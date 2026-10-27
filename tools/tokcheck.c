@@ -1,7 +1,8 @@
 // Print token ids for each sample of a file (samples separated by a line "=====").
 // scripts/tokcheck.py compares the output with the HF reference tokenizer.
-//   tokcheck model.gguf samples.txt
+//   tokcheck model.gguf|hf_model_dir samples.txt
 #include "gguf.h"
+#include <sys/stat.h>
 #include "tokenizer.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,9 +10,14 @@
 
 int main(int argc, char **argv) {
     if (argc < 3) { fprintf(stderr, "usage: tokcheck model.gguf samples.txt\n"); return 1; }
-    gguf_ctx *g = gguf_open(argv[1]);
-    if (!g) return 1;
-    tokenizer *t = tok_load(g);
+    struct stat sb;
+    tokenizer *t;
+    if (stat(argv[1], &sb) == 0 && S_ISDIR(sb.st_mode)) t = tok_load_hf(argv[1]);
+    else {
+        gguf_ctx *g = gguf_open(argv[1]);
+        if (!g) return 1;
+        t = tok_load(g);
+    }
     if (!t) return 1;
     FILE *f = fopen(argv[2], "rb");
     if (!f) { perror(argv[2]); return 1; }
@@ -39,6 +45,5 @@ int main(int argc, char **argv) {
         s = e + strlen(sep);
     }
     tok_free(t);
-    gguf_close(g);
     return 0;
 }

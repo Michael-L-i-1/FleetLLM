@@ -2,6 +2,9 @@
 // t=0, fixed output length, greedy. Same workload as the earlier vLLM runs.
 //   bench --model glimmer --levels 1,2,4,8,16 --gen 128 [--reps 2]
 //   bench --model llama1b --check     greedy batched outputs == sequential outputs
+//   --share: automatic prefix sharing on (new agents fork the KV of live, cached
+//            or still-prefilling sequences with the same prefix; finished agents
+//            stay cached), comparable to a server with prefix caching enabled
 #include "common.h"
 
 static char *read_file(const char *path) {
@@ -20,6 +23,8 @@ static char *read_file(const char *path) {
 typedef struct { int32_t *ids; int n; } prompt_t;
 
 // Run k agents (prompt i % n_tasks) concurrently or one by one; returns wall seconds.
+static bool share;
+
 static double run(engine *e, const prompt_t *pr, int n_tasks, int k, int gen, bool batched, bool eos, int32_t ***outs, int **out_n, double *ttft) {
     int *ids = malloc(sizeof(int) * k);
     sample_params p = sample_defaults();
@@ -32,7 +37,8 @@ static double run(engine *e, const prompt_t *pr, int n_tasks, int k, int gen, bo
     for (int b = 0; b < k; b += batched ? k : 1) {
         int m = batched ? k : 1;
         for (int i = 0; i < m; i++) {
-            ids[i] = engine_create_fresh(e, pr[(b + i) % n_tasks].ids, pr[(b + i) % n_tasks].n);
+            const prompt_t *t = &pr[(b + i) % n_tasks];
+            ids[i] = share ? engine_create(e, t->ids, t->n) : engine_create_fresh(e, t->ids, t->n);
             engine_start(e, ids[i], p);
         }
         engine_generate(e, ids, m);
@@ -42,7 +48,8 @@ static double run(engine *e, const prompt_t *pr, int n_tasks, int k, int gen, bo
             (*outs)[b + i] = malloc(sizeof(int32_t) * s->n_gen);
             memcpy((*outs)[b + i], s->gen, sizeof(int32_t) * s->n_gen);
             (*out_n)[b + i] = s->n_gen;
-            engine_release(e, ids[i]);
+            if (share) engine_retire(e, ids[i]);
+            else engine_release(e, ids[i]);
         }
     }
     *ttft = first / k;
@@ -64,6 +71,7 @@ int main(int argc, char **argv) {
     }
     int gen = (int)arg_num(argc, argv, "--gen", 128);
     engine *e = rt.e;
+    share = arg_flag(argc, argv, "--share");
     { // warm-up: pipelines, page tables, both matmul paths
         int32_t **o; int *on; double tt;
         run(e, pr, n_tasks, n_tasks < 2 ? 1 : 2, 4, true, false, &o, &on, &tt);
@@ -79,7 +87,7 @@ int main(int argc, char **argv) {
     }
     int reps = (int)arg_num(argc, argv, "--reps", 2);
     const char *levels = arg_str(argc, argv, "--levels", "1,2,4,8");
-    printf("engine=cinfer backend=%s model=%s gen=%d\n", rt.be->name, arch_name(rt.m->c.arch), gen);
+    printf("engine=cinfer backend=%s model=%s gen=%d share=%d\n", rt.be->name, arch_name(rt.m->c.arch), gen, share);
     printf("%4s %8s %9s %10s %10s\n", "N", "wall s", "TTFT ms", "agg tok/s", "per-agent");
     char lv[256];
     snprintf(lv, sizeof lv, "%s", levels);
@@ -92,7 +100,8 @@ int main(int argc, char **argv) {
             if (w < best) { best = w; best_ttft = tt; }
         }
         double agg = (double)k * gen / best;
-        printf("%4d %8.2f %9.0f %10.1f %10.1f\n", k, best, best_ttft * 1e3, agg, agg / k);
+        printf("%4d %8.2f %9.0f %10.1f %10.1f  (prefill rows %ld, shared %ld)\n", k, best, best_ttft * 1e3, agg, agg / k, e->st.prefill_rows, e->st.shared_tokens);
+        e->st.prefill_rows = e->st.shared_tokens = 0;
         fflush(stdout);
     }
     return 0;

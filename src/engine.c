@@ -82,18 +82,49 @@ static void touch(engine *e, int id) {
 }
 
 int engine_create(engine *e, const int32_t *prompt, int n) {
-    int best = -1, best_len = 0;
+    int best = -1, best_len = 0, lead = -1, lead_len = 0;
     for (int i = 0; i < e->n_seqs; i++) {
         seq_t *s = &e->seqs[i];
         if (!s->live) continue;
         int l = 0;
         while (l < s->n_tokens && l < n && s->tokens[l] == prompt[l]) l++;
+        int w = l; // match continuing into the queued (not yet written) prompt
+        if (l == s->n_tokens && !s->wait_len) while (w < s->n_tokens + s->n_pending && w < n && s->pending[w - s->n_tokens] == prompt[w]) w++;
         if (l > n - 1) l = n - 1; // keep one token to produce logits from
+        if (w > n - 1) w = n - 1;
         if (l >= e->min_share && l > best_len && kv_can_fork_at(&e->kv, &s->pages, l)) { best = i; best_len = l; }
+        if (w > lead_len) { lead = i; lead_len = w; }
+    }
+    if (lead >= 0 && lead_len >= best_len + e->min_share) { // worth waiting for a leader still prefilling
+        int id = engine_create_fresh(e, prompt, n);
+        e->seqs[id].wait_for = lead;
+        e->seqs[id].wait_len = lead_len;
+        return id;
     }
     if (best < 0) return engine_create_fresh(e, prompt, n);
     touch(e, best);
     return engine_fork_at(e, best, best_len, prompt + best_len, n - best_len);
+}
+
+// A waiting sequence forks its leader once the shared prefix is written; it
+// gives up (and prefills itself) if the leader is gone or cannot be forked.
+static void resolve_wait(engine *e, int id, bool force) {
+    seq_t *s = &e->seqs[id];
+    if (!s->wait_len) return;
+    seq_t *l = &e->seqs[s->wait_for];
+    int len = s->wait_len;
+    bool same = l->live && l->n_tokens >= len && !memcmp(l->tokens, s->pending, sizeof(int32_t) * len);
+    if (same && kv_can_fork_at(&e->kv, &l->pages, len)) {
+        s->pages = kv_fork_at(&e->kv, &l->pages, len);
+        append(&s->tokens, &s->n_tokens, &s->cap_tokens, l->tokens, len);
+        memmove(s->pending, s->pending + len, sizeof(int32_t) * (s->n_pending - len));
+        s->n_pending -= len;
+        e->st.shared_tokens += len;
+        e->st.deduped_tokens += len;
+        s->wait_len = 0;
+    } else if (force || !l->live || l->n_tokens >= len || l->wait_len) {
+        s->wait_len = 0;
+    }
 }
 
 void engine_start(engine *e, int id, sample_params p) {
@@ -144,11 +175,16 @@ typedef struct { int seq, take; } plan_item;
 bool engine_step(engine *e, const int *ids, int n) {
     plan_item *plan = malloc(sizeof(plan_item) * (n ? n : 1));
     int np = 0, budget = e->row_budget, n_decode = 0;
-    for (int i = 0; i < n && budget > 0; i++) // decode rows first
-        if (e->seqs[ids[i]].n_pending == 1) { plan[np++] = (plan_item){ ids[i], 1 }; budget--; n_decode++; }
-    for (int i = 0; i < n && budget > 0; i++) {
-        seq_t *s = &e->seqs[ids[i]];
-        if (s->n_pending > 1) { int take = s->n_pending < budget ? s->n_pending : budget; plan[np++] = (plan_item){ ids[i], take }; budget -= take; }
+    for (int i = 0; i < n; i++) resolve_wait(e, ids[i], false);
+    for (int pass = 0; pass < 2 && !np; pass++) {
+        if (pass) for (int i = 0; i < n; i++) resolve_wait(e, ids[i], true); // leaders not in this step: stop waiting
+        budget = e->row_budget;
+        for (int i = 0; i < n && budget > 0; i++) // decode rows first
+            if (e->seqs[ids[i]].n_pending == 1 && !e->seqs[ids[i]].wait_len) { plan[np++] = (plan_item){ ids[i], 1 }; budget--; n_decode++; }
+        for (int i = 0; i < n && budget > 0; i++) {
+            seq_t *s = &e->seqs[ids[i]];
+            if (s->n_pending > 1 && !s->wait_len) { int take = s->n_pending < budget ? s->n_pending : budget; plan[np++] = (plan_item){ ids[i], take }; budget -= take; }
+        }
     }
     if (!np) { free(plan); return false; }
     uint32_t need = 0;

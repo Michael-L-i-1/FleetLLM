@@ -1,4 +1,5 @@
-// Architecture-agnostic decoder description loaded from GGUF.
+// Architecture-agnostic decoder description loaded from GGUF or from a Hugging
+// Face / MLX safetensors directory (config.json + affine-quantized weights).
 //
 // One pre-norm transformer covers several families via flags:
 //   x = embed(tok) [* embed_scale] [rms(x) if embed_norm]
@@ -11,15 +12,24 @@
 // llama: optional rope_freqs; qwen2: NEOX rope + q/k/v bias; qwen3: NEOX rope + qk_norm
 #pragma once
 #include "gguf.h"
+#include "safetensors.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
+// MLX affine quantization: w = scale * q + bias per group of `group` columns,
+// q packed little-endian at `bits` per value, scales/biases bf16 or f16 [rows][cols/group].
+#define QT_AFFINE 1000
+
 typedef struct {
-    uint32_t type;
+    uint32_t type;       // ggml type or QT_AFFINE
     int rows, cols;      // rows = output features, cols = input features
     size_t row_bytes;
     const uint8_t *data; // NULL if the tensor is absent
+    const uint16_t *scales, *biases; // QT_AFFINE only
+    int bits, group;                 // QT_AFFINE only
+    bool scales_f16;                 // QT_AFFINE: scales/biases are f16 (else bf16)
+    void *gpu;                       // backend-owned repacked copy (if any); data is then unused on device
 } qmat;
 
 typedef struct {
@@ -41,21 +51,38 @@ typedef struct {
     bool rope_neox, embed_norm;
 } model_cfg;
 
+typedef struct { const void *base; size_t len; } mem_region;
+
 typedef struct {
     model_cfg c;
-    gguf_ctx *g;
+    gguf_ctx *g;          // GGUF source, or
+    st_ctx *st;           // safetensors source (dir holds config/tokenizer)
+    char dir[4096];
+    // Host memory the weights and norm vectors live in (for zero-copy GPU wrapping).
+    mem_region regions[66];
+    int n_regions;
+    uint8_t *aux; size_t aux_len, aux_used; // converted f32 norm vectors (safetensors)
+    uint8_t *arena; size_t arena_len;       // aligned copies of misaligned safetensors matrices
     layer *layers;
     const float *out_norm;
     qmat tok_embd, output;
     float *inv_freq; // hd/2 entries: base^(-2i/hd) / freq_factor[i]
 } model;
 
+// path: a .gguf file, or a directory with config.json + *.safetensors
 model *model_load(const char *path);
+// Dequantize row r of w into dst (w->cols floats).
+void qmat_row(const qmat *w, int r, float *dst);
+size_t qmat_bytes(const qmat *w);
+// Copy misaligned safetensors matrices into an aligned arena (for backends that
+// read the original layout directly); skips matrices a backend repacked.
+void model_align_mats(model *m);
 void model_free(model *m);
 // Dequantize embeddings for n tokens into x (n x d), applying embed scale / norm.
 void model_embed(const model *m, const int32_t *tokens, int n, float *x);
 // Weight bytes read on every decode step (everything but the embedding table).
 size_t model_streamed_bytes(const model *m);
-// Page in and mlock the streamed weights; returns bytes pinned.
+// Page in and mlock the streamed weights that live in the model's own memory
+// (backend-repacked matrices are skipped); returns bytes pinned.
 size_t model_pin(const model *m);
 const char *arch_name(arch_t a);

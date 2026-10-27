@@ -1,4 +1,5 @@
-// Byte-level BPE tokenizer built from GGUF metadata (tokenizer.ggml.*).
+// Byte-level BPE tokenizer built from GGUF metadata (tokenizer.ggml.*) or a
+// Hugging Face tokenizer.json.
 #pragma once
 #include "gguf.h"
 #include <stddef.h>
@@ -10,6 +11,8 @@ typedef enum { PRE_LLAMA3, PRE_QWEN2, PRE_LLAMA4 } pretok_kind;
 typedef struct tokenizer tokenizer;
 
 tokenizer *tok_load(const gguf_ctx *g);
+// From a Hugging Face model directory (tokenizer.json + tokenizer_config.json + config.json).
+tokenizer *tok_load_hf(const char *dir);
 void tok_free(tokenizer *t);
 
 // Encode UTF-8 text (special tokens such as <|eot_id|> are recognized). Returns

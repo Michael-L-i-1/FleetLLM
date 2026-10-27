@@ -1,7 +1,7 @@
 // cinfer Metal kernels (compiled at runtime from this embedded source).
 //
-// Weights are read in place from the mmap'd GGUF (zero-copy buffer); K-quant
-// block layouts match ggml. Activations are f32; KV cache is f16 in pages of
+// Weights are read in place from the mmap'd GGUF / safetensors (zero-copy
+// buffers); K-quant block layouts match ggml, affine layouts match MLX. Activations are f32; KV cache is f16 in pages of
 // PAGE tokens laid out [page][layer][k|v][kv_head][PAGE][head_dim].
 //
 // Matmul strategy (as in vllm-metal): batches <= 8 rows use a fused mat-vec on
@@ -213,6 +213,69 @@ MMF_INST(q8_0, 8, 272)
 MMF_INST(q4_0, 40, 144)
 
 // ---------------------------------------------------------------------------
+// Affine (MLX) mat-vec for small batches: Y[t][r] = W[r] . X[t] for NT tokens,
+// with W[r][k] = scale * q + bias per group of G columns, q packed at BITS.
+// Layout follows MLX's qmv_fast (2 simdgroups x 4 rows, each lane 16 (8 for
+// 8-bit) consecutive values per pass); codes are decoded once per pass and
+// reused for all NT tokens, and the bias term uses sum(x).
+// Instantiated at runtime for the (S, G, BITS) combinations the model uses.
+// ---------------------------------------------------------------------------
+struct AmvArgs { uint K, M, N, ldy, x_stride; };
+
+template <typename S, int G, int BITS, int NT>
+kernel void amv(device const uchar* W [[buffer(0)]], device const S* SC [[buffer(1)]], device const S* BI [[buffer(2)]],
+                device const float* X [[buffer(3)]], device float* Y [[buffer(4)]], constant AmvArgs& a [[buffer(5)]],
+                uint2 tg [[threadgroup_position_in_grid]], ushort sg [[simdgroup_index_in_threadgroup]],
+                ushort lane [[thread_index_in_simdgroup]]) {
+    constexpr int VPT = BITS == 8 ? 8 : 16; // values per lane per pass
+    constexpr int BPT = VPT * BITS / 8;     // packed bytes per lane per pass
+    constexpr int R = 4;
+    const uint row0 = tg.x * 8 + sg * R;
+    const uint t0 = tg.y * NT;
+    if (row0 >= a.M) return;
+    const uint rb = a.K * BITS / 8, ng = a.K / G;
+    float acc[R][NT];
+    for (int r = 0; r < R; r++) for (int t = 0; t < NT; t++) acc[r][t] = 0.0f;
+    for (uint k = lane * VPT; k < a.K; k += VPT * 32) {
+        float q[R][VPT], sc[R], bi[R];
+        for (int r = 0; r < R; r++) {
+            uint row = min(row0 + r, a.M - 1);
+            device const uchar* wp = W + row * rb + k * BITS / 8;
+            sc[r] = float(SC[row * ng + k / G]);
+            bi[r] = float(BI[row * ng + k / G]);
+            if (BITS == 4) {
+                uint2 v = *((device const uint2*)wp);
+                for (int i = 0; i < 8; i++) { q[r][i] = float((v.x >> (4 * i)) & 15u); q[r][8 + i] = float((v.y >> (4 * i)) & 15u); }
+            } else if (BITS == 8) {
+                uint2 v = *((device const uint2*)wp);
+                float4 lo = float4(as_type<uchar4>(v.x)), hi = float4(as_type<uchar4>(v.y));
+                for (int i = 0; i < 4; i++) { q[r][i] = lo[i]; q[r][4 + i] = hi[i]; }
+            } else { // 2-bit
+                uint v = *((device const uint*)wp);
+                for (int i = 0; i < 16; i++) q[r][i] = float((v >> (2 * i)) & 3u);
+            }
+        }
+        for (int t = 0; t < NT; t++) {
+            if (t0 + t >= a.N) break;
+            device const float4* xp = (device const float4*)(X + (t0 + t) * a.x_stride + k);
+            float4 xv[VPT / 4];
+            float sx = 0.0f;
+            for (int i = 0; i < VPT / 4; i++) { xv[i] = xp[i]; sx += xv[i].x + xv[i].y + xv[i].z + xv[i].w; }
+            for (int r = 0; r < R; r++) {
+                float d = 0.0f;
+                for (int i = 0; i < VPT / 4; i++) d += dot(xv[i], float4(q[r][4 * i], q[r][4 * i + 1], q[r][4 * i + 2], q[r][4 * i + 3]));
+                acc[r][t] += sc[r] * d + bi[r] * sx;
+            }
+        }
+    }
+    for (int r = 0; r < R; r++)
+        for (int t = 0; t < NT; t++) {
+            float v = simd_sum(acc[r][t]);
+            if (lane == 0 && row0 + r < a.M && t0 + t < a.N) Y[(t0 + t) * a.ldy + row0 + r] = v;
+        }
+}
+
+// ---------------------------------------------------------------------------
 // Dequantize rows [r0, r0+rows) of W into a dense f16 matrix D[rows][K].
 // One thread per 16-value sub-block.
 // ---------------------------------------------------------------------------
@@ -291,7 +354,7 @@ kernel void gemm_f16(device const half* D [[buffer(0)]], device const float* X [
 // ---------------------------------------------------------------------------
 // RMS norm. add=0: y[row] = rms(x[src])*w   add=1: y[row] += rms(x[row])*w
 // ---------------------------------------------------------------------------
-struct NormArgs { uint d; float eps; uint has_w, add, gather; };
+struct NormArgs { uint d; float eps; uint has_w, add, gather, half_out; }; // half_out: y is f16 (matmul input)
 
 kernel void rms_norm(device const float* x [[buffer(0)]], device float* y [[buffer(1)]], device const float* w [[buffer(2)]],
                      constant NormArgs& a [[buffer(3)]], device const uint* idx [[buffer(4)]],
@@ -316,7 +379,9 @@ kernel void rms_norm(device const float* x [[buffer(0)]], device float* y [[buff
     float r = rsqrt(part[0] / float(a.d) + a.eps);
     for (uint i = tid; i < a.d; i += nt) {
         float v = xr[i] * r * (a.has_w ? w[i] : 1.0f);
-        if (a.add) yr[i] += v; else yr[i] = v;
+        if (a.half_out) ((device half*)y)[(size_t)row * a.d + i] = half(v);
+        else if (a.add) yr[i] += v;
+        else yr[i] = v;
     }
 }
 
@@ -324,7 +389,7 @@ kernel void rms_norm(device const float* x [[buffer(0)]], device float* y [[buff
 // Per-head QK RMS norm (optional) + RoPE (optional; NORM or NEOX), in place.
 // grid (rows, n_head + n_kv) threadgroups of 32; n_head may be 0 (K only).
 // ---------------------------------------------------------------------------
-struct QkArgs { uint nh, nkv, hd; float eps; uint has_qn, has_kn, rope, neox; };
+struct QkArgs { uint nh, nkv, hd; float eps; uint has_qn, has_kn, rope, neox, qs, ks; }; // qs/ks: row strides (floats)
 
 kernel void qk_norm_rope(device float* q [[buffer(0)]], device float* k [[buffer(1)]], device const float* qn [[buffer(2)]],
                          device const float* kn [[buffer(3)]], device const uint* pos [[buffer(4)]],
@@ -332,7 +397,7 @@ kernel void qk_norm_rope(device float* q [[buffer(0)]], device float* k [[buffer
                          uint2 tg [[threadgroup_position_in_grid]], ushort lane [[thread_index_in_simdgroup]]) {
     const uint row = tg.x, h = tg.y, hd = a.hd, E = hd / 32, half_ = hd / 2;
     bool isq = h < a.nh;
-    device float* x = isq ? q + (row * a.nh + h) * hd : k + (row * a.nkv + (h - a.nh)) * hd;
+    device float* x = isq ? q + row * a.qs + h * hd : k + row * a.ks + (h - a.nh) * hd;
     bool norm = isq ? a.has_qn : a.has_kn;
     device const float* wn = isq ? qn : kn;
     uint ia[4], ib[4], fi[4];
@@ -364,7 +429,7 @@ kernel void qk_norm_rope(device float* q [[buffer(0)]], device float* k [[buffer
 // ---------------------------------------------------------------------------
 // Write K/V rows into their paged f16 slots. slot[row] = page*page_elems + (pos%PAGE)*hd.
 // ---------------------------------------------------------------------------
-struct KvwArgs { uint nkv, hd, page; ulong layer_off; };
+struct KvwArgs { uint nkv, hd, page, ks; ulong layer_off; uint vs, pad; }; // ks/vs: row strides of k/v
 
 kernel void kv_write(device const float* k [[buffer(0)]], device const float* v [[buffer(1)]], device half* pool [[buffer(2)]],
                      device const ulong* slot [[buffer(3)]], constant KvwArgs& a [[buffer(4)]], uint2 gid [[thread_position_in_grid]]) {
@@ -372,8 +437,8 @@ kernel void kv_write(device const float* k [[buffer(0)]], device const float* v 
     if (e >= kvd) return;
     uint h = e / a.hd, dd = e % a.hd;
     ulong base = slot[row] + a.layer_off + h * a.page * a.hd + dd;
-    pool[base] = half(k[row * kvd + e]);
-    pool[base + a.nkv * a.page * a.hd] = half(v[row * kvd + e]);
+    pool[base] = half(k[row * a.ks + e]);
+    pool[base + a.nkv * a.page * a.hd] = half(v[row * a.vs + e]);
 }
 
 // ---------------------------------------------------------------------------
@@ -383,7 +448,7 @@ kernel void kv_write(device const float* k [[buffer(0)]], device const float* v 
 // position-parallel (lane = position) with online softmax; partial (m, l, o)
 // per split; attn_reduce merges splits and applies the optional sigmoid gate.
 // ---------------------------------------------------------------------------
-struct AttnArgs { uint nh, nkv, hd; float scale; ulong page_elems, layer_off; uint page, gate; };
+struct AttnArgs { uint nh, nkv, hd; float scale; ulong page_elems, layer_off; uint page, gate, qs, gs, half_out, pad; }; // qs/gs: row strides of q/gate
 struct RowInfo { uint ctx_end, start, tab, pad; };
 #define AT 32
 
@@ -400,11 +465,11 @@ kernel void attn_fd(device const float* q [[buffer(0)]], device const half* pool
     threadgroup half ks[AT * KS];
     threadgroup half vs[AT * HD];
     const uint row = tg.x, kvh = tg.y, split = tg.z;
-    const uint G = a.nh / a.nkv, h = kvh * G + sg, qd = a.nh * HD;
+    const uint G = a.nh / a.nkv, h = kvh * G + sg;
     const RowInfo r = ri[row];
     const uint s0 = r.start + split * sp.x;
     const uint s1 = min(r.ctx_end + 1, s0 + sp.x);
-    for (uint i = tid; i < G * HD; i += ntg) qs[i] = q[row * qd + kvh * G * HD + i] * a.scale;
+    for (uint i = tid; i < G * HD; i += ntg) qs[i] = q[row * a.qs + kvh * G * HD + i] * a.scale;
     const ulong vofs = (ulong)a.nkv * a.page * HD;
     float m = -INFINITY, l = 0.0f, o[E];
     for (int i = 0; i < E; i++) o[i] = 0.0f;
@@ -472,17 +537,24 @@ kernel void attn_reduce(device const float* part [[buffer(0)]], device const flo
     for (uint i = 0; i < E; i++) {
         uint idx = row * a.nh * hd + h * hd + lane * E + i;
         float v = o[i] / L;
-        if (a.gate) v *= 1.0f / (1.0f + exp(-g[idx]));
-        out[idx] = v;
+        if (a.gate) v *= 1.0f / (1.0f + exp(-g[row * a.gs + h * hd + lane * E + i]));
+        if (a.half_out) ((device half*)out)[idx] = half(v);
+        else out[idx] = v;
     }
 }
 
 // ---------------------------------------------------------------------------
 // Elementwise
 // ---------------------------------------------------------------------------
-kernel void silu_mul(device float* g [[buffer(0)]], device const float* u [[buffer(1)]], uint i [[thread_position_in_grid]]) {
-    float x = g[i];
-    g[i] = x / (1.0f + exp(-x)) * u[i];
+// out[r][c] = silu(g[r*stride + c]) * u[r*stride + c], c < ff (g/u may be halves of one fused row)
+// a.z: write f16
+kernel void silu_mul(device const float* g [[buffer(0)]], device const float* u [[buffer(1)]], device float* out [[buffer(2)]],
+                     constant uint3& a [[buffer(3)]], uint i [[thread_position_in_grid]]) {
+    uint r = i / a.x, c = i % a.x;
+    float x = g[r * a.y + c];
+    float v = x / (1.0f + exp(-x)) * u[r * a.y + c];
+    if (a.z) ((device half*)out)[i] = half(v);
+    else out[i] = v;
 }
 
 // y[i] += b[i % w] (bias add, or a plain residual add with w = n*d)
@@ -495,4 +567,10 @@ struct CapArgs { float scale, cap; };
 kernel void softcap(device float* y [[buffer(0)]], constant CapArgs& a [[buffer(1)]], uint i [[thread_position_in_grid]]) {
     float v = y[i] * a.scale;
     y[i] = a.cap > 0.0f ? a.cap * precise::tanh(v / a.cap) : v;
+}
+
+// f32 -> f16 copy (activations feeding the NAX GEMM), 4 elements per thread; n % 4 == 0
+kernel void to_half(device const float4* x [[buffer(0)]], device half4* y [[buffer(1)]], constant uint& n [[buffer(2)]],
+                    uint i [[thread_position_in_grid]]) {
+    if (i < n / 4) y[i] = half4(x[i]);
 }

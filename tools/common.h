@@ -30,6 +30,8 @@ static const char *model_path(const char *alias) {
     if (!strcmp(alias, "glimmer")) pat = "models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/*/Muse-Glimmer-30B-UD-Q2_K_XL.gguf";
     else if (!strcmp(alias, "llama1b")) pat = "models--unsloth--Llama-3.2-1B-Instruct-GGUF/snapshots/*/Llama-3.2-1B-Instruct-Q4_K_M.gguf";
     else if (!strcmp(alias, "qwen3")) pat = "models--unsloth--Qwen3-1.7B-GGUF/snapshots/*/Qwen3-1.7B-Q4_K_M.gguf";
+    else if (!strcmp(alias, "glimmer-mlx4")) pat = "models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/*";
+    else if (!strcmp(alias, "llama1b-mlx4")) pat = "models--mlx-community--Llama-3.2-1B-Instruct-4bit/snapshots/*";
     if (!pat) return alias;
     char g[4096];
     snprintf(g, sizeof g, "%s/.cache/huggingface/hub/%s", getenv("HOME"), pat);
@@ -49,15 +51,15 @@ static runtime load_runtime(int argc, char **argv) {
     const char *path = model_path(arg_str(argc, argv, "--model", "llama1b"));
     rt.m = model_load(path);
     if (!rt.m) exit(1);
-    rt.tok = tok_load(rt.m->g);
+    rt.tok = rt.m->g ? tok_load(rt.m->g) : tok_load_hf(rt.m->dir);
     if (!rt.tok) exit(1);
     double budget_gb = arg_num(argc, argv, "--budget-gb", 16);
     size_t streamed = model_streamed_bytes(rt.m);
     size_t reserve = 600u << 20; // activations, logits, scratch, touched embedding rows
     size_t budget = (size_t)(budget_gb * 1e9);
     if (budget < streamed + reserve + (64u << 20)) { fprintf(stderr, "budget %.1f GB too small for %.2f GB of weights\n", budget_gb, streamed / 1e9); exit(1); }
-    size_t pinned = arg_flag(argc, argv, "--no-pin") ? 0 : model_pin(rt.m);
     rt.be = backend_create(arg_str(argc, argv, "--backend", "auto"), rt.m);
+    size_t pinned = arg_flag(argc, argv, "--no-pin") ? 0 : model_pin(rt.m);
     rt.e = engine_new(rt.m, rt.be, rt.tok, budget - streamed - reserve);
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
     fprintf(stderr, "[load] %.1fs %s %s, %d layers, weights %.2f GB (pinned %.2f), KV %.2f GB (%u full + %u swa pages), backend %s\n",

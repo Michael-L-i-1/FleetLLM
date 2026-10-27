@@ -5,7 +5,10 @@
 // generating sequence, then prefill chunks until the row budget is used, and
 // runs them as one batched forward. A new sequence forks the KV of the live or
 // cached sequence that shares its longest token prefix (copy-on-write pages),
-// so subagents with a common system prompt / task prefill it once.
+// so subagents with a common system prompt / task prefill it once. If the
+// longest match is with a sequence whose prompt is still queued (agents fanned
+// out at the same moment), the newcomer waits for that leader to prefill the
+// shared part and then forks it, instead of computing it a second time.
 #pragma once
 #include "backend.h"
 #include "sampler.h"
@@ -17,13 +20,14 @@ typedef struct {
     int32_t *tokens; int n_tokens, cap_tokens;    // tokens whose KV is written
     int32_t *pending; int n_pending, cap_pending; // queued input
     int32_t *gen; int n_gen, cap_gen;             // generated output
+    int wait_for, wait_len; // waiting for seqs[wait_for] to write wait_len shared tokens (wait_len 0: not waiting)
     sample_params p;
     uint64_t rng;
     double t_start, t_first; // creation time, first generated token (seconds)
 } seq_t;
 
 typedef struct {
-    long steps, decode_rows, prefill_rows, shared_tokens, gen_tokens;
+    long steps, decode_rows, prefill_rows, shared_tokens, gen_tokens, deduped_tokens;
     double forward_secs;
 } engine_stats;
 

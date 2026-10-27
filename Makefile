@@ -28,9 +28,12 @@ $(BUILD):
 $(BUILD)/%.o: src/%.c src/*.h | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Metal kernels are embedded as a C string so the binary is self-contained.
-$(BUILD)/kernels_metal.h: src/metal/kernels.metal | $(BUILD)
-	cd src/metal && xxd -i kernels.metal > ../../$@
+# Metal kernels are embedded as C strings so the binary is self-contained
+# (vendored MLX headers under src/metal/mlx are inlined).
+METAL_SRC := $(wildcard src/metal/*.metal) $(shell find src/metal/mlx -name '*.h')
+$(BUILD)/kernels_metal.h: $(METAL_SRC) scripts/embed_metal.py | $(BUILD)
+	python3 scripts/embed_metal.py src/metal/kernels.metal kernels_metal > $@
+	python3 scripts/embed_metal.py src/metal/kernels_nax.metal kernels_nax_metal >> $@
 
 $(BUILD)/metal.o: src/metal/metal.m src/*.h $(BUILD)/kernels_metal.h | $(BUILD)
 	$(CC) $(CFLAGS) -fobjc-arc -I$(BUILD) -Isrc -c $< -o $@

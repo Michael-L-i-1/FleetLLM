@@ -30,7 +30,7 @@ static void mm_rows(void *ctx, int r0, int r1) {
     const qmat *w = j->w;
     float *row = malloc(sizeof(float) * w->cols);
     for (int r = r0; r < r1; r++) {
-        dequant_row(w->type, w->data + (size_t)r * w->row_bytes, row, w->cols);
+        qmat_row(w, r, row);
         for (int t = 0; t < j->n; t++) {
             const float *xt = j->x + (size_t)t * w->cols;
             float s = 0;
@@ -220,7 +220,7 @@ backend *cpu_backend_new(void) {
     return b;
 }
 
-backend *backend_create(const char *name, const model *m) {
+backend *backend_create(const char *name, model *m) {
 #ifdef CI_METAL
     if (!strcmp(name, "metal") || !strcmp(name, "auto")) return metal_backend_new(m);
 #else

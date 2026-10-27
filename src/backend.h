@@ -27,7 +27,8 @@ struct backend {
 
 backend *cpu_backend_new(void);
 #ifdef CI_METAL
-backend *metal_backend_new(const model *m);
+backend *metal_backend_new(model *m);
 #endif
-// "cpu", "metal", or "auto" (metal when available)
-backend *backend_create(const char *name, const model *m);
+// "cpu", "metal", or "auto" (metal when available). A backend may attach
+// repacked copies of weight matrices to the model (qmat.gpu).
+backend *backend_create(const char *name, model *m);

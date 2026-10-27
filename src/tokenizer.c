@@ -7,6 +7,7 @@
 //          |\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n/]*|\s*[\r\n]+|\s+(?!\S)|\s+
 #include "tokenizer.h"
 #include "unicode.h"
+#include "json.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +38,7 @@ struct tokenizer {
     int32_t stops[16];
     int n_stops;
     int32_t bos;
+    json *src; // tokenizer.json the token strings point into (HF loader)
 };
 
 static uint64_t fnv(const char *s, size_t n) {
@@ -74,6 +76,77 @@ static int cmp_special_len(const void *a, const void *b, void *ctx) {
     return (int)t->tokens[*(const int32_t *)b].len - (int)t->tokens[*(const int32_t *)a].len;
 }
 
+// Shared tail of both loaders: vocab hash, merge table, special tokens, byte
+// map, stop tokens. tokens/types are owned by t; merges are (a, b) string pairs.
+static void tok_finish(tokenizer *t, const str *merges, size_t n_merges) {
+    uint32_t vs = pow2_at_least((uint64_t)t->n_vocab * 2);
+    t->vmask = vs - 1;
+    t->vmap = malloc(sizeof(int32_t) * vs);
+    memset(t->vmap, 0xff, sizeof(int32_t) * vs);
+    for (int i = 0; i < t->n_vocab; i++) {
+        if (t->types[i] == TT_UNUSED && !t->tokens[i].len) continue;
+        uint32_t h = (uint32_t)fnv(t->tokens[i].s, t->tokens[i].len) & t->vmask;
+        while (t->vmap[h] >= 0) {
+            // keep the first id for duplicate strings
+            if (t->tokens[t->vmap[h]].len == t->tokens[i].len && memcmp(t->tokens[t->vmap[h]].s, t->tokens[i].s, t->tokens[i].len) == 0) goto next;
+            h = (h + 1) & t->vmask;
+        }
+        t->vmap[h] = i;
+    next:;
+    }
+    uint32_t ms = pow2_at_least(n_merges * 2 + 2);
+    t->mmask = ms - 1;
+    t->mkeys = malloc(sizeof(uint64_t) * ms);
+    t->mrank = malloc(sizeof(uint32_t) * ms);
+    t->mres = malloc(sizeof(int32_t) * ms);
+    memset(t->mres, 0xff, sizeof(int32_t) * ms);
+    char buf[1024];
+    for (size_t r = 0; r < n_merges; r++) {
+        const str *ma = &merges[2 * r], *mb = &merges[2 * r + 1];
+        if (ma->len + mb->len >= sizeof buf) continue;
+        int32_t a = vfind(t, ma->s, ma->len), b = vfind(t, mb->s, mb->len);
+        memcpy(buf, ma->s, ma->len);
+        memcpy(buf + ma->len, mb->s, mb->len);
+        int32_t res = vfind(t, buf, ma->len + mb->len);
+        if (a < 0 || b < 0 || res < 0) continue;
+        uint64_t key = ((uint64_t)(uint32_t)a << 32) | (uint32_t)b;
+        uint32_t i = (uint32_t)mix(key) & t->mmask;
+        while (t->mres[i] >= 0 && t->mkeys[i] != key) i = (i + 1) & t->mmask;
+        if (t->mres[i] >= 0) continue; // keep the higher-priority (earlier) merge
+        t->mkeys[i] = key;
+        t->mrank[i] = (uint32_t)r;
+        t->mres[i] = res;
+    }
+    // special tokens: control and user-defined, matched verbatim, longest first
+    for (int i = 0; i < t->n_vocab && t->n_specials < 4096; i++)
+        if ((t->types[i] == TT_CONTROL || t->types[i] == TT_USER) && t->tokens[i].len > 0) t->specials[t->n_specials++] = i;
+    // insertion sort by length, longest first (qsort_r's signature differs across libcs)
+    for (int i = 1; i < t->n_specials; i++) {
+        int32_t v = t->specials[i];
+        int j = i - 1;
+        while (j >= 0 && cmp_special_len(&t->specials[j], &v, t) > 0) { t->specials[j + 1] = t->specials[j]; j--; }
+        t->specials[j + 1] = v;
+    }
+    for (int i = 0; i < t->n_specials; i++) t->special_first[(unsigned char)t->tokens[t->specials[i]].s[0]] = 1;
+    // GPT-2 bytes_to_unicode
+    int nb = 0;
+    for (int b = 0; b < 256; b++) {
+        bool printable = (b >= '!' && b <= '~') || (b >= 0xA1 && b <= 0xAC) || (b >= 0xAE && b <= 0xFF);
+        t->byte_to_cp[b] = printable ? (uint32_t)b : (uint32_t)(256 + nb++);
+    }
+    for (int i = 0; i < 512; i++) t->cp_to_byte[i] = -1;
+    for (int b = 0; b < 256; b++) t->cp_to_byte[t->byte_to_cp[b]] = (int16_t)b;
+    static const char *stop_names[] = { "<|eot|>", "<|eom|>", "<|eot_id|>", "<|eom_id|>", "<|im_end|>", "<|end_of_text|>", "<|endoftext|>", "<end_of_turn>" };
+    for (size_t i = 0; i < sizeof stop_names / sizeof *stop_names; i++) {
+        int32_t id = vfind(t, stop_names[i], strlen(stop_names[i]));
+        if (id >= 0 && !tok_is_stop(t, id) && t->n_stops < 16) t->stops[t->n_stops++] = id;
+    }
+}
+
+static void add_stop(tokenizer *t, int64_t id) {
+    if (id >= 0 && id < t->n_vocab && t->n_stops < 16 && !tok_is_stop(t, (int32_t)id)) t->stops[t->n_stops++] = (int32_t)id;
+}
+
 tokenizer *tok_load(const gguf_ctx *g) {
     size_t n;
     const char *model = gguf_str(g, "tokenizer.ggml.model", &n);
@@ -96,91 +169,131 @@ tokenizer *tok_load(const gguf_ctx *g) {
         t->tokens[i] = (str){ s, (uint32_t)len };
         t->types[i] = ty ? (uint8_t)gguf_arr_u64(ty, i) : TT_NORMAL;
     }
-    uint32_t vs = pow2_at_least(tk->n * 2);
-    t->vmask = vs - 1;
-    t->vmap = malloc(sizeof(int32_t) * vs);
-    memset(t->vmap, 0xff, sizeof(int32_t) * vs);
-    for (int i = 0; i < t->n_vocab; i++) {
-        uint32_t h = (uint32_t)fnv(t->tokens[i].s, t->tokens[i].len) & t->vmask;
-        while (t->vmap[h] >= 0) {
-            // keep the first id for duplicate strings
-            if (t->tokens[t->vmap[h]].len == t->tokens[i].len && memcmp(t->tokens[t->vmap[h]].s, t->tokens[i].s, t->tokens[i].len) == 0) goto next;
-            h = (h + 1) & t->vmask;
-        }
-        t->vmap[h] = i;
-    next:;
-    }
-    uint32_t ms = pow2_at_least(mk->n * 2 + 2);
-    t->mmask = ms - 1;
-    t->mkeys = malloc(sizeof(uint64_t) * ms);
-    t->mrank = malloc(sizeof(uint32_t) * ms);
-    t->mres = malloc(sizeof(int32_t) * ms);
-    memset(t->mres, 0xff, sizeof(int32_t) * ms);
+    str *merges = malloc(sizeof(str) * 2 * mk->n);
+    size_t nm = 0;
     p = mk->data;
-    char buf[1024];
     for (uint64_t r = 0; r < mk->n; r++) {
         size_t len;
         const char *s = gguf_arr_next_str(&p, &len);
         const char *sp = memchr(s, ' ', len);
         if (!sp) continue;
-        size_t la = sp - s, lb = len - la - 1;
-        if (la + lb >= sizeof buf) continue;
-        int32_t a = vfind(t, s, la), b = vfind(t, sp + 1, lb);
-        memcpy(buf, s, la);
-        memcpy(buf + la, sp + 1, lb);
-        int32_t res = vfind(t, buf, la + lb);
-        if (a < 0 || b < 0 || res < 0) continue;
-        uint64_t key = ((uint64_t)(uint32_t)a << 32) | (uint32_t)b;
-        uint32_t i = (uint32_t)mix(key) & t->mmask;
-        while (t->mres[i] >= 0 && t->mkeys[i] != key) i = (i + 1) & t->mmask;
-        if (t->mres[i] >= 0) continue; // keep the higher-priority (earlier) merge
-        t->mkeys[i] = key;
-        t->mrank[i] = (uint32_t)r;
-        t->mres[i] = res;
+        merges[2 * nm] = (str){ s, (uint32_t)(sp - s) };
+        merges[2 * nm + 1] = (str){ sp + 1, (uint32_t)(len - (sp - s) - 1) };
+        nm++;
     }
     const char *pre = gguf_str(g, "tokenizer.ggml.pre", &n);
     t->pre = PRE_LLAMA3;
     t->ignore_merges = true;
     if (pre && n == 6 && memcmp(pre, "llama4", 6) == 0) t->pre = PRE_LLAMA4;
     else if (pre && ((n == 5 && memcmp(pre, "qwen2", 5) == 0) || (n == 16 && memcmp(pre, "deepseek-r1-qwen", 16) == 0))) { t->pre = PRE_QWEN2; t->ignore_merges = false; }
-    // special tokens: control and user-defined, matched verbatim, longest first
-    for (int i = 0; i < t->n_vocab && t->n_specials < 4096; i++)
-        if ((t->types[i] == TT_CONTROL || t->types[i] == TT_USER) && t->tokens[i].len > 0) t->specials[t->n_specials++] = i;
-    // insertion sort by length, longest first (qsort_r's signature differs across libcs)
-    for (int i = 1; i < t->n_specials; i++) {
-        int32_t v = t->specials[i];
-        int j = i - 1;
-        while (j >= 0 && cmp_special_len(&t->specials[j], &v, t) > 0) { t->specials[j + 1] = t->specials[j]; j--; }
-        t->specials[j + 1] = v;
-    }
-    for (int i = 0; i < t->n_specials; i++) t->special_first[(unsigned char)t->tokens[t->specials[i]].s[0]] = 1;
-    // GPT-2 bytes_to_unicode
-    int nb = 0;
-    for (int b = 0; b < 256; b++) {
-        bool printable = (b >= '!' && b <= '~') || (b >= 0xA1 && b <= 0xAC) || (b >= 0xAE && b <= 0xFF);
-        t->byte_to_cp[b] = printable ? (uint32_t)b : (uint32_t)(256 + nb++);
-    }
-    for (int i = 0; i < 512; i++) t->cp_to_byte[i] = -1;
-    for (int b = 0; b < 256; b++) t->cp_to_byte[t->byte_to_cp[b]] = (int16_t)b;
-    // stop tokens
-    static const char *stop_names[] = { "<|eot|>", "<|eom|>", "<|eot_id|>", "<|eom_id|>", "<|im_end|>", "<|end_of_text|>", "<|endoftext|>", "<end_of_turn>" };
-    for (size_t i = 0; i < sizeof stop_names / sizeof *stop_names; i++) {
-        int32_t id = vfind(t, stop_names[i], strlen(stop_names[i]));
-        if (id >= 0) t->stops[t->n_stops++] = id;
-    }
+    tok_finish(t, merges, nm);
+    free(merges);
     const char *idk[] = { "tokenizer.ggml.eos_token_id", "tokenizer.ggml.eot_token_id", "tokenizer.ggml.eom_token_id" };
     for (int i = 0; i < 3; i++) {
         uint64_t v;
-        if (gguf_u64(g, idk[i], &v) && t->n_stops < 16 && !tok_is_stop(t, (int32_t)v)) t->stops[t->n_stops++] = (int32_t)v;
+        if (gguf_u64(g, idk[i], &v)) add_stop(t, (int64_t)v);
     }
     uint64_t b;
     t->bos = gguf_u64(g, "tokenizer.ggml.bos_token_id", &b) ? (int32_t)b : -1;
     return t;
 }
 
+// Hugging Face tokenizer.json (byte-level BPE). The pre-tokenizer is picked by
+// matching its Split regex against the three patterns implemented here.
+tokenizer *tok_load_hf(const char *dir) {
+    char path[4096];
+    snprintf(path, sizeof path, "%s/tokenizer.json", dir);
+    json *j = json_load_file(path);
+    if (!j) { fprintf(stderr, "tokenizer: cannot read %s\n", path); return NULL; }
+    const jnode *root = json_root(j), *mdl = json_get(j, root, "model");
+    const char *type = json_str(j, mdl, "type");
+    const jnode *vocab = json_get(j, mdl, "vocab"), *mlist = json_get(j, mdl, "merges"), *added = json_get(j, root, "added_tokens");
+    if (!type || strcmp(type, "BPE") || !vocab || vocab->type != J_OBJ || !mlist) {
+        fprintf(stderr, "tokenizer: only byte-level BPE tokenizer.json is supported\n");
+        json_free(j);
+        return NULL;
+    }
+    int n_vocab = 0;
+    for (const jnode *v = json_first(j, vocab); v; v = json_next(j, v)) if ((int)v->num + 1 > n_vocab) n_vocab = (int)v->num + 1;
+    for (const jnode *a = json_first(j, added); a; a = json_next(j, a)) {
+        int id = (int)json_num(j, a, "id", -1);
+        if (id + 1 > n_vocab) n_vocab = id + 1;
+    }
+    tokenizer *t = calloc(1, sizeof *t);
+    t->src = j;
+    t->n_vocab = n_vocab;
+    t->tokens = calloc(n_vocab, sizeof(str));
+    t->types = malloc(n_vocab);
+    memset(t->types, TT_UNUSED, n_vocab);
+    for (const jnode *v = json_first(j, vocab); v; v = json_next(j, v)) {
+        int id = (int)v->num;
+        t->tokens[id] = (str){ v->key, (uint32_t)v->key_len };
+        t->types[id] = TT_NORMAL;
+    }
+    for (const jnode *a = json_first(j, added); a; a = json_next(j, a)) {
+        int id = (int)json_num(j, a, "id", -1);
+        const jnode *c = json_get(j, a, "content");
+        if (id < 0 || !c || c->type != J_STR) continue;
+        t->tokens[id] = (str){ c->s, (uint32_t)c->n };
+        t->types[id] = json_bool(j, a, "special", false) ? TT_CONTROL : TT_USER;
+    }
+    // merges: ["a b", ...] (older files) or [["a", "b"], ...]
+    str *merges = malloc(sizeof(str) * 2 * (mlist->n + 1));
+    size_t nm = 0;
+    for (const jnode *m = json_first(j, mlist); m; m = json_next(j, m)) {
+        if (m->type == J_STR) {
+            const char *sp = memchr(m->s, ' ', m->n);
+            if (!sp) continue;
+            merges[2 * nm] = (str){ m->s, (uint32_t)(sp - m->s) };
+            merges[2 * nm + 1] = (str){ sp + 1, (uint32_t)(m->n - (sp - m->s) - 1) };
+        } else if (m->type == J_ARR && m->n == 2) {
+            const jnode *a = json_child(j, m, 0), *b = json_child(j, m, 1);
+            merges[2 * nm] = (str){ a->s, (uint32_t)a->n };
+            merges[2 * nm + 1] = (str){ b->s, (uint32_t)b->n };
+        } else continue;
+        nm++;
+    }
+    // pre-tokenizer: find the Split regex anywhere under pre_tokenizer
+    const char *regex = NULL;
+    const jnode *pt = json_get(j, root, "pre_tokenizer");
+    const jnode *list = json_get(j, pt, "pretokenizers");
+    for (const jnode *p = list ? json_first(j, list) : pt; p && !regex; p = list ? json_next(j, p) : NULL) {
+        const char *ty = json_str(j, p, "type");
+        if (ty && !strcmp(ty, "Split")) regex = json_str(j, json_get(j, p, "pattern"), "Regex");
+    }
+    t->ignore_merges = json_bool(j, mdl, "ignore_merges", false);
+    if (regex && strstr(regex, "\\p{Lu}\\p{Lt}")) t->pre = PRE_LLAMA4;
+    else if (regex && strstr(regex, "\\p{N}{1,3}")) t->pre = PRE_LLAMA3;
+    else if (regex && strstr(regex, "\\p{N}")) t->pre = PRE_QWEN2;
+    else { fprintf(stderr, "tokenizer: unrecognized pre-tokenizer (%s)\n", regex ? regex : "none"); tok_free(t); free(merges); return NULL; }
+    tok_finish(t, merges, nm);
+    free(merges);
+    // bos / eos from tokenizer_config.json and config.json
+    t->bos = -1;
+    snprintf(path, sizeof path, "%s/tokenizer_config.json", dir);
+    json *tc = json_load_file(path);
+    if (tc) {
+        const char *bos = json_str(tc, json_root(tc), "bos_token");
+        const char *eos = json_str(tc, json_root(tc), "eos_token");
+        if (bos) t->bos = vfind(t, bos, strlen(bos));
+        if (eos) add_stop(t, vfind(t, eos, strlen(eos)));
+        json_free(tc);
+    }
+    snprintf(path, sizeof path, "%s/config.json", dir);
+    json *cf = json_load_file(path);
+    if (cf) {
+        const jnode *r = json_root(cf), *e = json_get(cf, r, "eos_token_id");
+        if (e && e->type == J_NUM) add_stop(t, (int64_t)e->num);
+        for (const jnode *x = e && e->type == J_ARR ? json_first(cf, e) : NULL; x; x = json_next(cf, x)) add_stop(t, (int64_t)x->num);
+        json_free(cf);
+    }
+    return t;
+}
+
 void tok_free(tokenizer *t) {
     if (!t) return;
     free(t->tokens); free(t->types); free(t->vmap); free(t->mkeys); free(t->mrank); free(t->mres);
+    json_free(t->src);
     free(t);
 }
 

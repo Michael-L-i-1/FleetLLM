@@ -1,0 +1,8 @@
+engine=openai base=http://localhost:8077/v1 model=glimmer gen=128
+   N   wall s   TTFT ms  agg tok/s  per-agent  tokens
+   1     7.04       231       18.2       18.2     128
+   2     7.52       317       34.1       17.0     256
+   4     9.14       558       56.0       14.0     512
+   8    16.12      1216       63.5        7.9    1024
+  16    23.41       686       87.5        5.5    2048
+  32    27.23      1009      150.4        4.7    4096

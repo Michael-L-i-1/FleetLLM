@@ -1,6 +1,8 @@
 #include "model.h"
+#include "json.h"
 #include "quant.h"
 #include <math.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +54,11 @@ static float key_f(const gguf_ctx *g, const char *arch, const char *k, float def
     return gguf_f32(g, key, &v) ? v : def;
 }
 
+static model *model_load_st(const char *dir);
+
 model *model_load(const char *path) {
+    struct stat sb;
+    if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode)) return model_load_st(path);
     gguf_ctx *g = gguf_open(path);
     if (!g) return NULL;
     size_t n;
@@ -61,6 +67,7 @@ model *model_load(const char *path) {
     if (a) memcpy(arch, a, n < 63 ? n : 63);
     model *m = calloc(1, sizeof *m);
     m->g = g;
+    m->regions[m->n_regions++] = (mem_region){ g->map, g->size };
     model_cfg *c = &m->c;
     if (!strcmp(arch, "llama")) c->arch = ARCH_LLAMA;
     else if (!strcmp(arch, "qwen2")) c->arch = ARCH_QWEN2;
@@ -137,11 +144,20 @@ void model_free(model *m) {
     if (!m) return;
     free(m->layers);
     free(m->inv_freq);
-    gguf_close(m->g);
+    if (m->g) gguf_close(m->g);
+    if (m->st) st_close(m->st);
+    if (m->aux) munmap(m->aux, m->aux_len);
+    if (m->arena) munmap(m->arena, m->arena_len);
     free(m);
 }
 
-static size_t mat_bytes(const qmat *q) { return q->data ? q->row_bytes * (size_t)q->rows : 0; }
+size_t qmat_bytes(const qmat *q) {
+    if (!q->data) return 0;
+    size_t n = q->row_bytes * (size_t)q->rows;
+    if (q->type == QT_AFFINE) n += 2 * 2 * (size_t)q->rows * (q->cols / q->group);
+    return n;
+}
+#define mat_bytes qmat_bytes
 
 size_t model_streamed_bytes(const model *m) {
     size_t n = mat_bytes(&m->output);
@@ -153,14 +169,24 @@ size_t model_streamed_bytes(const model *m) {
     return n;
 }
 
-static size_t pin(const qmat *q) {
-    if (!q->data) return 0;
-    size_t n = mat_bytes(q);
-    madvise((void *)q->data, n, MADV_WILLNEED);
+static size_t pin_range(const void *p, size_t n) {
+    // mlock wants page-aligned ranges
+    uintptr_t a = (uintptr_t)p & ~(uintptr_t)16383, b = ((uintptr_t)p + n + 16383) & ~(uintptr_t)16383;
+    madvise((void *)a, b - a, MADV_WILLNEED);
     volatile uint8_t s = 0;
-    for (size_t i = 0; i < n; i += 16384) s += q->data[i];
+    for (uintptr_t i = a; i < b; i += 16384) s += *(const uint8_t *)i;
     (void)s;
-    return mlock(q->data, n) == 0 ? n : 0;
+    return mlock((void *)a, b - a) == 0 ? n : 0;
+}
+
+static size_t pin(const qmat *q) {
+    if (!q->data || q->gpu) return 0;
+    size_t n = pin_range(q->data, q->row_bytes * (size_t)q->rows);
+    if (q->type == QT_AFFINE) {
+        size_t sb = 2 * (size_t)q->rows * (q->cols / q->group);
+        n += pin_range(q->scales, sb) + pin_range(q->biases, sb);
+    }
+    return n;
 }
 
 size_t model_pin(const model *m) {
@@ -176,7 +202,7 @@ void model_embed(const model *m, const int32_t *tokens, int n, float *x) {
     const model_cfg *c = &m->c;
     for (int r = 0; r < n; r++) {
         float *xr = x + (size_t)r * c->d;
-        dequant_row(m->tok_embd.type, m->tok_embd.data + (size_t)tokens[r] * m->tok_embd.row_bytes, xr, c->d);
+        qmat_row(&m->tok_embd, tokens[r], xr);
         if (c->embed_scale != 1.f) for (int i = 0; i < c->d; i++) xr[i] *= c->embed_scale;
         if (c->embed_norm) {
             double ss = 0;
@@ -185,4 +211,287 @@ void model_embed(const model *m, const int32_t *tokens, int n, float *x) {
             for (int i = 0; i < c->d; i++) xr[i] *= s;
         }
     }
+}
+
+static inline float bf16(uint16_t h) {
+    uint32_t u = (uint32_t)h << 16;
+    float f;
+    memcpy(&f, &u, 4);
+    return f;
+}
+
+void qmat_row(const qmat *w, int r, float *dst) {
+    const uint8_t *src = w->data + (size_t)r * w->row_bytes;
+    if (w->type != QT_AFFINE) { dequant_row(w->type, src, dst, w->cols); return; }
+    int ng = w->cols / w->group, bits = w->bits;
+    uint32_t mask = (1u << bits) - 1;
+    for (int g = 0; g < ng; g++) {
+        uint16_t hs, hb; // safetensors data may be misaligned
+        memcpy(&hs, w->scales + (size_t)r * ng + g, 2);
+        memcpy(&hb, w->biases + (size_t)r * ng + g, 2);
+        float sc = w->scales_f16 ? fp16_to_f32(hs) : bf16(hs), bi = w->scales_f16 ? fp16_to_f32(hb) : bf16(hb);
+        for (int i = g * w->group; i < (g + 1) * w->group; i++) {
+            // little-endian bit stream: value i occupies bits [i*bits, (i+1)*bits)
+            size_t bit = (size_t)i * bits, byte = bit >> 3;
+            uint32_t v = src[byte];
+            if (byte + 1 < w->row_bytes) v |= (uint32_t)src[byte + 1] << 8;
+            dst[i] = sc * (float)((v >> (bit & 7)) & mask) + bi;
+        }
+    }
+}
+
+// ---------------------------------------------------------------- safetensors / MLX
+
+typedef struct { const st_ctx *st; const char *prefix; } names;
+
+static const st_tensor *st_get(const names *nm, const char *suffix) {
+    char k[512];
+    snprintf(k, sizeof k, "%s%s", nm->prefix, suffix);
+    return st_find(nm->st, k);
+}
+
+// Linear layer `base` (e.g. "model.layers.0.self_attn.q_proj") with in_features
+// cols: MLX affine (weight U32 + scales + biases) or unquantized f16/bf16.
+static qmat st_mat(const names *nm, const char *base, int cols) {
+    qmat m = {0};
+    char k[512];
+    snprintf(k, sizeof k, "%s.weight", base);
+    const st_tensor *w = st_get(nm, k);
+    if (!w) return m;
+    snprintf(k, sizeof k, "%s.scales", base);
+    const st_tensor *sc = st_get(nm, k);
+    snprintf(k, sizeof k, "%s.biases", base);
+    const st_tensor *bi = st_get(nm, k);
+    m.rows = (int)w->shape[0];
+    m.data = w->data;
+    if (sc && bi && w->dtype == ST_U32) {
+        if (sc->dtype != bi->dtype || (sc->dtype != ST_BF16 && sc->dtype != ST_F16)) { fprintf(stderr, "%s: scales/biases must be bf16 or f16\n", base); exit(1); }
+        m.type = QT_AFFINE;
+        m.scales_f16 = sc->dtype == ST_F16;
+        m.cols = cols;
+        m.bits = (int)(w->shape[1] * 32 / m.cols);
+        m.group = (int)(m.cols / sc->shape[1]);
+        m.row_bytes = (size_t)w->shape[1] * 4;
+        m.scales = (const uint16_t *)sc->data;
+        m.biases = (const uint16_t *)bi->data;
+        if (m.bits * m.cols != w->shape[1] * 32 || m.group * sc->shape[1] != m.cols) { fprintf(stderr, "%s: inconsistent quantized shape\n", base); exit(1); }
+    } else if (w->dtype == ST_BF16 || w->dtype == ST_F16) {
+        m.type = w->dtype == ST_BF16 ? GGML_BF16 : GGML_F16;
+        m.cols = (int)w->shape[1];
+        m.row_bytes = (size_t)m.cols * 2;
+    } else if (w->dtype == ST_F32) {
+        m.type = GGML_F32;
+        m.cols = (int)w->shape[1];
+        m.row_bytes = (size_t)m.cols * 4;
+    } else { fprintf(stderr, "%s: unsupported dtype %s\n", base, st_dtype_name(w->dtype)); exit(1); }
+    return m;
+}
+
+static float *aux_alloc(model *m, size_t n) {
+    size_t bytes = (n * sizeof(float) + 63) & ~(size_t)63;
+    if (m->aux_used + bytes > m->aux_len) { fprintf(stderr, "model: aux arena exhausted\n"); exit(1); }
+    float *p = (float *)(m->aux + m->aux_used);
+    m->aux_used += bytes;
+    return p;
+}
+
+// Norm weight as f32 (optionally 1 + w for zero-centered norms); NULL if absent.
+static const float *st_vec(model *m, const names *nm, const char *name, int expect, float add) {
+    const st_tensor *t = st_get(nm, name);
+    if (!t) return NULL;
+    if (t->shape[0] != expect || t->n_dims != 1) { fprintf(stderr, "%s: expected %d elems\n", name, expect); exit(1); }
+    float *v = aux_alloc(m, expect);
+    for (int i = 0; i < expect; i++) {
+        float x;
+        if (t->dtype == ST_F32) memcpy(&x, t->data + 4 * i, 4);
+        else {
+            uint16_t h;
+            memcpy(&h, t->data + 2 * i, 2);
+            x = t->dtype == ST_BF16 ? bf16(h) : fp16_to_f32(h);
+        }
+        v[i] = x + add;
+    }
+    return v;
+}
+
+static const float *const_vec(model *m, int n, float val) {
+    float *v = aux_alloc(m, n);
+    for (int i = 0; i < n; i++) v[i] = val;
+    return v;
+}
+
+// safetensors data is only as aligned as its JSON header length makes it; GPU
+// kernels want 16-byte aligned rows, so misaligned matrices the GPU reads are
+// copied once into an aligned arena (same layout). The embedding table stays
+// mapped unless it doubles as the output projection.
+static size_t up64(size_t n) { return (n + 63) & ~(size_t)63; }
+static bool misaligned(const qmat *q) {
+    return q->data && !q->gpu && (((uintptr_t)q->data | (uintptr_t)q->scales | (uintptr_t)q->biases) & 15);
+}
+static size_t mat_parts(const qmat *q, size_t *wb, size_t *sb) {
+    *wb = q->row_bytes * (size_t)q->rows;
+    *sb = q->type == QT_AFFINE ? 2 * (size_t)q->rows * (q->cols / q->group) : 0;
+    return up64(*wb) + 2 * up64(*sb);
+}
+
+void model_align_mats(model *m) {
+    qmat *mats[8 * 1024 + 1];
+    int n = 0;
+    bool tied = m->output.data == m->tok_embd.data;
+    mats[n++] = &m->output;
+    for (int i = 0; i < m->c.n_layer; i++) {
+        layer *l = &m->layers[i];
+        qmat *ls[] = { &l->wq, &l->wk, &l->wv, &l->wg, &l->wo, &l->w_gate, &l->w_up, &l->w_down };
+        for (int k = 0; k < 8; k++) mats[n++] = ls[k];
+    }
+    size_t total = 0, wb, sb;
+    for (int i = 0; i < n; i++) if (misaligned(mats[i])) total += mat_parts(mats[i], &wb, &sb);
+    if (!total) return;
+    m->arena_len = (total + 16383) & ~(size_t)16383;
+    m->arena = mmap(NULL, m->arena_len, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    if (m->arena == MAP_FAILED) { fprintf(stderr, "model: cannot allocate %.2f GB for aligned weights\n", m->arena_len / 1e9); exit(1); }
+    size_t off = 0;
+    for (int i = 0; i < n; i++) {
+        qmat *q = mats[i];
+        if (!misaligned(q)) continue;
+        mat_parts(q, &wb, &sb);
+        uint8_t *d = m->arena + off;
+        memcpy(d, q->data, wb);
+        q->data = d;
+        off += up64(wb);
+        if (sb) {
+            memcpy(m->arena + off, q->scales, sb);
+            q->scales = (const uint16_t *)(m->arena + off);
+            off += up64(sb);
+            memcpy(m->arena + off, q->biases, sb);
+            q->biases = (const uint16_t *)(m->arena + off);
+            off += up64(sb);
+        }
+    }
+    if (tied) m->tok_embd = m->output;
+    m->regions[m->n_regions++] = (mem_region){ m->arena, m->arena_len };
+}
+
+static model *model_load_st(const char *dir) {
+    char path[4096];
+    snprintf(path, sizeof path, "%s/config.json", dir);
+    json *j = json_load_file(path);
+    if (!j) { fprintf(stderr, "%s: cannot read\n", path); return NULL; }
+    const jnode *root = json_root(j), *tc = json_get(j, root, "text_config");
+    const jnode *cfg = tc ? tc : root;
+    const char *mt = json_str(j, root, "model_type");
+    model *m = calloc(1, sizeof *m);
+    snprintf(m->dir, sizeof m->dir, "%s", dir);
+    model_cfg *c = &m->c;
+    if (!mt) mt = "?";
+    if (!strcmp(mt, "llama")) c->arch = ARCH_LLAMA;
+    else if (!strcmp(mt, "qwen2")) c->arch = ARCH_QWEN2;
+    else if (!strcmp(mt, "qwen3")) c->arch = ARCH_QWEN3;
+    else if (!strcmp(mt, "muse_glimmer") || !strcmp(mt, "muse_glimmer_text")) c->arch = ARCH_GLIMMER;
+    else { fprintf(stderr, "model_type '%s' not supported\n", mt); exit(1); }
+    bool glimmer = c->arch == ARCH_GLIMMER;
+#define NUM(k, d) json_num(j, cfg, k, d)
+    c->n_layer = (int)NUM("num_hidden_layers", 0);
+    c->d = (int)NUM("hidden_size", 0);
+    c->ff = (int)NUM("intermediate_size", 0);
+    c->n_head = (int)NUM("num_attention_heads", 0);
+    c->n_kv = (int)NUM("num_key_value_heads", c->n_head);
+    c->hd = (int)NUM("head_dim", c->d / c->n_head);
+    c->eps = (float)NUM("rms_norm_eps", 1e-6);
+    c->post_eps = glimmer ? (float)NUM("post_norm_eps", 1e-8) : c->eps;
+    c->rope_base = (float)NUM("rope_theta", 10000.0);
+    const jnode *rp = json_get(j, cfg, "rope_parameters");
+    if (rp) c->rope_base = (float)json_num(j, rp, "rope_theta", c->rope_base);
+    c->window = glimmer || json_bool(j, cfg, "use_sliding_window", false) ? (int)NUM("sliding_window", 0) : 0;
+    c->logit_scale = glimmer ? (float)NUM("output_multiplier", 1.0) : 1.f;
+    c->softcap = (float)NUM("final_logit_softcapping", 0.0);
+    c->embed_scale = 1.f;
+    c->embed_norm = glimmer;
+    c->rope_neox = true; // HF layout: rotate-half
+    c->attn_scale = 1.f / sqrtf((float)c->hd);
+    float qk_scale = glimmer ? (float)NUM("qk_scale_factor", 1.0) : 1.f;
+    bool tied = json_bool(j, cfg, "tie_word_embeddings", json_bool(j, root, "tie_word_embeddings", false));
+
+    m->st = st_open_dir(dir);
+    if (!m->st) exit(1);
+    for (int i = 0; i < m->st->n_files; i++) m->regions[m->n_regions++] = (mem_region){ m->st->files[i].map, m->st->files[i].size };
+    m->aux_len = ((size_t)c->n_layer * (4 * c->d + 2 * c->hd + 3 * 1024) * 4 + c->d * 4 + (1 << 20) + 16383) & ~(size_t)16383;
+    m->aux = mmap(NULL, m->aux_len, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    m->regions[m->n_regions++] = (mem_region){ m->aux, m->aux_len };
+    // Multimodal checkpoints nest the text tower under language_model.
+    names nm = { m->st, st_find(m->st, "language_model.model.embed_tokens.weight") ? "language_model." : "" };
+    m->tok_embd = st_mat(&nm, "model.embed_tokens", c->d);
+    m->output = tied ? m->tok_embd : st_mat(&nm, "lm_head", c->d);
+    if (!m->tok_embd.data || !m->output.data) { fprintf(stderr, "%s: missing embeddings / lm_head\n", dir); exit(1); }
+    c->vocab = m->output.rows;
+    m->out_norm = st_vec(m, &nm, "model.norm.weight", c->d, 0);
+
+    const jnode *lt = json_get(j, cfg, "layer_types"), *lr = json_get(j, cfg, "layer_rope_theta");
+    m->layers = calloc(c->n_layer, sizeof(layer));
+    float center = glimmer ? 1.f : 0.f; // glimmer's per-block norms scale by (1 + w)
+    for (int i = 0; i < c->n_layer; i++) {
+        layer *l = &m->layers[i];
+        char k[256];
+#define L(s) (snprintf(k, sizeof k, "model.layers.%d.%s", i, s), k)
+        l->attn_norm = st_vec(m, &nm, L("input_layernorm.weight"), c->d, center);
+        if (st_get(&nm, L("pre_feedforward_layernorm.weight"))) {
+            // sandwich norms (gemma-style): post_attention_layernorm normalizes the attention output
+            l->post_attn_norm = st_vec(m, &nm, L("post_attention_layernorm.weight"), c->d, center);
+            l->ffn_norm = st_vec(m, &nm, L("pre_feedforward_layernorm.weight"), c->d, center);
+            l->post_ffn_norm = st_vec(m, &nm, L("post_feedforward_layernorm.weight"), c->d, center);
+        } else {
+            l->ffn_norm = st_vec(m, &nm, L("post_attention_layernorm.weight"), c->d, center);
+        }
+        l->q_norm = st_vec(m, &nm, L("self_attn.q_norm.weight"), c->hd, 0);
+        l->k_norm = st_vec(m, &nm, L("self_attn.k_norm.weight"), c->hd, 0);
+        if (glimmer) { // weightless QK-norm; q additionally scaled
+            l->q_norm = const_vec(m, c->hd, qk_scale);
+            l->k_norm = const_vec(m, c->hd, 1.f);
+        }
+        l->bq = st_vec(m, &nm, L("self_attn.q_proj.bias"), c->n_head * c->hd, 0);
+        l->bk = st_vec(m, &nm, L("self_attn.k_proj.bias"), c->n_kv * c->hd, 0);
+        l->bv = st_vec(m, &nm, L("self_attn.v_proj.bias"), c->n_kv * c->hd, 0);
+        l->wq = st_mat(&nm, L("self_attn.q_proj"), c->d);
+        l->wk = st_mat(&nm, L("self_attn.k_proj"), c->d);
+        l->wv = st_mat(&nm, L("self_attn.v_proj"), c->d);
+        l->wg = st_mat(&nm, L("self_attn.gate_proj"), c->d);
+        l->wo = st_mat(&nm, L("self_attn.o_proj"), c->n_head * c->hd);
+        l->w_gate = st_mat(&nm, L("mlp.gate_proj"), c->d);
+        l->w_up = st_mat(&nm, L("mlp.up_proj"), c->d);
+        l->w_down = st_mat(&nm, L("mlp.down_proj"), c->ff);
+#undef L
+        if (!l->attn_norm || !l->ffn_norm || !l->wq.data || !l->wk.data || !l->wv.data || !l->wo.data || !l->w_gate.data || !l->w_up.data || !l->w_down.data) {
+            fprintf(stderr, "layer %d: missing tensors\n", i);
+            exit(1);
+        }
+        const jnode *t = json_child(j, lt, i), *th = json_child(j, lr, i);
+        l->swa = c->window > 0 && (t ? t->type == J_STR && !strcmp(t->s, "sliding_attention") : glimmer && i % 4 != 3);
+        l->rope = th ? th->num != 0 : !glimmer || l->swa;
+        l->pool_layer = l->swa ? c->n_swa++ : c->n_full++;
+    }
+    // inverse frequencies, with llama3-style long-context scaling when configured
+    m->inv_freq = malloc(sizeof(float) * c->hd / 2);
+    const jnode *rs = json_get(j, cfg, "rope_scaling");
+    const char *rtype = rs ? json_str(j, rs, "rope_type") : NULL;
+    if (!rtype && rs) rtype = json_str(j, rs, "type");
+    for (int i = 0; i < c->hd / 2; i++) {
+        double f = pow(c->rope_base, -(double)(2 * i) / c->hd);
+        if (rtype && !strcmp(rtype, "llama3")) {
+            double factor = json_num(j, rs, "factor", 8), lo = json_num(j, rs, "low_freq_factor", 1), hi = json_num(j, rs, "high_freq_factor", 4);
+            double old = json_num(j, rs, "original_max_position_embeddings", 8192);
+            double wl = 2 * M_PI / f, lo_wl = old / lo, hi_wl = old / hi;
+            if (wl > lo_wl) f /= factor;
+            else if (wl >= hi_wl) {
+                double sm = (old / wl - lo) / (hi - lo);
+                f = (1 - sm) * f / factor + sm * f;
+            }
+        } else if (rtype && strcmp(rtype, "default")) {
+            fprintf(stderr, "rope_scaling type '%s' not supported\n", rtype);
+            exit(1);
+        }
+        m->inv_freq[i] = (float)f;
+    }
+#undef NUM
+    json_free(j);
+    return m;
 }

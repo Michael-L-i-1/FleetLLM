@@ -1,11 +1,14 @@
-// Metal backend (Apple GPU). The mmap'd GGUF is wrapped as one zero-copy
-// MTLBuffer (weights and F32 norm vectors are addressed by offset); KV pages
-// are f16 in shared buffers so the engine's copy-on-write bookkeeping stays on
-// the CPU. One command buffer per forward step.
+// Metal backend (Apple GPU). Each host region holding weights (the mmap'd GGUF,
+// or every safetensors shard plus the converted norm vectors) is wrapped as a
+// zero-copy MTLBuffer and tensors are addressed by offset; KV pages are f16 in
+// shared buffers so the engine's copy-on-write bookkeeping stays on the CPU.
+// One command buffer per forward step.
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #include "backend.h"
+#include "engine.h"
 #include "kernels_metal.h"
+#include "threadpool.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,10 +21,10 @@
 typedef struct { uint32_t K, M, N, ldy, row_bytes, x_stride; } MvArgs;
 typedef struct { uint32_t K, rows, row_bytes, r0; } DqArgs;
 typedef struct { uint32_t K, rows, N, ldy, r0, x_stride; } GemmArgs;
-typedef struct { uint32_t d; float eps; uint32_t has_w, add, gather; } NormArgs;
-typedef struct { uint32_t nh, nkv, hd; float eps; uint32_t has_qn, has_kn, rope, neox; } QkArgs;
-typedef struct { uint32_t nkv, hd, page, pad; uint64_t layer_off; } KvwArgs;
-typedef struct { uint32_t nh, nkv, hd; float scale; uint64_t page_elems, layer_off; uint32_t page, gate; } AttnArgs;
+typedef struct { uint32_t d; float eps; uint32_t has_w, add, gather, half_out; } NormArgs;
+typedef struct { uint32_t nh, nkv, hd; float eps; uint32_t has_qn, has_kn, rope, neox, qs, ks; } QkArgs;
+typedef struct { uint32_t nkv, hd, page, ks; uint64_t layer_off; uint32_t vs, pad; } KvwArgs;
+typedef struct { uint32_t nh, nkv, hd; float scale; uint64_t page_elems, layer_off; uint32_t page, gate, qs, gs, half_out, pad; } AttnArgs;
 typedef struct { uint32_t ctx_end, start, tab, pad; } RowInfo;
 typedef struct { float scale, cap; } CapArgs;
 
@@ -31,9 +34,14 @@ typedef struct { float scale, cap; } CapArgs;
     id<MTLCommandQueue> queue;
     NSMutableDictionary<NSString *, id<MTLComputePipelineState>> *pso;
     NSMutableDictionary<NSString *, id<MTLBuffer>> *bufs;
-    id<MTLBuffer> wbuf;
-    const uint8_t *wbase;
-    size_t wlen;
+    id<MTLBuffer> wbuf[66];
+    const uint8_t *wbase[66];
+    size_t wlen[66];
+    int n_w;
+    bool nax; // affine GEMM on the neural accelerators (Metal 4)
+    // per layer: fused [q|k|v|gate] and [ffn gate|up] tiled matrices (type 0 when not fused)
+    qmat *f_qkvg, *f_gu;
+    bool h16; // every matmul is tiled: matmul inputs are produced directly as f16
     id<MTLBuffer> invf;
 }
 @end
@@ -59,7 +67,17 @@ static id<MTLBuffer> B(CIMetal *mt, NSString *name, size_t bytes) {
     return b;
 }
 
-static uint64_t woff(CIMetal *mt, const void *p) { return (uint64_t)((const uint8_t *)p - mt->wbase); }
+// Bind host pointer p (inside one of the wrapped weight regions) at index idx.
+static void set_w(id<MTLComputeCommandEncoder> e, CIMetal *mt, const void *p, int idx) {
+    const uint8_t *q = p;
+    for (int i = 0; i < mt->n_w; i++)
+        if (q >= mt->wbase[i] && q < mt->wbase[i] + mt->wlen[i]) { [e setBuffer:mt->wbuf[i] offset:(NSUInteger)(q - mt->wbase[i]) atIndex:idx]; return; }
+    if (!p) { [e setBuffer:mt->wbuf[0] offset:0 atIndex:idx]; return; } // unused optional argument
+    fprintf(stderr, "metal: pointer %p is outside the weight regions\n", p);
+    exit(1);
+}
+
+static const char *sname(const qmat *w) { return w->scales_f16 ? "f16" : "bf"; }
 
 static const char *qname(uint32_t type) {
     switch (type) {
@@ -78,14 +96,133 @@ static int env_int(const char *name, int def) { const char *s = getenv(name); re
 static int mv_max(void) { static int v = -1; if (v < 0) v = env_int("CINFER_MV_MAX", MV_MAX_ROWS); return v; }
 static int fused_max(void) { static int v = -1; if (v < 0) v = env_int("CINFER_FUSED_MAX", FUSED_MAX_ROWS); return v; }
 
-// y[t*ldy + r] = W[r] . x[t] for n tokens
+typedef struct { uint32_t K, M, N, ldy, x_stride; } AmvArgs;
+typedef struct { int32_t K, N, M, ldy, split, part_stride; } AtArgs;
+
+// ---- tiled affine layout (see kernels_nax.metal: TiledBlock) ----
+// 4-bit affine matrices are repacked at load into 64-row x 64-K blocks with
+// their scales/biases inline, so each NAX GEMM K step is one contiguous read.
+#define TILE 64
+typedef struct { void *buf; int split, split_mv; } tiled_t; // buf: retained id<MTLBuffer>
+
+static int tiled_gpt(const qmat *w) { return w->group >= TILE ? 1 : TILE / w->group; }
+static size_t tiled_block_bytes(const qmat *w) { return (size_t)TILE * TILE * w->bits / 8 + (size_t)TILE * tiled_gpt(w) * 2 * 2; }
+static bool tiled_ok(const qmat *w) {
+    return w->type == QT_AFFINE && w->bits == 4 && w->cols % TILE == 0 && (w->group == 32 || w->group == 64 || w->group == 128);
+}
+
+typedef struct { const qmat *w; uint8_t *dst; } repack_job;
+static void repack_rows(void *ctx, int rt0, int rt1) {
+    const repack_job *j = ctx;
+    const qmat *w = j->w;
+    int n_kt = w->cols / TILE, gpt = tiled_gpt(w), ng = w->cols / w->group, cb = TILE * TILE * w->bits / 8, rbt = TILE * w->bits / 8;
+    size_t bb = tiled_block_bytes(w);
+    for (int rt = rt0; rt < rt1; rt++)
+        for (int kt = 0; kt < n_kt; kt++) {
+            uint8_t *blk = j->dst + ((size_t)rt * n_kt + kt) * bb;
+            uint16_t *par = (uint16_t *)(blk + cb);
+            for (int r = 0; r < TILE; r++) {
+                int row = rt * TILE + r;
+                if (row >= w->rows) {
+                    memset(blk + r * rbt, 0, rbt);
+                    memset(par + r * gpt * 2, 0, gpt * 4);
+                    continue;
+                }
+                memcpy(blk + r * rbt, w->data + (size_t)row * w->row_bytes + (size_t)kt * rbt, rbt);
+                for (int g = 0; g < gpt; g++) {
+                    int gi = (kt * TILE + g * (w->group < TILE ? w->group : TILE)) / w->group;
+                    memcpy(par + (r * gpt + g) * 2, w->scales + (size_t)row * ng + gi, 2);
+                    memcpy(par + (r * gpt + g) * 2 + 1, w->biases + (size_t)row * ng + gi, 2);
+                }
+            }
+        }
+}
+
+// K splits (measured on M5 Pro): GEMM so that row tiles x split ~ 2048
+// threadgroups with >= 4 K tiles per split; mat-vec so that ~8192 simdgroups
+// run with >= 8 K tiles each. Both depend only on the weight shape.
+static int tiled_split(const qmat *w, int units_per_tile, int target, int min_kt) {
+    int units = (w->rows + TILE - 1) / TILE * units_per_tile, n_kt = w->cols / TILE, split = 1;
+    while (units * split * 2 <= target && n_kt / (split * 2) >= min_kt) split *= 2;
+    return split;
+}
+#define TMV_MAX 2 // tokens handled by the tiled mat-vec; more go to the NAX GEMM
+
+// untiled affine mat-vec over tokens [t0, t0+n), n <= 8
+static void matmul_affine_mv(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, id<MTLBuffer> y, int ldy, int t0, int n) {
+    int nt = n == 1 ? 1 : n == 2 ? 2 : n <= 4 ? 4 : 8;
+    AmvArgs a = { (uint32_t)w->cols, (uint32_t)w->rows, (uint32_t)n, (uint32_t)ldy, (uint32_t)w->cols };
+    [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"amv_%s_%d_%d_%d", sname(w), w->group, w->bits, nt])];
+    set_w(e, mt, w->data, 0);
+    set_w(e, mt, w->scales, 1);
+    set_w(e, mt, w->biases, 2);
+    [e setBuffer:x offset:(NSUInteger)t0 * w->cols * 4 atIndex:3];
+    [e setBuffer:y offset:(NSUInteger)t0 * ldy * 4 atIndex:4];
+    set_bytes(e, &a, sizeof a, 5);
+    [e dispatchThreadgroups:MTLSizeMake((w->rows + 7) / 8, 1, 1) threadsPerThreadgroup:MTLSizeMake(64, 1, 1)];
+}
+
+// Bytes for a matmul input of n rows: f32 rows, or f16 rows padded to a whole
+// number of 64-row tiles (the NAX GEMM reads, but never stores, the pad rows).
+static size_t act_bytes(int n, int cols) {
+    size_t f32 = 4 * (size_t)n * cols, f16 = 2 * (size_t)((n + 63) / 64 * 64) * cols;
+    return f32 > f16 ? f32 : f16;
+}
+
+// x_half: x already holds f16 rows padded to a multiple of 64 (see act_bytes)
+static void matmul_affine(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, bool x_half, id<MTLBuffer> y, int ldy, int n) {
+    if (w->gpu) {
+        const tiled_t *tw = w->gpu;
+        int bm = n <= 16 ? 16 : n <= 32 ? 32 : 64, padded = (n + 63) / 64 * 64;
+        id<MTLBuffer> xh = x;
+        if (!x_half) { // activations as f16, padded to a whole number of 64-row tiles (pad rows are never stored)
+            xh = B(mt, @"x16", 2 * (size_t)padded * w->cols);
+            uint32_t cnt = (uint32_t)((size_t)n * w->cols);
+            [e setComputePipelineState:P(mt, @"to_half")];
+            [e setBuffer:x offset:0 atIndex:0];
+            [e setBuffer:xh offset:0 atIndex:1];
+            set_bytes(e, &cnt, 4, 2);
+            [e dispatchThreads:MTLSizeMake(cnt / 4, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+        }
+        int tiles = (w->rows + TILE - 1) / TILE, mv = n <= TMV_MAX, split = mv ? tw->split_mv : tw->split;
+        id<MTLBuffer> out = split > 1 ? B(mt, @"part", 4 * (size_t)split * n * w->rows) : y;
+        AtArgs a = { w->cols, w->rows, n, split > 1 ? w->rows : ldy, split, n * w->rows };
+        [e setBuffer:(__bridge id<MTLBuffer>)tw->buf offset:0 atIndex:0];
+        [e setBuffer:xh offset:0 atIndex:3];
+        [e setBuffer:out offset:0 atIndex:4];
+        if (mv) {
+            [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"tmv_%s_%d_%d", sname(w), w->group, n])];
+            set_bytes(e, &a, sizeof a, 5);
+            [e dispatchThreadgroups:MTLSizeMake(tiles * 4, 1, split) threadsPerThreadgroup:MTLSizeMake(64, 1, 1)];
+        } else {
+            [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"aqmt_%s_%d_%d", sname(w), w->group, bm])];
+            set_bytes(e, &a, sizeof a, 5);
+            int wm = bm == 16 ? 1 : 2;
+            [e dispatchThreadgroups:MTLSizeMake(tiles, (n + bm - 1) / bm, split) threadsPerThreadgroup:MTLSizeMake(32 * wm * 2, 1, 1)];
+        }
+        if (split > 1) {
+            int32_t a4[4] = { w->rows, n, split, ldy };
+            [e setComputePipelineState:P(mt, @"split_sum")];
+            [e setBuffer:out offset:0 atIndex:0];
+            [e setBuffer:y offset:0 atIndex:1];
+            set_bytes(e, a4, sizeof a4, 2);
+            [e dispatchThreads:MTLSizeMake(w->rows, n, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+        }
+        return;
+    }
+    for (int t0 = 0; t0 < n; t0 += 8) // no NAX / untiled layout: mat-vec in groups of 8 tokens
+        matmul_affine_mv(mt, e, w, x, y, ldy, t0, n - t0 < 8 ? n - t0 : 8);
+}
+
+// y[t*ldy + r] = W[r] . x[t] for n tokens; x is f16 when mt->h16 (all matmuls tiled)
 static void matmul(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, id<MTLBuffer> y, int ldy, int n) {
+    if (w->type == QT_AFFINE) { matmul_affine(mt, e, w, x, mt->h16, y, ldy, n); return; }
     const char *ty = qname(w->type);
     if (n <= mv_max()) {
         int nt = n == 1 ? 1 : n == 2 ? 2 : n <= 4 ? 4 : 8;
         MvArgs a = { (uint32_t)w->cols, (uint32_t)w->rows, (uint32_t)n, (uint32_t)ldy, (uint32_t)w->row_bytes, (uint32_t)w->cols };
         [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"mv_%s_%d", ty, nt])];
-        [e setBuffer:mt->wbuf offset:woff(mt, w->data) atIndex:0];
+        set_w(e, mt, w->data, 0);
         [e setBuffer:x offset:0 atIndex:1];
         [e setBuffer:y offset:0 atIndex:2];
         set_bytes(e, &a, sizeof a, 3);
@@ -96,7 +233,7 @@ static void matmul(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, i
         int tn = n <= 16 ? 16 : 32;
         MvArgs a = { (uint32_t)w->cols, (uint32_t)w->rows, (uint32_t)n, (uint32_t)ldy, (uint32_t)w->row_bytes, (uint32_t)w->cols };
         [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"mmf_%s_%d", ty, tn])];
-        [e setBuffer:mt->wbuf offset:woff(mt, w->data) atIndex:0];
+        set_w(e, mt, w->data, 0);
         [e setBuffer:x offset:0 atIndex:1];
         [e setBuffer:y offset:0 atIndex:2];
         set_bytes(e, &a, sizeof a, 3);
@@ -111,7 +248,7 @@ static void matmul(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, i
         int rows = w->rows - r0 < chunk ? w->rows - r0 : chunk;
         DqArgs d = { (uint32_t)w->cols, (uint32_t)rows, (uint32_t)w->row_bytes, (uint32_t)r0 };
         [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"dq_%s", ty])];
-        [e setBuffer:mt->wbuf offset:woff(mt, w->data) atIndex:0];
+        set_w(e, mt, w->data, 0);
         [e setBuffer:scratch offset:0 atIndex:1];
         set_bytes(e, &d, sizeof d, 2);
         [e dispatchThreads:MTLSizeMake(w->cols / 16, rows, 1) threadsPerThreadgroup:MTLSizeMake(64, 1, 1)];
@@ -125,21 +262,24 @@ static void matmul(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, i
     }
 }
 
+// add=false writes a matmul input (f16 when mt->h16); add=true accumulates into the f32 residual
 static void rms(CIMetal *mt, id<MTLComputeCommandEncoder> e, id<MTLBuffer> x, id<MTLBuffer> y, const float *w, int d, float eps, bool add, int rows, id<MTLBuffer> gather) {
-    NormArgs a = { (uint32_t)d, eps, w != NULL, add, gather != nil };
+    NormArgs a = { (uint32_t)d, eps, w != NULL, add, gather != nil, !add && mt->h16 };
     [e setComputePipelineState:P(mt, @"rms_norm")];
     [e setBuffer:x offset:0 atIndex:0];
     [e setBuffer:y offset:0 atIndex:1];
-    [e setBuffer:mt->wbuf offset:w ? woff(mt, w) : 0 atIndex:2];
+    set_w(e, mt, w, 2);
     set_bytes(e, &a, sizeof a, 3);
     [e setBuffer:gather ? gather : x offset:0 atIndex:4];
     [e dispatchThreadgroups:MTLSizeMake(rows, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
 }
 
-static void add_bcast(CIMetal *mt, id<MTLComputeCommandEncoder> e, id<MTLBuffer> y, id<MTLBuffer> b, uint64_t b_off, uint32_t w, size_t n) {
+// y[i] += b[i % w]; b is a weight-region pointer, or NULL to add buffer bb
+static void add_bcast(CIMetal *mt, id<MTLComputeCommandEncoder> e, id<MTLBuffer> y, const float *b, id<MTLBuffer> bb, uint32_t w, size_t n) {
     [e setComputePipelineState:P(mt, @"add_bcast")];
     [e setBuffer:y offset:0 atIndex:0];
-    [e setBuffer:b offset:b_off atIndex:1];
+    if (b) set_w(e, mt, b, 1);
+    else [e setBuffer:bb offset:0 atIndex:1];
     set_bytes(e, &w, sizeof w, 2);
     [e dispatchThreads:MTLSizeMake(n, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
 }
@@ -160,10 +300,13 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         const model_cfg *c = &m->c;
         int d = c->d, hd = c->hd, qd = c->n_head * hd, kvd = c->n_kv * hd;
         size_t f = 4;
-        id<MTLBuffer> xb = B(mt, @"x", f * n * d), hb = B(mt, @"h", f * n * d), qb = B(mt, @"q", f * n * qd),
+        // matmul inputs (h, att, act, hsel) are sized by act_bytes
+        id<MTLBuffer> xb = B(mt, @"x", f * n * d), hb = B(mt, @"h", act_bytes(n, d)), qb = B(mt, @"q", f * n * qd),
                       kb = B(mt, @"k", f * n * kvd), vb = B(mt, @"v", f * n * kvd), gb = B(mt, @"g", f * n * qd),
-                      ab = B(mt, @"att", f * n * qd), ob = B(mt, @"o", f * n * d), fgb = B(mt, @"fg", f * n * c->ff),
-                      fub = B(mt, @"fu", f * n * c->ff);
+                      ab = B(mt, @"att", act_bytes(n, qd)), ob = B(mt, @"o", f * n * d), fgb = B(mt, @"fg", f * n * c->ff),
+                      fub = B(mt, @"fu", f * n * c->ff), actb = B(mt, @"act", act_bytes(n, c->ff));
+        int qkvg_w = qd + 2 * kvd + (m->layers[0].wg.data ? qd : 0);
+        id<MTLBuffer> qkvgb = mt->f_qkvg[0].type ? B(mt, @"qkvg", f * n * qkvg_w) : nil, gub = mt->f_gu[0].type ? B(mt, @"gu", f * n * 2 * c->ff) : nil;
         // host-side inputs, written into shared memory before commit
         int32_t *toks = malloc(sizeof(int32_t) * n);
         uint32_t *posv = malloc(sizeof(uint32_t) * n);
@@ -212,7 +355,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         id<MTLBuffer> part = B(mt, @"part", (size_t)n * c->n_head * n_split_max * (hd + 2) * 4);
         id<MTLBuffer> full_pool = (__bridge id<MTLBuffer>)kv->full.handle;
         id<MTLBuffer> swa_pool = kv->window ? (__bridge id<MTLBuffer>)kv->swa.handle : full_pool;
-        id<MTLBuffer> hsel = ns ? B(mt, @"hsel", f * ns * d) : nil, lg = ns ? B(mt, @"logits", f * (size_t)ns * c->vocab) : nil;
+        id<MTLBuffer> hsel = ns ? B(mt, @"hsel", act_bytes(ns, d)) : nil, lg = ns ? B(mt, @"logits", f * (size_t)ns * c->vocab) : nil;
 
         id<MTLCommandBuffer> cb = [mt->queue commandBuffer];
         id<MTLComputeCommandEncoder> e = [cb computeCommandEncoder];
@@ -221,20 +364,31 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         for (int li = 0; li < c->n_layer; li++) {
             const layer *l = &m->layers[li];
             rms(mt, e, xb, hb, l->attn_norm, d, c->eps, false, n, nil);
-            matmul(mt, e, &l->wq, hb, qb, qd, n);
-            matmul(mt, e, &l->wk, hb, kb, kvd, n);
-            matmul(mt, e, &l->wv, hb, vb, kvd, n);
-            if (l->wg.data) matmul(mt, e, &l->wg, hb, gb, qd, n);
-            if (l->bq) add_bcast(mt, e, qb, mt->wbuf, woff(mt, l->bq), qd, (size_t)n * qd);
-            if (l->bk) add_bcast(mt, e, kb, mt->wbuf, woff(mt, l->bk), kvd, (size_t)n * kvd);
-            if (l->bv) add_bcast(mt, e, vb, mt->wbuf, woff(mt, l->bv), kvd, (size_t)n * kvd);
+            // q/k/v/gate: one fused matmul into [n][q|k|v|g] rows, or four separate ones
+            id<MTLBuffer> qB = qb, kB = kb, vB = vb, gB = gb;
+            NSUInteger qO = 0, kO = 0, vO = 0, gO = 0;
+            uint32_t qs = qd, ks = kvd, vs = kvd, gs = qd;
+            if (mt->f_qkvg[li].type) {
+                matmul(mt, e, &mt->f_qkvg[li], hb, qkvgb, qkvg_w, n);
+                qB = kB = vB = gB = qkvgb;
+                kO = 4 * qd; vO = 4 * (qd + kvd); gO = 4 * (qd + 2 * kvd);
+                qs = ks = vs = gs = qkvg_w;
+            } else {
+                matmul(mt, e, &l->wq, hb, qb, qd, n);
+                matmul(mt, e, &l->wk, hb, kb, kvd, n);
+                matmul(mt, e, &l->wv, hb, vb, kvd, n);
+                if (l->wg.data) matmul(mt, e, &l->wg, hb, gb, qd, n);
+            }
+            if (l->bq) add_bcast(mt, e, qb, l->bq, nil, qd, (size_t)n * qd);
+            if (l->bk) add_bcast(mt, e, kb, l->bk, nil, kvd, (size_t)n * kvd);
+            if (l->bv) add_bcast(mt, e, vb, l->bv, nil, kvd, (size_t)n * kvd);
             if (l->q_norm || l->k_norm || l->rope) {
-                QkArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->eps, l->q_norm != NULL, l->k_norm != NULL, l->rope, c->rope_neox };
+                QkArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->eps, l->q_norm != NULL, l->k_norm != NULL, l->rope, c->rope_neox, qs, ks };
                 [e setComputePipelineState:P(mt, @"qk_norm_rope")];
-                [e setBuffer:qb offset:0 atIndex:0];
-                [e setBuffer:kb offset:0 atIndex:1];
-                [e setBuffer:mt->wbuf offset:l->q_norm ? woff(mt, l->q_norm) : 0 atIndex:2];
-                [e setBuffer:mt->wbuf offset:l->k_norm ? woff(mt, l->k_norm) : 0 atIndex:3];
+                [e setBuffer:qB offset:qO atIndex:0];
+                [e setBuffer:kB offset:kO atIndex:1];
+                set_w(e, mt, l->q_norm, 2);
+                set_w(e, mt, l->k_norm, 3);
                 [e setBuffer:B(mt, @"pos", 4 * n) offset:0 atIndex:4];
                 [e setBuffer:mt->invf offset:0 atIndex:5];
                 set_bytes(e, &a, sizeof a, 6);
@@ -244,21 +398,21 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             id<MTLBuffer> pool = l->swa ? swa_pool : full_pool;
             uint64_t layer_off = (uint64_t)l->pool_layer * 2 * c->n_kv * KV_PAGE * hd;
             {
-                KvwArgs a = { (uint32_t)c->n_kv, (uint32_t)hd, KV_PAGE, 0, layer_off };
+                KvwArgs a = { (uint32_t)c->n_kv, (uint32_t)hd, KV_PAGE, ks, layer_off, vs, 0 };
                 [e setComputePipelineState:P(mt, @"kv_write")];
-                [e setBuffer:kb offset:0 atIndex:0];
-                [e setBuffer:vb offset:0 atIndex:1];
+                [e setBuffer:kB offset:kO atIndex:0];
+                [e setBuffer:vB offset:vO atIndex:1];
                 [e setBuffer:pool offset:0 atIndex:2];
                 [e setBuffer:B(mt, l->swa ? @"slot_swa" : @"slot_full", 8 * n) offset:0 atIndex:3];
                 set_bytes(e, &a, sizeof a, 4);
                 [e dispatchThreads:MTLSizeMake(kvd, n, 1) threadsPerThreadgroup:MTLSizeMake(kvd < 256 ? kvd : 256, 1, 1)];
             }
             {
-                AttnArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->attn_scale, pl->page_elems, layer_off, KV_PAGE, l->wg.data != NULL };
+                AttnArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->attn_scale, pl->page_elems, layer_off, KV_PAGE, l->wg.data != NULL, qs, gs, mt->h16, 0 };
                 uint32_t mx = l->swa ? max_swa : max_full;
                 uint32_t sp[2] = { ATTN_SPLIT, (mx + ATTN_SPLIT - 1) / ATTN_SPLIT };
                 [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"attn_fd_%d", hd])];
-                [e setBuffer:qb offset:0 atIndex:0];
+                [e setBuffer:qB offset:qO atIndex:0];
                 [e setBuffer:pool offset:0 atIndex:1];
                 [e setBuffer:B(mt, l->swa ? @"ri_swa" : @"ri_full", sizeof(RowInfo) * n) offset:0 atIndex:2];
                 [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
@@ -268,7 +422,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                 [e dispatchThreadgroups:MTLSizeMake(n, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(32 * (c->n_head / c->n_kv), 1, 1)];
                 [e setComputePipelineState:P(mt, @"attn_reduce")];
                 [e setBuffer:part offset:0 atIndex:0];
-                [e setBuffer:gb offset:0 atIndex:1];
+                [e setBuffer:gB offset:gO atIndex:1];
                 [e setBuffer:ab offset:0 atIndex:2];
                 set_bytes(e, &a, sizeof a, 3);
                 set_bytes(e, sp, sizeof sp, 4);
@@ -276,17 +430,28 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             }
             matmul(mt, e, &l->wo, ab, ob, d, n);
             if (l->post_attn_norm) rms(mt, e, ob, xb, l->post_attn_norm, d, c->post_eps, true, n, nil);
-            else add_bcast(mt, e, xb, ob, 0, (uint32_t)(n * d), (size_t)n * d);
+            else add_bcast(mt, e, xb, NULL, ob, (uint32_t)(n * d), (size_t)n * d);
             rms(mt, e, xb, hb, l->ffn_norm, d, c->eps, false, n, nil);
-            matmul(mt, e, &l->w_gate, hb, fgb, c->ff, n);
-            matmul(mt, e, &l->w_up, hb, fub, c->ff, n);
-            [e setComputePipelineState:P(mt, @"silu_mul")];
-            [e setBuffer:fgb offset:0 atIndex:0];
-            [e setBuffer:fub offset:0 atIndex:1];
+            uint32_t sa[3] = { (uint32_t)c->ff, (uint32_t)c->ff, mt->h16 };
+            if (mt->f_gu[li].type) {
+                matmul(mt, e, &mt->f_gu[li], hb, gub, 2 * c->ff, n);
+                sa[1] = 2 * c->ff;
+                [e setComputePipelineState:P(mt, @"silu_mul")];
+                [e setBuffer:gub offset:0 atIndex:0];
+                [e setBuffer:gub offset:4 * c->ff atIndex:1];
+            } else {
+                matmul(mt, e, &l->w_gate, hb, fgb, c->ff, n);
+                matmul(mt, e, &l->w_up, hb, fub, c->ff, n);
+                [e setComputePipelineState:P(mt, @"silu_mul")];
+                [e setBuffer:fgb offset:0 atIndex:0];
+                [e setBuffer:fub offset:0 atIndex:1];
+            }
+            [e setBuffer:actb offset:0 atIndex:2];
+            set_bytes(e, sa, sizeof sa, 3);
             [e dispatchThreads:MTLSizeMake((size_t)n * c->ff, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
-            matmul(mt, e, &l->w_down, fgb, ob, d, n);
+            matmul(mt, e, &l->w_down, actb, ob, d, n);
             if (l->post_ffn_norm) rms(mt, e, ob, xb, l->post_ffn_norm, d, c->post_eps, true, n, nil);
-            else add_bcast(mt, e, xb, ob, 0, (uint32_t)(n * d), (size_t)n * d);
+            else add_bcast(mt, e, xb, NULL, ob, (uint32_t)(n * d), (size_t)n * d);
         }
         if (ns) {
             rms(mt, e, xb, hsel, m->out_norm, d, c->eps, false, ns, B(mt, @"sel", 4 * ns));
@@ -302,6 +467,15 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         [e endEncoding];
         [cb commit];
         [cb waitUntilCompleted];
+        static int prof = -1;
+        if (prof < 0) prof = getenv("CINFER_PROFILE") != NULL;
+        if (prof) { // per-step GPU time, averaged per batch size
+            static double acc[1025];
+            static int cnt[1025];
+            int k = n > 1024 ? 1024 : n;
+            acc[k] += cb.GPUEndTime - cb.GPUStartTime;
+            if (++cnt[k] % 16 == 0) fprintf(stderr, "[profile] n=%d gpu %.2f ms/step\n", n, acc[k] / cnt[k] * 1e3);
+        }
         free(toks); free(posv); free(tab); free(off_full); free(off_swa); free(ri_full); free(ri_swa);
         free(slot_full); free(slot_swa); free(sel);
         if (cb.status != MTLCommandBufferStatusCompleted) {
@@ -313,34 +487,151 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
     }
 }
 
+static void compile_into(CIMetal *mt, NSString *src, MTLCompileOptions *opt) {
+    NSError *err = nil;
+    id<MTLLibrary> lib = [mt->dev newLibraryWithSource:src options:opt ? opt : [MTLCompileOptions new] error:&err];
+    if (!lib) { fprintf(stderr, "metal: kernel compile failed: %s\n", err.localizedDescription.UTF8String); exit(1); }
+    for (NSString *name in lib.functionNames) {
+        id<MTLFunction> fn = [lib newFunctionWithName:name];
+        id<MTLComputePipelineState> p = [mt->dev newComputePipelineStateWithFunction:fn error:&err];
+        if (!p) { fprintf(stderr, "metal: pipeline %s: %s\n", name.UTF8String, err.localizedDescription.UTF8String); exit(1); }
+        mt->pso[name] = p;
+    }
+}
+
 static void metal_destroy(backend *b) {
     CFBridgingRelease(b->impl);
     free(b);
 }
 
-backend *metal_backend_new(const model *m) {
+// Repack several matrices sharing in-features into one tiled matrix (rows
+// stacked in order) so they run as one GEMM; returns bytes, or 0 when the
+// matrices cannot be fused (then out->type stays 0).
+static size_t fuse_tiled(CIMetal *mt, qmat **ws, int n, qmat *out) {
+    int rows = 0;
+    for (int i = 0; i < n; i++) {
+        const qmat *w = ws[i];
+        if (!w->data || !tiled_ok(w) || w->gpu || w->rows % TILE || w->cols != ws[0]->cols || w->group != ws[0]->group ||
+            w->scales_f16 != ws[0]->scales_f16)
+            return 0;
+        rows += w->rows;
+    }
+    *out = *ws[0];
+    out->rows = rows;
+    size_t bb = tiled_block_bytes(out), per_tile = (size_t)(out->cols / TILE) * bb, bytes = (size_t)(rows / TILE) * per_tile;
+    id<MTLBuffer> buf = [mt->dev newBufferWithLength:bytes options:MTLResourceStorageModeShared];
+    if (!buf) { fprintf(stderr, "metal: allocation of %zu bytes for repacked weights failed\n", bytes); exit(1); }
+    tiled_t *tw = calloc(1, sizeof *tw);
+    tw->buf = (__bridge_retained void *)buf;
+    tw->split = tiled_split(out, 1, 2048, 4);
+    tw->split_mv = tiled_split(out, 8, 8192, 8);
+    uint8_t *dst = buf.contents;
+    for (int i = 0; i < n; i++) {
+        repack_job j = { ws[i], dst };
+        parallel_for(ws[i]->rows / TILE, 4, repack_rows, &j);
+        dst += (size_t)(ws[i]->rows / TILE) * per_tile;
+        ws[i]->gpu = tw; // the parts now live in the fused copy
+    }
+    out->gpu = tw;
+    return bytes;
+}
+
+backend *metal_backend_new(model *m) {
     @autoreleasepool {
         CIMetal *mt = [CIMetal new];
         mt->dev = MTLCreateSystemDefaultDevice();
         if (!mt->dev) { fprintf(stderr, "metal: no device\n"); exit(1); }
         mt->queue = [mt->dev newCommandQueue];
-        NSString *src = [[NSString alloc] initWithBytes:kernels_metal length:kernels_metal_len encoding:NSUTF8StringEncoding];
-        NSError *err = nil;
-        id<MTLLibrary> lib = [mt->dev newLibraryWithSource:src options:[MTLCompileOptions new] error:&err];
-        if (!lib) { fprintf(stderr, "metal: kernel compile failed: %s\n", err.localizedDescription.UTF8String); exit(1); }
+        // affine kernels are templates: instantiate the (scale type, group, bits) combos in use
+        NSMutableString *inst = [NSMutableString new], *inst_nax = [NSMutableString new];
+        NSMutableSet *seen = [NSMutableSet new];
+        mt->nax = [mt->dev supportsFamily:MTLGPUFamilyMetal4] && [mt->dev supportsFamily:MTLGPUFamilyApple10] && !getenv("CINFER_NO_NAX");
+        const qmat *mats[8 * 1024];
+        int nm = 0;
+        mats[nm++] = &m->output;
+        for (int i = 0; i < m->c.n_layer && nm + 8 <= 8 * 1024; i++) {
+            const layer *l = &m->layers[i];
+            const qmat *ls[] = { &l->wq, &l->wk, &l->wv, &l->wg, &l->wo, &l->w_gate, &l->w_up, &l->w_down };
+            for (int k = 0; k < 8; k++) mats[nm++] = ls[k];
+        }
+        for (int i = 0; i < nm; i++) {
+            const qmat *w = mats[i];
+            if (!w->data || w->type != QT_AFFINE) continue;
+            if (w->bits != 2 && w->bits != 4 && w->bits != 8) { fprintf(stderr, "metal: %d-bit affine weights not supported\n", w->bits); exit(1); }
+            if (w->cols % 32) { fprintf(stderr, "metal: affine weights need in-features %% 32 == 0\n"); exit(1); }
+            NSString *key = [NSString stringWithFormat:@"%s_%d_%d", sname(w), w->group, w->bits];
+            if ([seen containsObject:key]) continue;
+            [seen addObject:key];
+            const char *st = w->scales_f16 ? "half" : "bfloat";
+            for (int nt = 1; nt <= 8; nt *= 2)
+                [inst appendFormat:@"template [[host_name(\"amv_%@_%d\")]] kernel decltype(amv<%s, %d, %d, %d>) amv<%s, %d, %d, %d>;\n", key, nt, st, w->group, w->bits, nt, st, w->group, w->bits, nt];
+            if (tiled_ok(w)) {
+                NSString *kg = [key substringToIndex:[key rangeOfString:@"_" options:NSBackwardsSearch].location];
+                for (int nt = 1; nt <= TMV_MAX; nt++)
+                    [inst_nax appendFormat:@"template [[host_name(\"tmv_%@_%d\")]] [[kernel]] decltype(tmv<%s, %d, %d>) tmv<%s, %d, %d>;\n", kg, nt, st, w->group, nt, st, w->group, nt];
+            }
+            if (tiled_ok(w))
+                for (int bm = 16; bm <= 64; bm *= 2)
+                    [inst_nax appendFormat:@"template [[host_name(\"aqmt_%@_%d\")]] [[kernel]] decltype(aqmt<%s, half, %d, %d, %d, %d, 2>) aqmt<%s, half, %d, %d, %d, %d, 2>;\n", [key substringToIndex:[key rangeOfString:@"_" options:NSBackwardsSearch].location], bm,
+                                           st, w->group, w->bits, bm, bm == 16 ? 1 : 2, st, w->group, w->bits, bm, bm == 16 ? 1 : 2];
+        }
         mt->pso = [NSMutableDictionary new];
-        for (NSString *name in lib.functionNames) {
-            id<MTLFunction> fn = [lib newFunctionWithName:name];
-            id<MTLComputePipelineState> p = [mt->dev newComputePipelineStateWithFunction:fn error:&err];
-            if (!p) { fprintf(stderr, "metal: pipeline %s: %s\n", name.UTF8String, err.localizedDescription.UTF8String); exit(1); }
-            mt->pso[name] = p;
+        NSString *src = [[NSString alloc] initWithBytes:kernels_metal length:kernels_metal_len encoding:NSUTF8StringEncoding];
+        compile_into(mt, [src stringByAppendingString:inst], nil);
+        if (mt->nax && inst_nax.length) {
+            NSString *nsrc = [[NSString alloc] initWithBytes:kernels_nax_metal length:kernels_nax_metal_len encoding:NSUTF8StringEncoding];
+            MTLCompileOptions *o = [MTLCompileOptions new];
+            o.languageVersion = MTLLanguageVersion4_0;
+            compile_into(mt, [nsrc stringByAppendingString:inst_nax], o);
         }
         mt->bufs = [NSMutableDictionary new];
-        // the whole mmap as one no-copy buffer (page-aligned base, length rounded to 16 KB)
-        mt->wbase = m->g->map;
-        mt->wlen = (m->g->size + 16383) / 16384 * 16384;
-        mt->wbuf = [mt->dev newBufferWithBytesNoCopy:(void *)m->g->map length:mt->wlen options:MTLResourceStorageModeShared deallocator:nil];
-        if (!mt->wbuf) { fprintf(stderr, "metal: could not wrap the model mapping (%zu bytes)\n", mt->wlen); exit(1); }
+        // repack 4-bit affine matrices into the tiled layout (NAX path); others keep
+        // the original layout, which then has to be 16-byte aligned
+        double t0 = now_secs();
+        size_t repacked = 0;
+        bool need_align = false;
+        tp_init(0);
+        mt->f_qkvg = calloc(m->c.n_layer, sizeof(qmat));
+        mt->f_gu = calloc(m->c.n_layer, sizeof(qmat));
+        if (mt->nax && !getenv("CINFER_NO_FUSE"))
+            for (int i = 0; i < m->c.n_layer; i++) {
+                layer *l = &m->layers[i];
+                qmat *qkvg[] = { &l->wq, &l->wk, &l->wv, &l->wg }, *gu[] = { &l->w_gate, &l->w_up };
+                if (!l->bq && !l->bk && !l->bv) repacked += fuse_tiled(mt, qkvg, l->wg.data ? 4 : 3, &mt->f_qkvg[i]);
+                repacked += fuse_tiled(mt, gu, 2, &mt->f_gu[i]);
+            }
+        for (int i = 0; i < nm; i++) {
+            qmat *w = (qmat *)mats[i];
+            if (!w->data || w->type != QT_AFFINE || w->gpu) continue;
+            if (!mt->nax || !tiled_ok(w)) { need_align = true; continue; }
+            bool dup = false; // tied embeddings: output may alias another matrix
+            for (int k = 0; k < i; k++) if (mats[k]->data == w->data && mats[k]->gpu) { w->gpu = mats[k]->gpu; dup = true; }
+            if (dup) continue;
+            int tiles = (w->rows + TILE - 1) / TILE;
+            size_t bytes = (size_t)tiles * (w->cols / TILE) * tiled_block_bytes(w);
+            id<MTLBuffer> buf = [mt->dev newBufferWithLength:bytes options:MTLResourceStorageModeShared];
+            if (!buf) { fprintf(stderr, "metal: allocation of %zu bytes for repacked weights failed\n", bytes); exit(1); }
+            repack_job j = { w, buf.contents };
+            parallel_for(tiles, 4, repack_rows, &j);
+            tiled_t *tw = calloc(1, sizeof *tw);
+            tw->buf = (__bridge_retained void *)buf;
+            tw->split = tiled_split(w, 1, 2048, 4);
+            tw->split_mv = tiled_split(w, 8, 8192, 8);
+            w->gpu = tw;
+            repacked += bytes;
+        }
+        if (need_align) model_align_mats(m);
+        mt->h16 = m->output.gpu != NULL;
+        for (int i = 0; i < nm; i++) if (mats[i]->data && !mats[i]->gpu) mt->h16 = false;
+        if (repacked) fprintf(stderr, "[metal] repacked %.2f GB of 4-bit weights into NAX tiles in %.1fs\n", repacked / 1e9, now_secs() - t0);
+        // every weight region as a no-copy buffer (page-aligned base, length rounded to 16 KB)
+        for (int i = 0; i < m->n_regions; i++) {
+            mt->wbase[i] = m->regions[i].base;
+            mt->wlen[i] = (m->regions[i].len + 16383) / 16384 * 16384;
+            mt->wbuf[i] = [mt->dev newBufferWithBytesNoCopy:(void *)mt->wbase[i] length:mt->wlen[i] options:MTLResourceStorageModeShared deallocator:nil];
+            if (!mt->wbuf[i]) { fprintf(stderr, "metal: could not wrap weight region %d (%zu bytes)\n", i, mt->wlen[i]); exit(1); }
+        }
+        mt->n_w = m->n_regions;
         mt->invf = [mt->dev newBufferWithBytes:m->inv_freq length:sizeof(float) * m->c.hd / 2 options:MTLResourceStorageModeShared];
         backend *b = calloc(1, sizeof *b);
         b->name = "metal";

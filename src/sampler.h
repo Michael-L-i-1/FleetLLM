@@ -10,6 +10,8 @@ typedef struct {
     uint64_t seed;
     int max_new;
     bool ignore_eos; // keep generating past stop tokens (fixed-length benchmarks)
+    int32_t stop[8]; // n_stop > 0: these end generation instead of the tokenizer's stop set
+    int n_stop;
 } sample_params;
 
 sample_params sample_defaults(void);

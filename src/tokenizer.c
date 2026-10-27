@@ -39,6 +39,7 @@ struct tokenizer {
     int n_stops;
     int32_t bos;
     json *src; // tokenizer.json the token strings point into (HF loader)
+    char *chat_template;
 };
 
 static uint64_t fnv(const char *s, size_t n) {
@@ -195,6 +196,8 @@ tokenizer *tok_load(const gguf_ctx *g) {
     }
     uint64_t b;
     t->bos = gguf_u64(g, "tokenizer.ggml.bos_token_id", &b) ? (int32_t)b : -1;
+    const char *ct = gguf_str(g, "tokenizer.chat_template", &n);
+    t->chat_template = ct ? strndup(ct, n) : strdup("");
     return t;
 }
 
@@ -277,6 +280,8 @@ tokenizer *tok_load_hf(const char *dir) {
         const char *eos = json_str(tc, json_root(tc), "eos_token");
         if (bos) t->bos = vfind(t, bos, strlen(bos));
         if (eos) add_stop(t, vfind(t, eos, strlen(eos)));
+        const char *ct = json_str(tc, json_root(tc), "chat_template");
+        if (ct) t->chat_template = strdup(ct);
         json_free(tc);
     }
     snprintf(path, sizeof path, "%s/config.json", dir);
@@ -294,6 +299,7 @@ void tok_free(tokenizer *t) {
     if (!t) return;
     free(t->tokens); free(t->types); free(t->vmap); free(t->mkeys); free(t->mrank); free(t->mres);
     json_free(t->src);
+    free(t->chat_template);
     free(t);
 }
 
@@ -303,6 +309,7 @@ bool tok_is_stop(const tokenizer *t, int32_t id) {
 }
 int tok_vocab_size(const tokenizer *t) { return t->n_vocab; }
 int32_t tok_bos(const tokenizer *t) { return t->bos; }
+const char *tok_chat_template(const tokenizer *t) { return t->chat_template ? t->chat_template : ""; }
 int32_t tok_lookup(const tokenizer *t, const char *s) { return vfind(t, s, strlen(s)); }
 
 // ---------------------------------------------------------------- output buffer

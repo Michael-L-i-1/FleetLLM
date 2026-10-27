@@ -191,6 +191,29 @@ static void make_room(engine *e, uint32_t pages) {
 
 typedef struct { int seq, take, spec; } plan_item; // spec: draft rows after the decode row
 
+static bool fits(const engine *e, uint32_t pages) {
+    return e->kv.full.n_free >= pages && (!e->kv.window || e->kv.swa.n_free >= pages);
+}
+
+// Free a sequence's KV and queue all of its tokens to be recomputed later
+// (vLLM-style recompute preemption): its generated output is kept.
+static void preempt(engine *e, int id) {
+    seq_t *s = &e->seqs[id];
+    int n = s->n_tokens + s->n_pending;
+    int32_t *all = malloc(sizeof(int32_t) * (n + 16));
+    memcpy(all, s->tokens, sizeof(int32_t) * s->n_tokens);
+    memcpy(all + s->n_tokens, s->pending, sizeof(int32_t) * s->n_pending);
+    kv_free_seq(&e->kv, &s->pages);
+    if (e->draft) kv_free_seq(&e->dkv, &s->dpages);
+    free(s->pending);
+    s->pending = all;
+    s->n_pending = n;
+    s->cap_pending = n + 16;
+    s->n_tokens = 0;
+    s->n_drafts = 0;
+    e->st.preemptions++;
+}
+
 static void add_ctx(engine *e, int seq, int pos, int src) {
     if (e->n_dctx == e->cap_dctx) { e->cap_dctx = e->cap_dctx ? e->cap_dctx * 2 : 256; e->dctx = realloc(e->dctx, sizeof(draft_row) * e->cap_dctx); }
     e->dctx[e->n_dctx++] = (draft_row){ seq, pos, src, pos };
@@ -274,7 +297,10 @@ static void emit(engine *e, seq_t *s, int32_t tok, double t) {
     append(&s->gen, &s->n_gen, &s->cap_gen, &tok, 1);
     if (s->n_gen == 1) s->t_first = t;
     e->st.gen_tokens++;
-    if ((!s->p.ignore_eos && tok_is_stop(e->tok, tok)) || s->n_gen >= s->p.max_new) s->done = true;
+    bool stop = false;
+    if (s->p.n_stop) for (int i = 0; i < s->p.n_stop; i++) stop |= s->p.stop[i] == tok;
+    else stop = tok_is_stop(e->tok, tok);
+    if ((!s->p.ignore_eos && stop) || s->n_gen >= s->p.max_new) s->done = true;
 }
 
 bool engine_step(engine *e, const int *ids, int n) {
@@ -302,8 +328,22 @@ bool engine_step(engine *e, const int *ids, int n) {
     if (!np) { free(plan); return false; }
     uint32_t need = 0;
     int n_rows = 0;
-    for (int i = 0; i < np; i++) { need += plan[i].take / KV_PAGE + 2; n_rows += plan[i].take; }
+    for (int i = 0; i < np; i++) need += plan[i].take / KV_PAGE + 2;
     make_room(e, need);
+    // Memory pressure: postpone the last planned items; if one item alone does not
+    // fit, preempt the most recently started other sequences.
+    while (!fits(e, need) && np > 1) { np--; need -= plan[np].take / KV_PAGE + 2; }
+    while (!fits(e, need)) {
+        int victim = -1;
+        for (int i = 0; i < e->n_seqs; i++) {
+            seq_t *s = &e->seqs[i];
+            if (!s->live || s->cached || !s->pages.n_pages || i == plan[0].seq) continue;
+            if (victim < 0 || s->t_start > e->seqs[victim].t_start) victim = i;
+        }
+        if (victim < 0) { fprintf(stderr, "engine: KV cache too small for one sequence (raise --budget-gb)\n"); exit(1); }
+        preempt(e, victim);
+    }
+    for (int i = 0; i < np; i++) n_rows += plan[i].take;
     if (n_rows > e->cap_rows) { e->cap_rows = n_rows * 2; e->rows = realloc(e->rows, sizeof(row_t) * e->cap_rows); }
     const seq_pages **pages = malloc(sizeof(seq_pages *) * np);
     int r = 0, n_logits = 0;

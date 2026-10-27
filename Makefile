@@ -41,7 +41,7 @@ $(BUILD)/metal.o: src/metal/metal.m src/*.h $(BUILD)/kernels_metal.h | $(BUILD)
 $(BUILD)/libcinfer.a: $(OBJ)
 	ar rcs $@ $^
 
-$(BUILD)/%: tools/%.c $(BUILD)/libcinfer.a
+$(BUILD)/%: tools/%.c tools/common.h $(BUILD)/libcinfer.a
 	$(CC) $(CFLAGS) -Isrc $< $(BUILD)/libcinfer.a $(LDLIBS) -o $@
 
 src/unicode_data.c: scripts/gen_unicode.py

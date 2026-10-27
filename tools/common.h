@@ -32,6 +32,7 @@ static const char *model_path(const char *alias) {
     else if (!strcmp(alias, "qwen3")) pat = "models--unsloth--Qwen3-1.7B-GGUF/snapshots/*/Qwen3-1.7B-Q4_K_M.gguf";
     else if (!strcmp(alias, "glimmer-mlx4")) pat = "models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/*";
     else if (!strcmp(alias, "llama1b-mlx4")) pat = "models--mlx-community--Llama-3.2-1B-Instruct-4bit/snapshots/*";
+    else if (!strcmp(alias, "llama8b-mlx4")) pat = "models--mlx-community--Meta-Llama-3.1-8B-Instruct-4bit/snapshots/*";
     else if (!strcmp(alias, "glimmer-draft")) pat = "models--meta-models--Muse-Glimmer-30B-assistant/snapshots/*"; // Meta's DFlash drafter
     if (!pat) return alias;
     char g[4096];
@@ -68,7 +69,10 @@ static runtime load_runtime(int argc, char **argv) {
     if (budget < streamed + reserve + (64u << 20)) { fprintf(stderr, "budget %.1f GB too small for %.2f GB of weights\n", budget_gb, streamed / 1e9); exit(1); }
     rt.be = backend_create(arg_str(argc, argv, "--backend", "auto"), rt.m);
     size_t pinned = arg_flag(argc, argv, "--no-pin") ? 0 : model_pin(rt.m);
-    rt.e = engine_new(rt.m, rt.be, rt.tok, budget - streamed - reserve);
+    size_t kv = budget - streamed - reserve;
+    double kv_gb = arg_num(argc, argv, "--kv-gb", 0); // cap the KV pool (it otherwise takes the rest of the budget)
+    if (kv_gb > 0 && (size_t)(kv_gb * 1e9) < kv) kv = (size_t)(kv_gb * 1e9);
+    rt.e = engine_new(rt.m, rt.be, rt.tok, kv);
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
     rt.e->spec_rows = (int)arg_num(argc, argv, "--spec-rows", 32);
     if (rt.draft && !engine_set_drafter(rt.e, rt.draft, dkv, (int)arg_num(argc, argv, "--spec-k", 0))) exit(1);

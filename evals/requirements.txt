@@ -1,0 +1,6 @@
+openai>=1.50
+pandas
+numpy
+jinja2
+requests
+tqdm

@@ -4,7 +4,7 @@ N concurrent agents, agent i gets task i % 8 from bench/tasks.txt, all sent at
 t=0, greedy, exactly --gen output tokens (ignore_eos). Reports the best of
 --reps runs per level: wall time, mean time to first token, aggregate tok/s.
 
-    python3 scripts/bench_openai.py --base http://localhost:8077/v1 --model glimmer --levels 1,2,4,8 --gen 128
+    python3 bench/bench_openai.py --base http://localhost:8077/v1 --model glimmer --levels 1,2,4,8 --gen 128
 """
 import argparse
 import json

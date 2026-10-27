@@ -31,6 +31,7 @@ typedef struct {
 typedef struct {
     long steps, decode_rows, prefill_rows, shared_tokens, gen_tokens, deduped_tokens;
     long spec_steps, spec_drafted, spec_accepted; // verify steps, drafts checked, drafts accepted
+    long preemptions; // sequences whose KV was freed under memory pressure (recomputed later)
     double draft_secs;
     double forward_secs;
 } engine_stats;

@@ -2,3 +2,5 @@ build/
 *.gguf
 __pycache__/
 build-*/
+evals/.venv/
+evals/third_party/

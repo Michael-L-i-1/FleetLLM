@@ -27,3 +27,6 @@ int32_t tok_lookup(const tokenizer *t, const char *s); // -1 if absent
 bool tok_is_stop(const tokenizer *t, int32_t id);
 int tok_vocab_size(const tokenizer *t);
 int32_t tok_bos(const tokenizer *t);
+// The model's Jinja chat template as shipped (tokenizer_config.json or GGUF
+// tokenizer.chat_template); "" if absent. Used to detect template variants.
+const char *tok_chat_template(const tokenizer *t);

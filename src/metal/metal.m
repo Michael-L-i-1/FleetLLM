@@ -51,8 +51,9 @@ typedef struct { uint32_t d; float eps_post, eps; uint32_t post, half_out; } Add
     bool nax; // affine GEMM on the neural accelerators (Metal 4)
     // per layer: fused [q|k|v|gate] and [ffn gate|up] tiled matrices (type 0 when not fused)
     qmat *f_qkvg, *f_gu;
+    qmat *d_kv, *d_gu; // drafter: fused [k|v] and [gate|up] per layer
     bool h16; // every matmul is tiled: matmul inputs are produced directly as f16
-    id<MTLBuffer> invf;
+    id<MTLBuffer> invf, d_invf;
 }
 @end
 @implementation CIMetal
@@ -184,8 +185,10 @@ static size_t act_bytes(int n, int cols) {
     return f32 > f16 ? f32 : f16;
 }
 
-// x_half: x already holds f16 rows padded to a multiple of 64 (see act_bytes)
-static void matmul_affine(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, bool x_half, id<MTLBuffer> y, int ldy, int n) {
+// x_half: x already holds f16 rows padded to a multiple of 64 (see act_bytes).
+// x_off / y_off: byte offsets into x / y (tiled path only).
+static void matmul_affine(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, NSUInteger x_off, bool x_half, id<MTLBuffer> y,
+                          NSUInteger y_off, int ldy, int n) {
     if (w->gpu) {
         const tiled_t *tw = w->gpu;
         int bm = n <= 16 ? 16 : 32, padded = (n + 63) / 64 * 64;
@@ -194,17 +197,18 @@ static void matmul_affine(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qma
             xh = B(mt, @"x16", 2 * (size_t)padded * w->cols);
             uint32_t cnt = (uint32_t)((size_t)n * w->cols);
             [e setComputePipelineState:P(mt, @"to_half")];
-            [e setBuffer:x offset:0 atIndex:0];
+            [e setBuffer:x offset:x_off atIndex:0];
             [e setBuffer:xh offset:0 atIndex:1];
             set_bytes(e, &cnt, 4, 2);
             [e dispatchThreads:MTLSizeMake(cnt / 4, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+            x_off = 0;
         }
         int tiles = (w->rows + TILE - 1) / TILE, mv = n <= tmv_max(), split = mv ? tw->split_mv : tw->split;
         id<MTLBuffer> out = split > 1 ? B(mt, @"kpart", 4 * (size_t)split * n * w->rows) : y;
         AtArgs a = { w->cols, w->rows, n, split > 1 ? w->rows : ldy, split, n * w->rows };
         [e setBuffer:(__bridge id<MTLBuffer>)tw->buf offset:0 atIndex:0];
-        [e setBuffer:xh offset:0 atIndex:3];
-        [e setBuffer:out offset:0 atIndex:4];
+        [e setBuffer:xh offset:x_off atIndex:3];
+        [e setBuffer:out offset:split > 1 ? 0 : y_off atIndex:4];
         if (mv) {
             [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"tmv_%s_%d_%d", sname(w), w->group, tmv_nt(n)])];
             set_bytes(e, &a, sizeof a, 5);
@@ -218,7 +222,7 @@ static void matmul_affine(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qma
             int32_t a4[4] = { w->rows, n, split, ldy };
             [e setComputePipelineState:P(mt, @"split_sum")];
             [e setBuffer:out offset:0 atIndex:0];
-            [e setBuffer:y offset:0 atIndex:1];
+            [e setBuffer:y offset:y_off atIndex:1];
             set_bytes(e, a4, sizeof a4, 2);
             [e dispatchThreads:MTLSizeMake(w->rows, n, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
         }
@@ -230,7 +234,7 @@ static void matmul_affine(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qma
 
 // y[t*ldy + r] = W[r] . x[t] for n tokens; x is f16 when mt->h16 (all matmuls tiled)
 static void matmul(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, id<MTLBuffer> y, int ldy, int n) {
-    if (w->type == QT_AFFINE) { matmul_affine(mt, e, w, x, mt->h16, y, ldy, n); return; }
+    if (w->type == QT_AFFINE) { matmul_affine(mt, e, w, x, 0, mt->h16, y, 0, ldy, n); return; }
     const char *ty = qname(w->type);
     if (n <= mv_max()) {
         int nt = n == 1 ? 1 : n == 2 ? 2 : n <= 4 ? 4 : 8;
@@ -312,6 +316,15 @@ static void add_bcast(CIMetal *mt, id<MTLComputeCommandEncoder> e, id<MTLBuffer>
     else [e setBuffer:bb offset:0 atIndex:1];
     set_bytes(e, &w, sizeof w, 2);
     [e dispatchThreads:MTLSizeMake(n, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+}
+
+static void argmax_dispatch(CIMetal *mt, id<MTLComputeCommandEncoder> e, id<MTLBuffer> x, id<MTLBuffer> out, int vocab, int rows) {
+    uint32_t v = (uint32_t)vocab;
+    [e setComputePipelineState:P(mt, @"argmax_rows")];
+    [e setBuffer:x offset:0 atIndex:0];
+    [e setBuffer:out offset:0 atIndex:1];
+    set_bytes(e, &v, 4, 2);
+    [e dispatchThreadgroups:MTLSizeMake(rows, 1, 1) threadsPerThreadgroup:MTLSizeMake(1024, 1, 1)];
 }
 
 static void *metal_alloc(backend *b, size_t bytes, void **handle) {
@@ -488,6 +501,15 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             if (fuse_norms && li + 1 < c->n_layer) add_norm(mt, e, ob, xb, hb, l->post_ffn_norm, c->post_eps, m->layers[li + 1].attn_norm, c->eps, d, n);
             else if (l->post_ffn_norm) rms(mt, e, ob, xb, l->post_ffn_norm, d, c->post_eps, true, n, nil);
             else add_bcast(mt, e, xb, NULL, ob, (uint32_t)(n * d), (size_t)n * d);
+            for (int ci = 0; ci < be->n_cap; ci++) // residual stream after this layer, for the drafter
+                if (be->cap_layers[ci] == li) {
+                    uint32_t ca[3] = { (uint32_t)d, (uint32_t)(be->n_cap * d), (uint32_t)(ci * d) };
+                    [e setComputePipelineState:P(mt, @"cap_write")];
+                    [e setBuffer:xb offset:0 atIndex:0];
+                    [e setBuffer:B(mt, @"cap", 2 * (size_t)n * be->n_cap * d) offset:0 atIndex:1];
+                    set_bytes(e, ca, sizeof ca, 2);
+                    [e dispatchThreads:MTLSizeMake(d, n, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+                }
         }
         if (ns) {
             rms(mt, e, xb, hsel, m->out_norm, d, c->eps, false, ns, B(mt, @"sel", 4 * ns));
@@ -499,6 +521,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                 set_bytes(e, &a, sizeof a, 1);
                 [e dispatchThreads:MTLSizeMake((size_t)ns * c->vocab, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
             }
+            if (be->argmax) argmax_dispatch(mt, e, lg, B(mt, @"amax", 4 * ns), c->vocab, ns);
         }
         [e endEncoding];
         [cb commit];
@@ -518,7 +541,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             fprintf(stderr, "metal: command buffer failed (status %ld): %s\n", (long)cb.status, cb.error.localizedDescription.UTF8String);
             return 1;
         }
-        if (ns) memcpy(logits, lg.contents, sizeof(float) * (size_t)ns * c->vocab);
+        if (ns && logits) memcpy(logits, lg.contents, sizeof(float) * (size_t)ns * c->vocab);
+        if (ns && be->argmax) memcpy(be->argmax, B(mt, @"amax", 4 * ns).contents, 4 * (size_t)ns);
         return 0;
     }
 }
@@ -535,9 +559,221 @@ static void compile_into(CIMetal *mt, NSString *src, MTLCompileOptions *opt) {
     }
 }
 
+// ---------------------------------------------------------------- DFlash drafter
+
+static size_t repack_one(CIMetal *mt, qmat *w);
+static size_t fuse_tiled(CIMetal *mt, qmat **ws, int n, qmat *out);
+
+static int metal_attach(backend *b, model *dm) {
+    @autoreleasepool {
+        CIMetal *mt = (__bridge CIMetal *)b->impl;
+        if (!mt->nax) { fprintf(stderr, "metal: the drafter needs the NAX (M5) path\n"); return 1; }
+        for (int i = 0; i < dm->n_regions && mt->n_w < 66; i++) { // norm vectors etc.
+            int k = mt->n_w++;
+            mt->wbase[k] = dm->regions[i].base;
+            mt->wlen[k] = (dm->regions[i].len + 16383) / 16384 * 16384;
+            mt->wbuf[k] = [mt->dev newBufferWithBytesNoCopy:(void *)mt->wbase[k] length:mt->wlen[k] options:MTLResourceStorageModeShared deallocator:nil];
+        }
+        double t0 = now_secs();
+        size_t bytes = 0;
+        mt->d_kv = calloc(dm->c.n_layer, sizeof(qmat));
+        mt->d_gu = calloc(dm->c.n_layer, sizeof(qmat));
+        for (int i = 0; i < dm->c.n_layer; i++) {
+            layer *l = &dm->layers[i];
+            qmat *kv[] = { &l->wk, &l->wv }, *gu[] = { &l->w_gate, &l->w_up };
+            bytes += fuse_tiled(mt, kv, 2, &mt->d_kv[i]) + fuse_tiled(mt, gu, 2, &mt->d_gu[i]);
+            qmat *rest[] = { &l->wq, &l->wo, &l->w_down };
+            for (int k = 0; k < 3; k++) if (!rest[k]->gpu) bytes += repack_one(mt, rest[k]);
+            if (!mt->d_kv[i].gpu || !mt->d_gu[i].gpu) { fprintf(stderr, "metal: drafter layer %d cannot be tiled\n", i); return 1; }
+        }
+        bytes += repack_one(mt, &dm->fc);
+        model_drop_host_copies(dm);
+        mt->d_invf = [mt->dev newBufferWithBytes:dm->inv_freq length:sizeof(float) * dm->c.hd / 2 options:MTLResourceStorageModeShared];
+        fprintf(stderr, "[metal] drafter: %.2f GB of 4-bit tiles in %.1fs\n", bytes / 1e9, now_secs() - t0);
+        return 0;
+    }
+}
+
+// One drafter step over context rows (KV from target hidden states) and block
+// rows (anchor + masks, bidirectional within the block); writes the argmax of
+// block rows 1..B-1 of every block (blocks are consecutive runs of B = blk_len rows).
+static int metal_draft(backend *be, const model *dm, const model *tm, kv_cache *dkv, const seq_pages *const *pages, const draft_row *ctx, int n_ctx,
+                       const draft_row *blk, int n_blk, int blk_len, int32_t *out) {
+    @autoreleasepool {
+        CIMetal *mt = (__bridge CIMetal *)be->impl;
+        const model_cfg *c = &dm->c;
+        int d = c->d, hd = c->hd, qd = c->n_head * hd, kvd = c->n_kv * hd, R = n_ctx + n_blk, B_ = blk_len;
+        int n_sel = n_blk / B_ * (B_ - 1);
+        size_t f = 4;
+        // host-side inputs
+        int nseq = 0;
+        for (int i = 0; i < n_ctx; i++) if (ctx[i].seq + 1 > nseq) nseq = ctx[i].seq + 1;
+        for (int i = 0; i < n_blk; i++) if (blk[i].seq + 1 > nseq) nseq = blk[i].seq + 1;
+        size_t tab_n = 1;
+        for (int s = 0; s < nseq; s++) tab_n += pages[s] ? (size_t)pages[s]->n_pages : 0;
+        uint32_t *tab = calloc(tab_n, 4), *off = calloc(nseq ? nseq : 1, 4), *posv = malloc(4 * (R ? R : 1)), *gidx = malloc(4 * (n_ctx ? n_ctx : 1));
+        uint32_t *sel = malloc(4 * (n_sel ? n_sel : 1));
+        uint64_t *slot = malloc(8 * (R ? R : 1));
+        RowInfo *ri = malloc(sizeof(RowInfo) * (n_blk ? n_blk : 1));
+        size_t t = 0;
+        for (int s = 0; s < nseq; s++) {
+            off[s] = (uint32_t)t;
+            if (pages[s]) { memcpy(tab + t, pages[s]->full, 4 * pages[s]->n_pages); t += pages[s]->n_pages; }
+        }
+        uint32_t max_sp = 1;
+        for (int i = 0; i < R; i++) {
+            const draft_row *r = i < n_ctx ? &ctx[i] : &blk[i - n_ctx];
+            posv[i] = (uint32_t)r->pos;
+            slot[i] = (uint64_t)pages[r->seq]->full[r->pos / KV_PAGE] * dkv->full.page_elems + (uint64_t)(r->pos % KV_PAGE) * hd;
+            if (i < n_ctx) gidx[i] = (uint32_t)r->src;
+            else {
+                uint32_t end = (uint32_t)r->ctx_end, start = c->window && end + 1 > (uint32_t)c->window ? end + 1 - c->window : 0;
+                ri[i - n_ctx] = (RowInfo){ end, start, off[r->seq], attn_split(end + 1 - start) };
+                uint32_t ns = (end + 1 - start + ri[i - n_ctx].split - 1) / ri[i - n_ctx].split;
+                if (ns > max_sp) max_sp = ns;
+            }
+        }
+        for (int b = 0, k = 0; b < n_blk / B_; b++) for (int j = 1; j < B_; j++) sel[k++] = (uint32_t)(b * B_ + j);
+        id<MTLBuffer> hb = B(mt, @"d_h", f * (n_blk ? n_blk : 1) * d), ctxn = B(mt, @"d_ctxn", act_bytes(n_ctx ? n_ctx : 1, d)),
+                      hnb = B(mt, @"d_hn", act_bytes(n_blk, d)), kvb = B(mt, @"d_kv", f * (size_t)R * 2 * kvd), qb = B(mt, @"d_q", f * n_blk * qd),
+                      ab = B(mt, @"d_att", act_bytes(n_blk, qd)), ob = B(mt, @"d_o", f * n_blk * d), gub = B(mt, @"d_gu", f * (size_t)n_blk * 2 * c->ff),
+                      actb = B(mt, @"d_act", act_bytes(n_blk, c->ff)), hsel = B(mt, @"d_hsel", act_bytes(n_sel, d)),
+                      lg = B(mt, @"d_logits", f * (size_t)n_sel * tm->c.vocab), amax = B(mt, @"d_amax", 4 * n_sel);
+        int32_t *toks = malloc(4 * (n_blk ? n_blk : 1));
+        for (int i = 0; i < n_blk; i++) toks[i] = blk[i].src;
+        model_embed_raw(tm, toks, n_blk, (float *)hb.contents); // target embeddings, no embed norm
+        free(toks);
+        write_buf(B(mt, @"d_pos", 4 * R), posv, 4 * R);
+        write_buf(B(mt, @"d_slot", 8 * R), slot, 8 * R);
+        write_buf(B(mt, @"d_tab", 4 * tab_n), tab, 4 * tab_n);
+        if (n_blk) write_buf(B(mt, @"d_ri", sizeof(RowInfo) * n_blk), ri, sizeof(RowInfo) * n_blk);
+        if (n_ctx) write_buf(B(mt, @"d_gidx", 4 * n_ctx), gidx, 4 * n_ctx);
+        if (n_sel) write_buf(B(mt, @"d_sel", 4 * n_sel), sel, 4 * n_sel);
+        id<MTLBuffer> part = B(mt, @"part", (size_t)(n_blk ? n_blk : 1) * c->n_head * max_sp * (hd + 2) * 4);
+        id<MTLBuffer> pool = (__bridge id<MTLBuffer>)dkv->full.handle;
+
+        id<MTLCommandBuffer> cb = [mt->queue commandBuffer];
+        id<MTLComputeCommandEncoder> e = [cb computeCommandEncoder];
+        int fcw = d * dm->n_target;
+        if (n_ctx) { // context: rms(fc(concat target hidden states)) -> ctxn
+            id<MTLBuffer> cin = B(mt, @"d_cin", act_bytes(n_ctx, fcw)), cf = B(mt, @"d_cf", f * (size_t)n_ctx * d);
+            uint32_t w = (uint32_t)fcw;
+            [e setComputePipelineState:P(mt, @"gather_half")];
+            [e setBuffer:B(mt, @"cap", 2) offset:0 atIndex:0];
+            [e setBuffer:cin offset:0 atIndex:1];
+            [e setBuffer:B(mt, @"d_gidx", 4 * n_ctx) offset:0 atIndex:2];
+            set_bytes(e, &w, 4, 3);
+            [e dispatchThreads:MTLSizeMake(fcw, n_ctx, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+            matmul_affine(mt, e, &dm->fc, cin, 0, true, cf, 0, d, n_ctx); // cin is always f16
+            rms(mt, e, cf, ctxn, dm->enc_norm, d, c->eps, false, n_ctx, nil);
+        }
+        for (int li = 0; li < c->n_layer; li++) {
+            const layer *l = &dm->layers[li];
+            uint64_t layer_off = (uint64_t)l->pool_layer * 2 * c->n_kv * KV_PAGE * hd;
+            if (n_blk) rms(mt, e, hb, hnb, l->attn_norm, d, c->eps, false, n_blk, nil);
+            // k|v for context rows then block rows; q for block rows
+            if (n_ctx) matmul_affine(mt, e, &mt->d_kv[li], ctxn, 0, mt->h16, kvb, 0, 2 * kvd, n_ctx);
+            if (n_blk) {
+                matmul_affine(mt, e, &mt->d_kv[li], hnb, 0, mt->h16, kvb, (NSUInteger)n_ctx * 2 * kvd * f, 2 * kvd, n_blk);
+                matmul_affine(mt, e, &l->wq, hnb, 0, mt->h16, qb, 0, qd, n_blk);
+            }
+            // QK norm + RoPE: K over all rows, Q over block rows
+            for (int pass = 0; pass < 2; pass++) {
+                int rows = pass ? n_blk : R;
+                if (!rows) continue;
+                QkArgs a = { pass ? (uint32_t)c->n_head : 0, pass ? 0 : (uint32_t)c->n_kv, (uint32_t)hd, c->eps, 1, 1, 1, 1, (uint32_t)qd, (uint32_t)(2 * kvd) };
+                [e setComputePipelineState:P(mt, @"qk_norm_rope")];
+                [e setBuffer:qb offset:0 atIndex:0];
+                [e setBuffer:kvb offset:0 atIndex:1];
+                set_w(e, mt, l->q_norm, 2);
+                set_w(e, mt, l->k_norm, 3);
+                [e setBuffer:B(mt, @"d_pos", 4 * R) offset:pass ? 4 * (NSUInteger)n_ctx : 0 atIndex:4];
+                [e setBuffer:mt->d_invf offset:0 atIndex:5];
+                set_bytes(e, &a, sizeof a, 6);
+                [e dispatchThreadgroups:MTLSizeMake(rows, pass ? c->n_head : c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+            }
+            {
+                KvwArgs a = { (uint32_t)c->n_kv, (uint32_t)hd, KV_PAGE, (uint32_t)(2 * kvd), layer_off, (uint32_t)(2 * kvd), 0 };
+                [e setComputePipelineState:P(mt, @"kv_write")];
+                [e setBuffer:kvb offset:0 atIndex:0];
+                [e setBuffer:kvb offset:4 * (NSUInteger)kvd atIndex:1];
+                [e setBuffer:pool offset:0 atIndex:2];
+                [e setBuffer:B(mt, @"d_slot", 8 * R) offset:0 atIndex:3];
+                set_bytes(e, &a, sizeof a, 4);
+                [e dispatchThreads:MTLSizeMake(kvd, R, 1) threadsPerThreadgroup:MTLSizeMake(kvd < 256 ? kvd : 256, 1, 1)];
+            }
+            if (!n_blk) continue;
+            {
+                AttnArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->attn_scale, dkv->full.page_elems, layer_off, KV_PAGE, 0, (uint32_t)qd, 0, mt->h16, 0 };
+                uint32_t sp[2] = { 0, max_sp };
+                [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"attn_fd_%d", hd])];
+                [e setBuffer:qb offset:0 atIndex:0];
+                [e setBuffer:pool offset:0 atIndex:1];
+                [e setBuffer:B(mt, @"d_ri", sizeof(RowInfo) * n_blk) offset:0 atIndex:2];
+                [e setBuffer:B(mt, @"d_tab", 4 * tab_n) offset:0 atIndex:3];
+                [e setBuffer:part offset:0 atIndex:4];
+                set_bytes(e, &a, sizeof a, 5);
+                set_bytes(e, sp, sizeof sp, 6);
+                [e dispatchThreadgroups:MTLSizeMake(n_blk, c->n_kv, max_sp) threadsPerThreadgroup:MTLSizeMake(32 * (c->n_head / c->n_kv), 1, 1)];
+                [e setComputePipelineState:P(mt, @"attn_reduce")];
+                [e setBuffer:part offset:0 atIndex:0];
+                [e setBuffer:qb offset:0 atIndex:1]; // gate unused
+                [e setBuffer:ab offset:0 atIndex:2];
+                set_bytes(e, &a, sizeof a, 3);
+                set_bytes(e, sp, sizeof sp, 4);
+                [e dispatchThreadgroups:MTLSizeMake(n_blk, c->n_head, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+            }
+            matmul_affine(mt, e, &l->wo, ab, 0, mt->h16, ob, 0, d, n_blk);
+            add_bcast(mt, e, hb, NULL, ob, (uint32_t)(n_blk * d), (size_t)n_blk * d);
+            rms(mt, e, hb, hnb, l->ffn_norm, d, c->eps, false, n_blk, nil);
+            matmul_affine(mt, e, &mt->d_gu[li], hnb, 0, mt->h16, gub, 0, 2 * c->ff, n_blk);
+            uint32_t sa[3] = { (uint32_t)c->ff, (uint32_t)(2 * c->ff), mt->h16 };
+            [e setComputePipelineState:P(mt, @"silu_mul")];
+            [e setBuffer:gub offset:0 atIndex:0];
+            [e setBuffer:gub offset:4 * (NSUInteger)c->ff atIndex:1];
+            [e setBuffer:actb offset:0 atIndex:2];
+            set_bytes(e, sa, sizeof sa, 3);
+            [e dispatchThreads:MTLSizeMake((size_t)n_blk * c->ff, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+            matmul_affine(mt, e, &l->w_down, actb, 0, mt->h16, ob, 0, d, n_blk);
+            add_bcast(mt, e, hb, NULL, ob, (uint32_t)(n_blk * d), (size_t)n_blk * d);
+        }
+        if (n_sel) { // final norm on rows 1.. of each block, target lm_head, argmax
+            rms(mt, e, hb, hsel, dm->out_norm, d, c->eps, false, n_sel, B(mt, @"d_sel", 4 * n_sel));
+            matmul(mt, e, &tm->output, hsel, lg, tm->c.vocab, n_sel);
+            argmax_dispatch(mt, e, lg, amax, tm->c.vocab, n_sel);
+        }
+        [e endEncoding];
+        [cb commit];
+        [cb waitUntilCompleted];
+        free(tab); free(off); free(posv); free(gidx); free(sel); free(slot); free(ri);
+        if (cb.status != MTLCommandBufferStatusCompleted) {
+            fprintf(stderr, "metal: drafter command buffer failed: %s\n", cb.error.localizedDescription.UTF8String);
+            return 1;
+        }
+        if (n_sel) memcpy(out, amax.contents, 4 * (size_t)n_sel);
+        return 0;
+    }
+}
+
 static void metal_destroy(backend *b) {
     CFBridgingRelease(b->impl);
     free(b);
+}
+
+// Repack one 4-bit affine matrix into the tiled layout (w->gpu); returns bytes.
+static size_t repack_one(CIMetal *mt, qmat *w) {
+    int tiles = (w->rows + TILE - 1) / TILE;
+    size_t bytes = (size_t)tiles * (w->cols / TILE) * tiled_block_bytes(w);
+    id<MTLBuffer> buf = [mt->dev newBufferWithLength:bytes options:MTLResourceStorageModeShared];
+    if (!buf) { fprintf(stderr, "metal: allocation of %zu bytes for repacked weights failed\n", bytes); exit(1); }
+    repack_job j = { w, buf.contents };
+    parallel_for(tiles, 4, repack_rows, &j);
+    tiled_t *tw = calloc(1, sizeof *tw);
+    tw->buf = (__bridge_retained void *)buf;
+    tw->split = tiled_split(w, 2, 2048, 4);
+    tw->split_mv = tiled_split(w, 8, 8192, 8);
+    w->gpu = tw;
+    return bytes;
 }
 
 // Repack several matrices sharing in-features into one tiled matrix (rows
@@ -590,9 +826,11 @@ backend *metal_backend_new(model *m) {
             const qmat *ls[] = { &l->wq, &l->wk, &l->wv, &l->wg, &l->wo, &l->w_gate, &l->w_up, &l->w_down };
             for (int k = 0; k < 8; k++) mats[nm++] = ls[k];
         }
-        for (int i = 0; i < nm; i++) {
-            const qmat *w = mats[i];
-            if (!w->data || w->type != QT_AFFINE) continue;
+        // a drafter attached later is quantized to 4-bit / group 64 / bf16 scales
+        static const qmat drafter_fmt = { .type = QT_AFFINE, .rows = 64, .cols = 64, .bits = 4, .group = 64, .data = (const uint8_t *)1 };
+        for (int i = 0; i <= nm; i++) {
+            const qmat *w = i < nm ? mats[i] : mt->nax ? &drafter_fmt : NULL;
+            if (!w || !w->data || w->type != QT_AFFINE) continue;
             if (w->bits != 2 && w->bits != 4 && w->bits != 8) { fprintf(stderr, "metal: %d-bit affine weights not supported\n", w->bits); exit(1); }
             if (w->cols % 32) { fprintf(stderr, "metal: affine weights need in-features %% 32 == 0\n"); exit(1); }
             NSString *key = [NSString stringWithFormat:@"%s_%d_%d", sname(w), w->group, w->bits];
@@ -643,18 +881,7 @@ backend *metal_backend_new(model *m) {
             bool dup = false; // tied embeddings: output may alias another matrix
             for (int k = 0; k < i; k++) if (mats[k]->data == w->data && mats[k]->gpu) { w->gpu = mats[k]->gpu; dup = true; }
             if (dup) continue;
-            int tiles = (w->rows + TILE - 1) / TILE;
-            size_t bytes = (size_t)tiles * (w->cols / TILE) * tiled_block_bytes(w);
-            id<MTLBuffer> buf = [mt->dev newBufferWithLength:bytes options:MTLResourceStorageModeShared];
-            if (!buf) { fprintf(stderr, "metal: allocation of %zu bytes for repacked weights failed\n", bytes); exit(1); }
-            repack_job j = { w, buf.contents };
-            parallel_for(tiles, 4, repack_rows, &j);
-            tiled_t *tw = calloc(1, sizeof *tw);
-            tw->buf = (__bridge_retained void *)buf;
-            tw->split = tiled_split(w, 2, 2048, 4);
-            tw->split_mv = tiled_split(w, 8, 8192, 8);
-            w->gpu = tw;
-            repacked += bytes;
+            repacked += repack_one(mt, w);
         }
         if (need_align) model_align_mats(m);
         mt->h16 = m->output.gpu != NULL;
@@ -674,6 +901,9 @@ backend *metal_backend_new(model *m) {
         b->kv_elem = 2;
         b->alloc_kv = metal_alloc;
         b->forward = metal_forward;
+        b->attach = metal_attach;
+        b->argmax_ok = true;
+        b->draft = metal_draft;
         b->destroy = metal_destroy;
         b->impl = (__bridge_retained void *)mt;
         return b;

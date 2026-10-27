@@ -630,3 +630,54 @@ kernel void to_half(device const float4* x [[buffer(0)]], device half4* y [[buff
                     uint i [[thread_position_in_grid]]) {
     if (i < n / 4) y[i] = half4(x[i]);
 }
+
+// ---------------------------------------------------------------------------
+// Speculative decoding helpers
+// ---------------------------------------------------------------------------
+// Argmax per row (lowest index among ties, like the CPU sampler); one
+// threadgroup of 1024 per row.
+kernel void argmax_rows(device const float* x [[buffer(0)]], device int* out [[buffer(1)]], constant uint& n [[buffer(2)]],
+                        uint row [[threadgroup_position_in_grid]], uint tid [[thread_position_in_threadgroup]],
+                        uint nt [[threads_per_threadgroup]], ushort lane [[thread_index_in_simdgroup]],
+                        ushort sg [[simdgroup_index_in_threadgroup]]) {
+    threadgroup float bv[32];
+    threadgroup uint bi[32];
+    device const float* r = x + (size_t)row * n;
+    float best = -INFINITY;
+    uint idx = 0xFFFFFFFFu;
+    for (uint i = tid; i < n; i += nt) {
+        float v = r[i];
+        if (v > best) { best = v; idx = i; } // per-thread indices increase, so '>' keeps the lowest
+    }
+    for (ushort o = 16; o > 0; o >>= 1) {
+        float ov = simd_shuffle_down(best, o);
+        uint oi = simd_shuffle_down(idx, o);
+        if (ov > best || (ov == best && oi < idx)) { best = ov; idx = oi; }
+    }
+    if (lane == 0) { bv[sg] = best; bi[sg] = idx; }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (sg == 0) {
+        uint ns = (nt + 31) / 32;
+        best = lane < ns ? bv[lane] : -INFINITY;
+        idx = lane < ns ? bi[lane] : 0xFFFFFFFFu;
+        for (ushort o = 16; o > 0; o >>= 1) {
+            float ov = simd_shuffle_down(best, o);
+            uint oi = simd_shuffle_down(idx, o);
+            if (ov > best || (ov == best && oi < idx)) { best = ov; idx = oi; }
+        }
+        if (lane == 0) out[row] = int(idx);
+    }
+}
+
+// dst[r * ld + off + c] = half(src[r * d + c]): capture a residual stream slice
+kernel void cap_write(device const float* src [[buffer(0)]], device half* dst [[buffer(1)]], constant uint3& a [[buffer(2)]],
+                      uint2 gid [[thread_position_in_grid]]) {
+    const uint d = a.x, ld = a.y, off = a.z, c = gid.x, r = gid.y;
+    if (c < d) dst[(size_t)r * ld + off + c] = half(src[(size_t)r * d + c]);
+}
+
+// dst[i] = src[idx[i]] for rows of w halves
+kernel void gather_half(device const half* src [[buffer(0)]], device half* dst [[buffer(1)]], device const uint* idx [[buffer(2)]],
+                        constant uint& w [[buffer(3)]], uint2 gid [[thread_position_in_grid]]) {
+    if (gid.x < w) dst[(size_t)gid.y * w + gid.x] = src[(size_t)idx[gid.y] * w + gid.x];
+}

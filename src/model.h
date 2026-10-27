@@ -40,7 +40,7 @@ typedef struct {
     int pool_layer; // index within its KV pool
 } layer;
 
-typedef enum { ARCH_LLAMA, ARCH_QWEN2, ARCH_QWEN3, ARCH_GLIMMER } arch_t;
+typedef enum { ARCH_LLAMA, ARCH_QWEN2, ARCH_QWEN3, ARCH_GLIMMER, ARCH_DFLASH } arch_t;
 
 typedef struct {
     arch_t arch;
@@ -67,6 +67,12 @@ typedef struct {
     const float *out_norm;
     qmat tok_embd, output;
     float *inv_freq; // hd/2 entries: base^(-2i/hd) / freq_factor[i]
+    // DFlash drafter (ARCH_DFLASH): no embeddings / lm_head of its own (uses the
+    // target's); fc projects the concatenated target hidden states.
+    qmat fc;
+    const float *enc_norm;
+    int target_layers[8], n_target, block_size, mask_token;
+    void *host_q; size_t host_q_len; // heap copies of weights quantized at load
 } model;
 
 // path: a .gguf file, or a directory with config.json + *.safetensors
@@ -78,8 +84,12 @@ size_t qmat_bytes(const qmat *w);
 // read the original layout directly); skips matrices a backend repacked.
 void model_align_mats(model *m);
 void model_free(model *m);
-// Dequantize embeddings for n tokens into x (n x d), applying embed scale / norm.
+// Dequantize embeddings for n tokens into x (n x d), applying embed scale / norm
+// (raw: without them, as the DFlash drafter's inputs).
 void model_embed(const model *m, const int32_t *tokens, int n, float *x);
+void model_embed_raw(const model *m, const int32_t *tokens, int n, float *x);
+// Free heap copies of load-time-quantized weights once a backend repacked them.
+void model_drop_host_copies(model *m);
 // Weight bytes read on every decode step (everything but the embedding table).
 size_t model_streamed_bytes(const model *m);
 // Page in and mlock the streamed weights that live in the model's own memory

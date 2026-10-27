@@ -2,6 +2,7 @@
 // t=0, fixed output length, greedy. Same workload as the earlier vLLM runs.
 //   bench --model glimmer --levels 1,2,4,8,16 --gen 128 [--reps 2]
 //   bench --model llama1b --check     greedy batched outputs == sequential outputs
+//   bench --model glimmer-mlx4 --draft glimmer-draft --check-spec   speculative outputs == plain greedy outputs
 //   --share: automatic prefix sharing on (new agents fork the KV of live, cached
 //            or still-prefilling sequences with the same prefix; finished agents
 //            stay cached), comparable to a server with prefix caching enabled
@@ -76,6 +77,24 @@ int main(int argc, char **argv) {
         int32_t **o; int *on; double tt;
         run(e, pr, n_tasks, n_tasks < 2 ? 1 : 2, 4, true, false, &o, &on, &tt);
     }
+    if (arg_flag(argc, argv, "--check-spec") && rt.draft) {
+        // every task alone without drafts (spec_rows 0), then all batched with speculation
+        int32_t **a, **b; int *an, *bn; double tt;
+        int rows = e->spec_rows;
+        e->spec_rows = 0;
+        double ws = run(e, pr, n_tasks, n_tasks, gen, false, true, &a, &an, &tt);
+        e->spec_rows = rows;
+        double wb = run(e, pr, n_tasks, n_tasks, gen, true, true, &b, &bn, &tt);
+        int same = 0;
+        for (int i = 0; i < n_tasks; i++) {
+            int k = 0;
+            while (k < an[i] && k < bn[i] && a[i][k] == b[i][k]) k++;
+            same += an[i] == bn[i] && k == an[i];
+            if (k < an[i] || an[i] != bn[i]) printf("task %d: first difference at token %d of %d\n", i, k, an[i]);
+        }
+        printf("check-spec: %d/%d speculative outputs identical to plain greedy (plain %.2fs, speculative batched %.2fs)\n", same, n_tasks, ws, wb);
+        return same == n_tasks ? 0 : 2;
+    }
     if (arg_flag(argc, argv, "--check")) {
         int32_t **a, **b; int *an, *bn; double tt;
         double ws = run(e, pr, n_tasks, n_tasks, gen, false, true, &a, &an, &tt);
@@ -87,7 +106,7 @@ int main(int argc, char **argv) {
     }
     int reps = (int)arg_num(argc, argv, "--reps", 2);
     const char *levels = arg_str(argc, argv, "--levels", "1,2,4,8");
-    printf("engine=cinfer backend=%s model=%s gen=%d share=%d\n", rt.be->name, arch_name(rt.m->c.arch), gen, share);
+    printf("engine=cinfer backend=%s model=%s gen=%d share=%d spec=%d\n", rt.be->name, arch_name(rt.m->c.arch), gen, share, rt.draft ? rt.e->spec_k : 0);
     printf("%4s %8s %9s %10s %10s\n", "N", "wall s", "TTFT ms", "agg tok/s", "per-agent");
     char lv[256];
     snprintf(lv, sizeof lv, "%s", levels);
@@ -100,8 +119,13 @@ int main(int argc, char **argv) {
             if (w < best) { best = w; best_ttft = tt; }
         }
         double agg = (double)k * gen / best;
-        printf("%4d %8.2f %9.0f %10.1f %10.1f  (prefill rows %ld, shared %ld)\n", k, best, best_ttft * 1e3, agg, agg / k, e->st.prefill_rows, e->st.shared_tokens);
-        e->st.prefill_rows = e->st.shared_tokens = 0;
+        printf("%4d %8.2f %9.0f %10.1f %10.1f  (prefill rows %ld, shared %ld", k, best, best_ttft * 1e3, agg, agg / k, e->st.prefill_rows, e->st.shared_tokens);
+        if (e->st.spec_steps)
+            printf(", spec: %.2f tokens/verify, %.0f%% of drafts accepted, drafter %.1f%% of time", 1.0 + (double)e->st.spec_accepted / e->st.spec_steps,
+                   100.0 * e->st.spec_accepted / e->st.spec_drafted, 100.0 * e->st.draft_secs / (e->st.draft_secs + e->st.forward_secs));
+        printf(")\n");
+        e->st.prefill_rows = e->st.shared_tokens = e->st.spec_steps = e->st.spec_drafted = e->st.spec_accepted = 0;
+        e->st.draft_secs = e->st.forward_secs = 0;
         fflush(stdout);
     }
     return 0;

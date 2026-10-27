@@ -1,0 +1,11 @@
+[metal] repacked 14.91 GB of 4-bit weights into NAX tiles in 4.1s
+[metal] drafter: 1.44 GB of 4-bit tiles in 0.7s
+[load] 7.0s muse-glimmer assistant/snapshots/c676cce91658f9568aaf264a416211e2782735b7, 52 layers, weights 16.85 GB (pinned 0.00), KV 3.52 GB (4134 full + 4134 swa pages), backend metal
+engine=cinfer backend=metal model=muse-glimmer gen=128 share=0 spec=15
+   N   wall s   TTFT ms  agg tok/s  per-agent
+   1     1.75       424       73.0       73.0  (prefill rows 619, shared 0, spec: 7.00 tokens/verify, 47% of drafts accepted, drafter 8.9% of time)
+   2     2.27       708      112.5       56.3  (prefill rows 404, shared 0, spec: 8.47 tokens/verify, 57% of drafts accepted, drafter 9.5% of time)
+   4     6.18      1144       82.8       20.7  (prefill rows 592, shared 0, spec: 3.85 tokens/verify, 31% of drafts accepted, drafter 12.2% of time)
+   8     7.94      1828      129.0       16.1  (prefill rows 1139, shared 0, spec: 2.94 tokens/verify, 48% of drafts accepted, drafter 11.1% of time)
+  16    12.14      3327      168.7       10.5  (prefill rows 2278, shared 0, spec: 1.94 tokens/verify, 70% of drafts accepted, drafter 9.1% of time)
+  32    20.62      6284      198.6        6.2  (prefill rows 4556, shared 0, spec: 2.19 tokens/verify, 63% of drafts accepted, drafter 3.0% of time)

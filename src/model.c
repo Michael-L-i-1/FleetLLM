@@ -1,6 +1,7 @@
 #include "model.h"
 #include "json.h"
 #include "quant.h"
+#include "threadpool.h"
 #include <math.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@ const char *arch_name(arch_t a) {
     case ARCH_QWEN2: return "qwen2";
     case ARCH_QWEN3: return "qwen3";
     case ARCH_GLIMMER: return "muse-glimmer";
+    case ARCH_DFLASH: return "dflash-drafter";
     }
     return "?";
 }
@@ -148,6 +150,7 @@ void model_free(model *m) {
     if (m->st) st_close(m->st);
     if (m->aux) munmap(m->aux, m->aux_len);
     if (m->arena) munmap(m->arena, m->arena_len);
+    if (m->host_q) munmap(m->host_q, m->host_q_len);
     free(m);
 }
 
@@ -160,7 +163,7 @@ size_t qmat_bytes(const qmat *q) {
 #define mat_bytes qmat_bytes
 
 size_t model_streamed_bytes(const model *m) {
-    size_t n = mat_bytes(&m->output);
+    size_t n = mat_bytes(&m->output) + mat_bytes(&m->fc);
     for (int i = 0; i < m->c.n_layer; i++) {
         const layer *l = &m->layers[i];
         n += mat_bytes(&l->wq) + mat_bytes(&l->wk) + mat_bytes(&l->wv) + mat_bytes(&l->wg) + mat_bytes(&l->wo) +
@@ -196,6 +199,10 @@ size_t model_pin(const model *m) {
         n += pin(&l->wq) + pin(&l->wk) + pin(&l->wv) + pin(&l->wg) + pin(&l->wo) + pin(&l->w_gate) + pin(&l->w_up) + pin(&l->w_down);
     }
     return n;
+}
+
+void model_embed_raw(const model *m, const int32_t *tokens, int n, float *x) {
+    for (int r = 0; r < n; r++) qmat_row(&m->tok_embd, tokens[r], x + (size_t)r * m->c.d);
 }
 
 void model_embed(const model *m, const int32_t *tokens, int n, float *x) {
@@ -372,6 +379,8 @@ void model_align_mats(model *m) {
     m->regions[m->n_regions++] = (mem_region){ m->arena, m->arena_len };
 }
 
+static model *model_load_dflash(const char *dir, json *j);
+
 static model *model_load_st(const char *dir) {
     char path[4096];
     snprintf(path, sizeof path, "%s/config.json", dir);
@@ -388,6 +397,7 @@ static model *model_load_st(const char *dir) {
     else if (!strcmp(mt, "qwen2")) c->arch = ARCH_QWEN2;
     else if (!strcmp(mt, "qwen3")) c->arch = ARCH_QWEN3;
     else if (!strcmp(mt, "muse_glimmer") || !strcmp(mt, "muse_glimmer_text")) c->arch = ARCH_GLIMMER;
+    else if (!strcmp(mt, "muse_glimmer_assistant")) { free(m); return model_load_dflash(dir, j); }
     else { fprintf(stderr, "model_type '%s' not supported\n", mt); exit(1); }
     bool glimmer = c->arch == ARCH_GLIMMER;
 #define NUM(k, d) json_num(j, cfg, k, d)
@@ -494,4 +504,164 @@ static model *model_load_st(const char *dir) {
 #undef NUM
     json_free(j);
     return m;
+}
+
+// ---------------------------------------------------------------- DFlash drafter
+
+static uint16_t to_bf16(float f) { // round to nearest even
+    uint32_t u;
+    memcpy(&u, &f, 4);
+    u += 0x7FFF + ((u >> 16) & 1);
+    return (uint16_t)(u >> 16);
+}
+
+typedef struct { qmat src, dst; } quant_job;
+
+// bf16/f16/f32 row-major -> MLX affine 4-bit, group 64, bf16 scales/biases
+static void quant_rows(void *ctx, int r0, int r1) {
+    quant_job *j = ctx;
+    const qmat *a = &j->src;
+    qmat *q = &j->dst;
+    int ng = a->cols / 64;
+    float *row = malloc(sizeof(float) * a->cols);
+    for (int r = r0; r < r1; r++) {
+        qmat_row(a, r, row);
+        uint8_t *qr = (uint8_t *)q->data + (size_t)r * q->row_bytes;
+        memset(qr, 0, q->row_bytes);
+        for (int g = 0; g < ng; g++) {
+            const float *w = row + g * 64;
+            float lo = w[0], hi = w[0];
+            for (int i = 1; i < 64; i++) { lo = w[i] < lo ? w[i] : lo; hi = w[i] > hi ? w[i] : hi; }
+            uint16_t sb = to_bf16(hi > lo ? (hi - lo) / 15.f : 1e-8f), bb = to_bf16(lo);
+            ((uint16_t *)q->scales)[(size_t)r * ng + g] = sb;
+            ((uint16_t *)q->biases)[(size_t)r * ng + g] = bb;
+            uint32_t us = (uint32_t)sb << 16, ub = (uint32_t)bb << 16;
+            float sc, bi;
+            memcpy(&sc, &us, 4);
+            memcpy(&bi, &ub, 4);
+            for (int i = 0; i < 64; i++) {
+                int v = (int)lrintf((w[i] - bi) / sc);
+                v = v < 0 ? 0 : v > 15 ? 15 : v;
+                qr[(g * 64 + i) / 2] |= (uint8_t)(v << ((i & 1) * 4));
+            }
+        }
+    }
+    free(row);
+}
+
+static size_t quant_bytes(const qmat *a) { return (size_t)a->rows * a->cols / 2 + 2 * 2 * (size_t)a->rows * (a->cols / 64); }
+
+// Quantize a (16-bit) matrix in place into the model's host_q arena at *off.
+static void quantize_into(model *m, qmat *w, size_t *off) {
+    if (!w->data) return;
+    if (w->type == QT_AFFINE) return; // already quantized checkpoint
+    if (w->cols % 64) { fprintf(stderr, "drafter: in-features %d not a multiple of 64\n", w->cols); exit(1); }
+    quant_job j = { *w, { 0 } };
+    qmat *q = &j.dst;
+    q->type = QT_AFFINE;
+    q->rows = w->rows;
+    q->cols = w->cols;
+    q->bits = 4;
+    q->group = 64;
+    q->row_bytes = (size_t)w->cols / 2;
+    uint8_t *base = m->host_q + *off;
+    q->data = base;
+    q->scales = (const uint16_t *)(base + (size_t)w->rows * q->row_bytes);
+    q->biases = q->scales + (size_t)w->rows * (w->cols / 64);
+    *off += (quant_bytes(w) + 63) & ~(size_t)63;
+    parallel_for(w->rows, 64, quant_rows, &j);
+    *w = j.dst;
+}
+
+static model *model_load_dflash(const char *dir, json *j) {
+    const jnode *cfg = json_root(j);
+    model *m = calloc(1, sizeof *m);
+    snprintf(m->dir, sizeof m->dir, "%s", dir);
+    model_cfg *c = &m->c;
+    c->arch = ARCH_DFLASH;
+    c->n_layer = (int)json_num(j, cfg, "num_hidden_layers", 5);
+    c->d = (int)json_num(j, cfg, "hidden_size", 0);
+    c->ff = (int)json_num(j, cfg, "intermediate_size", 0);
+    c->n_head = (int)json_num(j, cfg, "num_attention_heads", 0);
+    c->n_kv = (int)json_num(j, cfg, "num_key_value_heads", c->n_head);
+    c->hd = (int)json_num(j, cfg, "head_dim", c->d / c->n_head);
+    c->eps = c->post_eps = (float)json_num(j, cfg, "rms_norm_eps", 1e-5);
+    c->window = (int)json_num(j, cfg, "sliding_window", 0);
+    c->rope_base = (float)json_num(j, json_get(j, cfg, "rope_parameters"), "rope_theta", 500000.0);
+    c->rope_neox = true;
+    c->attn_scale = 1.f / sqrtf((float)c->hd);
+    c->logit_scale = 1.f;
+    c->embed_scale = 1.f;
+    m->block_size = (int)json_num(j, cfg, "block_size", 16);
+    m->mask_token = (int)json_num(j, cfg, "mask_token_id", -1);
+    const jnode *tl = json_get(j, cfg, "target_layer_ids");
+    for (const jnode *t = json_first(j, tl); t && m->n_target < 8; t = json_next(j, t)) m->target_layers[m->n_target++] = (int)t->num;
+    json_free(j);
+
+    m->st = st_open_dir(dir);
+    if (!m->st) exit(1);
+    for (int i = 0; i < m->st->n_files; i++) m->regions[m->n_regions++] = (mem_region){ m->st->files[i].map, m->st->files[i].size };
+    m->aux_len = ((size_t)c->n_layer * (2 * c->d + 2 * c->hd) * 4 + 2 * c->d * 4 + (1 << 20) + 16383) & ~(size_t)16383;
+    m->aux = mmap(NULL, m->aux_len, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    m->regions[m->n_regions++] = (mem_region){ m->aux, m->aux_len };
+    names nm = { m->st, "" };
+    m->fc = st_mat(&nm, "encoder.fc", c->d * m->n_target);
+    m->enc_norm = st_vec(m, &nm, "encoder.output_norm_enc.weight", c->d, 0);
+    m->out_norm = st_vec(m, &nm, "norm.weight", c->d, 0);
+    if (!m->fc.data || !m->enc_norm || !m->out_norm || m->mask_token < 0 || !m->n_target) { fprintf(stderr, "%s: not a DFlash drafter\n", dir); exit(1); }
+    m->layers = calloc(c->n_layer, sizeof(layer));
+    for (int i = 0; i < c->n_layer; i++) {
+        layer *l = &m->layers[i];
+        char k[256];
+#define L(s) (snprintf(k, sizeof k, "layers.%d.%s", i, s), k)
+        l->attn_norm = st_vec(m, &nm, L("input_layernorm.weight"), c->d, 0);
+        l->ffn_norm = st_vec(m, &nm, L("post_attention_layernorm.weight"), c->d, 0);
+        l->q_norm = st_vec(m, &nm, L("self_attn.q_norm.weight"), c->hd, 0);
+        l->k_norm = st_vec(m, &nm, L("self_attn.k_norm.weight"), c->hd, 0);
+        l->wq = st_mat(&nm, L("self_attn.q_proj"), c->d);
+        l->wk = st_mat(&nm, L("self_attn.k_proj"), c->d);
+        l->wv = st_mat(&nm, L("self_attn.v_proj"), c->d);
+        l->wo = st_mat(&nm, L("self_attn.o_proj"), c->n_head * c->hd);
+        l->w_gate = st_mat(&nm, L("mlp.gate_proj"), c->d);
+        l->w_up = st_mat(&nm, L("mlp.up_proj"), c->d);
+        l->w_down = st_mat(&nm, L("mlp.down_proj"), c->ff);
+#undef L
+        if (!l->attn_norm || !l->ffn_norm || !l->wq.data || !l->wk.data || !l->wv.data || !l->wo.data || !l->w_gate.data) { fprintf(stderr, "drafter layer %d: missing tensors\n", i); exit(1); }
+        l->swa = false; // drafter KV lives in one pool; the window is applied by the attention bounds
+        l->rope = true;
+        l->pool_layer = c->n_full++;
+    }
+    m->inv_freq = malloc(sizeof(float) * c->hd / 2);
+    for (int i = 0; i < c->hd / 2; i++) m->inv_freq[i] = (float)pow(c->rope_base, -(double)(2 * i) / c->hd);
+    // 16-bit checkpoint: quantize to 4-bit affine (draft quality only affects
+    // the acceptance rate; outputs are always verified by the target)
+    qmat *mats[1 + 8 * 8];
+    int nq = 0;
+    mats[nq++] = &m->fc;
+    for (int i = 0; i < c->n_layer; i++) {
+        layer *l = &m->layers[i];
+        qmat *ls[] = { &l->wq, &l->wk, &l->wv, &l->wo, &l->w_gate, &l->w_up, &l->w_down };
+        for (int k = 0; k < 7; k++) mats[nq++] = ls[k];
+    }
+    size_t total = 0, off = 0;
+    for (int i = 0; i < nq; i++) if (mats[i]->type != QT_AFFINE) total += (quant_bytes(mats[i]) + 63) & ~(size_t)63;
+    if (total) {
+        tp_init(0);
+        m->host_q_len = (total + 16383) & ~(size_t)16383;
+        m->host_q = mmap(NULL, m->host_q_len, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        m->regions[m->n_regions++] = (mem_region){ m->host_q, m->host_q_len };
+        for (int i = 0; i < nq; i++) quantize_into(m, mats[i], &off);
+    }
+    return m;
+}
+
+void model_drop_host_copies(model *m) {
+    if (!m->host_q) return;
+    bool all = !m->fc.data || m->fc.gpu;
+    for (int i = 0; i < m->c.n_layer; i++) {
+        const layer *l = &m->layers[i];
+        const qmat *ls[] = { &l->wq, &l->wk, &l->wv, &l->wo, &l->w_gate, &l->w_up, &l->w_down };
+        for (int k = 0; k < 7; k++) if (ls[k]->data && !ls[k]->gpu) all = false;
+    }
+    if (all) madvise(m->host_q, m->host_q_len, MADV_FREE); // contents no longer read
 }

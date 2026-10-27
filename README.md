@@ -44,6 +44,45 @@ one row. cinfer repacks 4-bit weights at load into 64x64 tiles with the scales
 inline (each K step is one contiguous read) and runs them on the M5 neural
 accelerators with split-K, so 1-16 rows cost within ~10% of one row.
 
+## Speculative decoding with Meta's DFlash drafter
+
+`meta-models/Muse-Glimmer-30B-assistant` (5-layer block-diffusion drafter, bf16,
+quantized to 4-bit at load: 1.44 GB). Each step the drafter reads the target's
+hidden states after layers 1/13/25/37/49, denoises a block (the last token + mask
+tokens) in one pass, and the target verifies all drafts in one batched forward;
+the longest matching prefix plus one bonus token is kept and rejected KV is
+truncated. Greedy outputs are identical to plain decoding
+(`bench --check-spec`: 8/8 tasks).
+
+Drafts per agent shrink with concurrency so a step stays near `--spec-rows`
+(32) rows, the batch size the 4-bit kernels run at nearly flat cost; the
+drafter's block shrinks with it (anchor + drafts instead of all 16 positions:
+~10% fewer accepted tokens, half the drafter time).
+
+Same workload as above (MLX 4-bit Glimmer, 128 tokens per agent, battery),
+aggregate tok/s; "no spec" is the same build without `--draft`:
+
+| Agents | no spec | **spec** | no spec, `--share` | **spec, `--share`** | tokens per verify (spec) |
+|---|---|---|---|---|---|
+| 1 | 17.2 | **73.0** | 18.2 | **90.8** | 7.0 |
+| 2 | 31.8 | **112.5** | 35.2 | **162.1** | 8.5 |
+| 4 | 59.4 | **82.8** | 67.2 | **101.0** | 3.9 |
+| 8 | 98.4 | **129.0** | 118.0 | **158.7** | 2.9 |
+| 16 | 155.9 | **168.7** | 239.4 | **301.5** | 1.9 |
+| 32 | 210.0 | 198.6 | 413.6 | 408.9 | (few drafts) |
+
+Agent i runs task i % 8, so the 1- and 2-agent rows are the code-edit and JSON
+tasks (very predictable); from 4 agents on, the story and math tasks accept far
+fewer drafts and, since every agent must produce 128 tokens, set the wall time.
+Meta reports 1.8x for this drafter on an M5 Max (26.6 -> 50.2 tok/s, one stream,
+diverse prompts). The "no spec" numbers above are higher than in the vLLM table
+because greedy sampling now runs as a GPU argmax (no logits copy).
+
+```bash
+./build/bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --levels 1,8,32 --gen 128 [--share]
+./build/bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --check-spec   # == plain greedy
+```
+
 ## Status
 
 | Piece | State |
@@ -56,6 +95,7 @@ accelerators with split-K, so 1-16 rows cost within ~10% of one row.
 | Metal backend | correct; GGUF: fused mat-vec / fused tile GEMM / dequant-once + dense GEMM; MLX 4-bit: tiled NAX GEMM + tiled mat-vec; flash-decoding attention |
 | MLX / HF safetensors loading (config, shards, tokenizer.json, affine weights) | Glimmer, Llama verified on CPU and GPU; tokenizer matches HF 10/10 |
 | In-flight prefix dedup (agents fanned out together share one prefill) | done |
+| Speculative decoding with the DFlash drafter (batched, adaptive draft length) | done; outputs identical to plain greedy |
 | Paged copy-on-write KV (full + sliding-window pools), continuous batching, automatic prefix sharing | done; batched greedy outputs identical to sequential (8/8) |
 
 ## Build and run
@@ -141,7 +181,8 @@ at 1/8 agents and 148.5 at 32.
    chunks, larger chunks when no agent is decoding.
 3. **Agent features**: session API (KV kept across turns), fork for subagents, tool-wait KV
    offload to SSD, disk prompt cache, group-aware scheduling, grammar-constrained tool calls
-   with jump-forward, n-gram / DFlash speculation, int8 KV (long contexts).
+   with jump-forward, n-gram drafts (no drafter weights), int8 KV (long contexts); drafter
+   KV in a sliding-window pool (it currently keeps the whole context).
 4. **Server**: OpenAI-compatible HTTP with streaming, so agent harnesses (and
    `scripts/bench_openai.py`) talk to it directly.
 5. **Pi 5**: NEON sdot kernels (port ggml's), repacked weights, cross-compile and run.

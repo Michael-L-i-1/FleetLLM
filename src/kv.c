@@ -127,3 +127,13 @@ void kv_trim_window(kv_cache *kv, seq_pages *s) {
         if (s->swa[pi] != KV_NONE) { prelease(&kv->swa, s->swa[pi]); s->swa[pi] = KV_NONE; }
     }
 }
+
+void kv_truncate(kv_cache *kv, seq_pages *s, int len) {
+    int keep = (len + KV_PAGE - 1) / KV_PAGE;
+    for (int i = keep; i < s->n_pages; i++) {
+        prelease(&kv->full, s->full[i]);
+        if (kv->window) prelease(&kv->swa, s->swa[i]);
+    }
+    if (keep < s->n_pages) s->n_pages = keep;
+    if (len < s->len) s->len = len;
+}

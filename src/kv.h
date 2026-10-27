@@ -45,6 +45,8 @@ bool kv_reserve(kv_cache *kv, seq_pages *s, int pos);
 bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len);
 seq_pages kv_fork_at(kv_cache *kv, const seq_pages *s, int len);
 void kv_free_seq(kv_cache *kv, seq_pages *s);
+// Shrink s to len tokens (rejected speculative positions), releasing whole pages past it.
+void kv_truncate(kv_cache *kv, seq_pages *s, int len);
 // Release sliding-window pages no future query can see.
 void kv_trim_window(kv_cache *kv, seq_pages *s);
 // Element offset of the [PAGE x head_dim] tile for (page, layer, k=0/v=1, head).

@@ -1,10 +1,10 @@
-[metal] repacked 14.91 GB of 4-bit weights into NAX tiles in 0.8s
-[load] 0.9s muse-glimmer -30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710, 52 layers, weights 14.91 GB (pinned 0.00), KV 2.46 GB (2887 full + 2887 swa pages), backend metal
-engine=cinfer backend=metal model=muse-glimmer gen=128 share=1
+[metal] repacked 14.91 GB of 4-bit weights into NAX tiles in 1.0s
+[load] 1.1s muse-glimmer -30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710, 52 layers, weights 14.91 GB (pinned 0.00), KV 2.46 GB (2887 full + 2887 swa pages), backend metal
+engine=cinfer backend=metal model=muse-glimmer gen=128 share=1 spec=0
    N   wall s   TTFT ms  agg tok/s  per-agent
-   1     7.07        55       18.1       18.1  (prefill rows 362, shared 256)
-   2     7.36        57       34.8       17.4  (prefill rows 0, shared 402)
-   4     7.92       236       64.7       16.2  (prefill rows 104, shared 486)
-   8     9.16       474      111.8       14.0  (prefill rows 379, shared 756)
-  16     9.34        68      219.3       13.7  (prefill rows 0, shared 2262)
-  32    11.37        80      360.3       11.3  (prefill rows 0, shared 4524)
+   1     7.05        55       18.2       18.2  (prefill rows 362, shared 256)
+   2     7.27        57       35.2       17.6  (prefill rows 0, shared 402)
+   4     7.62       235       67.2       16.8  (prefill rows 104, shared 486)
+   8     8.68       468      118.0       14.8  (prefill rows 379, shared 756)
+  16     8.56        67      239.4       15.0  (prefill rows 0, shared 2262)
+  32     9.90        78      413.6       12.9  (prefill rows 0, shared 4524)

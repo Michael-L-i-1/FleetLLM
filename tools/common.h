@@ -32,6 +32,7 @@ static const char *model_path(const char *alias) {
     else if (!strcmp(alias, "qwen3")) pat = "models--unsloth--Qwen3-1.7B-GGUF/snapshots/*/Qwen3-1.7B-Q4_K_M.gguf";
     else if (!strcmp(alias, "glimmer-mlx4")) pat = "models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/*";
     else if (!strcmp(alias, "llama1b-mlx4")) pat = "models--mlx-community--Llama-3.2-1B-Instruct-4bit/snapshots/*";
+    else if (!strcmp(alias, "glimmer-draft")) pat = "models--meta-models--Muse-Glimmer-30B-assistant/snapshots/*"; // Meta's DFlash drafter
     if (!pat) return alias;
     char g[4096];
     snprintf(g, sizeof g, "%s/.cache/huggingface/hub/%s", getenv("HOME"), pat);
@@ -42,9 +43,11 @@ static const char *model_path(const char *alias) {
     return path;
 }
 
-typedef struct { model *m; backend *be; tokenizer *tok; engine *e; } runtime;
+typedef struct { model *m, *draft; backend *be; tokenizer *tok; engine *e; } runtime;
 
 // Load model + backend + engine; the KV pool gets what the memory budget leaves.
+// --draft M enables speculative decoding with a DFlash drafter (--spec-k drafts
+// per verify step, --draft-kv-gb for its KV); its weights count against the budget.
 static runtime load_runtime(int argc, char **argv) {
     runtime rt;
     double t = now_secs();
@@ -55,6 +58,11 @@ static runtime load_runtime(int argc, char **argv) {
     if (!rt.tok) exit(1);
     double budget_gb = arg_num(argc, argv, "--budget-gb", 16);
     size_t streamed = model_streamed_bytes(rt.m);
+    const char *dpath = arg_str(argc, argv, "--draft", NULL);
+    rt.draft = dpath ? model_load(model_path(dpath)) : NULL;
+    if (dpath && !rt.draft) exit(1);
+    size_t dkv = (size_t)(arg_num(argc, argv, "--draft-kv-gb", 0.5) * 1e9);
+    if (rt.draft) streamed += model_streamed_bytes(rt.draft) + dkv;
     size_t reserve = 600u << 20; // activations, logits, scratch, touched embedding rows
     size_t budget = (size_t)(budget_gb * 1e9);
     if (budget < streamed + reserve + (64u << 20)) { fprintf(stderr, "budget %.1f GB too small for %.2f GB of weights\n", budget_gb, streamed / 1e9); exit(1); }
@@ -62,6 +70,8 @@ static runtime load_runtime(int argc, char **argv) {
     size_t pinned = arg_flag(argc, argv, "--no-pin") ? 0 : model_pin(rt.m);
     rt.e = engine_new(rt.m, rt.be, rt.tok, budget - streamed - reserve);
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
+    rt.e->spec_rows = (int)arg_num(argc, argv, "--spec-rows", 32);
+    if (rt.draft && !engine_set_drafter(rt.e, rt.draft, dkv, (int)arg_num(argc, argv, "--spec-k", 0))) exit(1);
     fprintf(stderr, "[load] %.1fs %s %s, %d layers, weights %.2f GB (pinned %.2f), KV %.2f GB (%u full + %u swa pages), backend %s\n",
             now_secs() - t, arch_name(rt.m->c.arch), path + (strlen(path) > 60 ? strlen(path) - 60 : 0), rt.m->c.n_layer, streamed / 1e9,
             pinned / 1e9, (rt.e->kv.full.bytes + rt.e->kv.swa.bytes) / 1e9, rt.e->kv.full.n_pages, rt.e->kv.swa.n_pages, rt.be->name);

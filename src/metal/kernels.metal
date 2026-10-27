@@ -386,6 +386,62 @@ kernel void rms_norm(device const float* x [[buffer(0)]], device float* y [[buff
 }
 
 // ---------------------------------------------------------------------------
+// Fused residual step (one threadgroup of 512 per row, row kept in registers):
+//   x += post ? rms(o) * wp : o        (wp may be null: plain add)
+//   h  = rms(x) * wn                    (f16 when half_out: next matmul input)
+// d must be a multiple of 4 and <= 512 * 4 * RA_V.
+// ---------------------------------------------------------------------------
+#define RA_V 8
+struct AddNormArgs { uint d; float eps_post, eps; uint post, half_out; };
+
+static inline float tg_sum(float v, threadgroup float* part, ushort lane, ushort sg, uint nt) {
+    v = simd_sum(v);
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (lane == 0) part[sg] = v;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    float t = lane < (nt + 31) / 32 ? part[lane] : 0.0f;
+    return simd_sum(t);
+}
+
+kernel void add_rms_norm(device const float* o [[buffer(0)]], device float* x [[buffer(1)]], device float* h [[buffer(2)]],
+                         device const float* wp [[buffer(3)]], device const float* wn [[buffer(4)]], constant AddNormArgs& a [[buffer(5)]],
+                         uint row [[threadgroup_position_in_grid]], uint tid [[thread_position_in_threadgroup]],
+                         uint nt [[threads_per_threadgroup]], ushort lane [[thread_index_in_simdgroup]],
+                         ushort sg [[simdgroup_index_in_threadgroup]]) {
+    threadgroup float part[32];
+    const uint d4 = a.d / 4;
+    device const float4* orow = (device const float4*)(o + (size_t)row * a.d);
+    device float4* xrow = (device float4*)(x + (size_t)row * a.d);
+    float4 v[RA_V];
+    float ss = 0.0f;
+    for (int j = 0; j < RA_V; j++) {
+        uint i = tid + j * nt;
+        v[j] = i < d4 ? orow[i] : float4(0.0f);
+        ss += dot(v[j], v[j]);
+    }
+    float ro = a.post ? rsqrt(tg_sum(ss, part, lane, sg, nt) / float(a.d) + a.eps_post) : 1.0f;
+    ss = 0.0f;
+    for (int j = 0; j < RA_V; j++) {
+        uint i = tid + j * nt;
+        if (i < d4) {
+            float4 add = v[j] * ro;
+            if (a.post) add *= ((device const float4*)wp)[i];
+            v[j] = xrow[i] + add;
+            xrow[i] = v[j];
+        }
+        ss += dot(v[j], v[j]);
+    }
+    float r = rsqrt(tg_sum(ss, part, lane, sg, nt) / float(a.d) + a.eps);
+    for (int j = 0; j < RA_V; j++) {
+        uint i = tid + j * nt;
+        if (i >= d4) continue;
+        float4 y = v[j] * r * ((device const float4*)wn)[i];
+        if (a.half_out) ((device half4*)h)[(size_t)row * d4 + i] = half4(y);
+        else ((device float4*)h)[(size_t)row * d4 + i] = y;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Per-head QK RMS norm (optional) + RoPE (optional; NORM or NEOX), in place.
 // grid (rows, n_head + n_kv) threadgroups of 32; n_head may be 0 (K only).
 // ---------------------------------------------------------------------------
@@ -449,7 +505,7 @@ kernel void kv_write(device const float* k [[buffer(0)]], device const float* v 
 // per split; attn_reduce merges splits and applies the optional sigmoid gate.
 // ---------------------------------------------------------------------------
 struct AttnArgs { uint nh, nkv, hd; float scale; ulong page_elems, layer_off; uint page, gate, qs, gs, half_out, pad; }; // qs/gs: row strides of q/gate
-struct RowInfo { uint ctx_end, start, tab, pad; };
+struct RowInfo { uint ctx_end, start, tab, split; }; // split: positions per split for this row
 #define AT 32
 
 template <int HD>
@@ -467,8 +523,8 @@ kernel void attn_fd(device const float* q [[buffer(0)]], device const half* pool
     const uint row = tg.x, kvh = tg.y, split = tg.z;
     const uint G = a.nh / a.nkv, h = kvh * G + sg;
     const RowInfo r = ri[row];
-    const uint s0 = r.start + split * sp.x;
-    const uint s1 = min(r.ctx_end + 1, s0 + sp.x);
+    const uint s0 = r.start + split * r.split;
+    const uint s1 = min(r.ctx_end + 1, s0 + r.split); // s0 >= s1: empty split (l = 0)
     for (uint i = tid; i < G * HD; i += ntg) qs[i] = q[row * a.qs + kvh * G * HD + i] * a.scale;
     const ulong vofs = (ulong)a.nkv * a.page * HD;
     float m = -INFINITY, l = 0.0f, o[E];

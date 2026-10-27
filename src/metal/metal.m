@@ -16,7 +16,16 @@
 #define MV_MAX_ROWS 8            // fused mat-vec up to here
 #define FUSED_MAX_ROWS 64        // fused tile-dequant GEMM up to here; above: dequantize once + dense GEMM
 #define SCRATCH_BYTES (256u << 20) // f16 dequant scratch; bigger matrices go in row chunks
-#define ATTN_SPLIT 256           // positions per flash-decoding split
+#define ATTN_SPLIT 256           // max positions per flash-decoding split
+// Positions per split for a row attending to ctx positions: ~48 splits (enough
+// parallelism for a single decoding row), a multiple of the 32-position tile in
+// 32..ATTN_SPLIT. It depends only on the row itself, so a row's result does not
+// depend on what else is in the batch.
+static uint32_t attn_split(uint32_t ctx) {
+    uint32_t sz = (ctx + 47) / 48;
+    sz = (sz + 31) / 32 * 32;
+    return sz < 32 ? 32 : sz > ATTN_SPLIT ? ATTN_SPLIT : sz;
+}
 
 typedef struct { uint32_t K, M, N, ldy, row_bytes, x_stride; } MvArgs;
 typedef struct { uint32_t K, rows, row_bytes, r0; } DqArgs;
@@ -25,8 +34,9 @@ typedef struct { uint32_t d; float eps; uint32_t has_w, add, gather, half_out; }
 typedef struct { uint32_t nh, nkv, hd; float eps; uint32_t has_qn, has_kn, rope, neox, qs, ks; } QkArgs;
 typedef struct { uint32_t nkv, hd, page, ks; uint64_t layer_off; uint32_t vs, pad; } KvwArgs;
 typedef struct { uint32_t nh, nkv, hd; float scale; uint64_t page_elems, layer_off; uint32_t page, gate, qs, gs, half_out, pad; } AttnArgs;
-typedef struct { uint32_t ctx_end, start, tab, pad; } RowInfo;
+typedef struct { uint32_t ctx_end, start, tab, split; } RowInfo;
 typedef struct { float scale, cap; } CapArgs;
+typedef struct { uint32_t d; float eps_post, eps; uint32_t post, half_out; } AddNormArgs;
 
 @interface CIMetal : NSObject {
 @public
@@ -138,15 +148,20 @@ static void repack_rows(void *ctx, int rt0, int rt1) {
         }
 }
 
-// K splits (measured on M5 Pro): GEMM so that row tiles x split ~ 2048
-// threadgroups with >= 4 K tiles per split; mat-vec so that ~8192 simdgroups
-// run with >= 8 K tiles each. Both depend only on the weight shape.
+// K splits (measured on M5 Pro): GEMM so that ~2048 single-simdgroup
+// threadgroups (2 per row tile) run with >= 4 K tiles per split; mat-vec so
+// that ~8192 simdgroups run with >= 8 K tiles each. Both depend only on the
+// weight shape.
 static int tiled_split(const qmat *w, int units_per_tile, int target, int min_kt) {
     int units = (w->rows + TILE - 1) / TILE * units_per_tile, n_kt = w->cols / TILE, split = 1;
     while (units * split * 2 <= target && n_kt / (split * 2) >= min_kt) split *= 2;
     return split;
 }
-#define TMV_MAX 2 // tokens handled by the tiled mat-vec; more go to the NAX GEMM
+#define TMV_MAX 4 // tokens handled by the tiled mat-vec (3-4 via its f16-dot variant); more go to the NAX GEMM
+static int tmv_nt(int n) { return n <= 2 ? n : 4; }
+// CINFER_TMV_MAX overrides TMV_MAX (0: the NAX GEMM for every batch size, so a
+// row's result is bit-identical whatever the batch size; used by bench --check)
+static int tmv_max(void) { static int v = -1; if (v < 0) v = env_int("CINFER_TMV_MAX", TMV_MAX); return v; }
 
 // untiled affine mat-vec over tokens [t0, t0+n), n <= 8
 static void matmul_affine_mv(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, id<MTLBuffer> y, int ldy, int t0, int n) {
@@ -173,7 +188,7 @@ static size_t act_bytes(int n, int cols) {
 static void matmul_affine(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, bool x_half, id<MTLBuffer> y, int ldy, int n) {
     if (w->gpu) {
         const tiled_t *tw = w->gpu;
-        int bm = n <= 16 ? 16 : n <= 32 ? 32 : 64, padded = (n + 63) / 64 * 64;
+        int bm = n <= 16 ? 16 : 32, padded = (n + 63) / 64 * 64;
         id<MTLBuffer> xh = x;
         if (!x_half) { // activations as f16, padded to a whole number of 64-row tiles (pad rows are never stored)
             xh = B(mt, @"x16", 2 * (size_t)padded * w->cols);
@@ -184,21 +199,20 @@ static void matmul_affine(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qma
             set_bytes(e, &cnt, 4, 2);
             [e dispatchThreads:MTLSizeMake(cnt / 4, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
         }
-        int tiles = (w->rows + TILE - 1) / TILE, mv = n <= TMV_MAX, split = mv ? tw->split_mv : tw->split;
-        id<MTLBuffer> out = split > 1 ? B(mt, @"part", 4 * (size_t)split * n * w->rows) : y;
+        int tiles = (w->rows + TILE - 1) / TILE, mv = n <= tmv_max(), split = mv ? tw->split_mv : tw->split;
+        id<MTLBuffer> out = split > 1 ? B(mt, @"kpart", 4 * (size_t)split * n * w->rows) : y;
         AtArgs a = { w->cols, w->rows, n, split > 1 ? w->rows : ldy, split, n * w->rows };
         [e setBuffer:(__bridge id<MTLBuffer>)tw->buf offset:0 atIndex:0];
         [e setBuffer:xh offset:0 atIndex:3];
         [e setBuffer:out offset:0 atIndex:4];
         if (mv) {
-            [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"tmv_%s_%d_%d", sname(w), w->group, n])];
+            [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"tmv_%s_%d_%d", sname(w), w->group, tmv_nt(n)])];
             set_bytes(e, &a, sizeof a, 5);
             [e dispatchThreadgroups:MTLSizeMake(tiles * 4, 1, split) threadsPerThreadgroup:MTLSizeMake(64, 1, 1)];
         } else {
-            [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"aqmt_%s_%d_%d", sname(w), w->group, bm])];
+            [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"aqms_%s_%d_%d", sname(w), w->group, bm])];
             set_bytes(e, &a, sizeof a, 5);
-            int wm = bm == 16 ? 1 : 2;
-            [e dispatchThreadgroups:MTLSizeMake(tiles, (n + bm - 1) / bm, split) threadsPerThreadgroup:MTLSizeMake(32 * wm * 2, 1, 1)];
+            [e dispatchThreadgroups:MTLSizeMake(tiles * 2, (n + bm - 1) / bm, split) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
         }
         if (split > 1) {
             int32_t a4[4] = { w->rows, n, split, ldy };
@@ -274,6 +288,22 @@ static void rms(CIMetal *mt, id<MTLComputeCommandEncoder> e, id<MTLBuffer> x, id
     [e dispatchThreadgroups:MTLSizeMake(rows, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
 }
 
+// x += wp ? rms(o) * wp : o;  h = rms(x) * wn  (one dispatch for the residual
+// step plus the next block's pre-norm)
+static bool add_norm_ok(int d) { return d % 4 == 0 && d <= 512 * 4 * 8; }
+static void add_norm(CIMetal *mt, id<MTLComputeCommandEncoder> e, id<MTLBuffer> o, id<MTLBuffer> x, id<MTLBuffer> h, const float *wp, float eps_post,
+                     const float *wn, float eps, int d, int rows) {
+    AddNormArgs a = { (uint32_t)d, eps_post, eps, wp != NULL, mt->h16 };
+    [e setComputePipelineState:P(mt, @"add_rms_norm")];
+    [e setBuffer:o offset:0 atIndex:0];
+    [e setBuffer:x offset:0 atIndex:1];
+    [e setBuffer:h offset:0 atIndex:2];
+    set_w(e, mt, wp, 3);
+    set_w(e, mt, wn, 4);
+    set_bytes(e, &a, sizeof a, 5);
+    [e dispatchThreadgroups:MTLSizeMake(rows, 1, 1) threadsPerThreadgroup:MTLSizeMake(512, 1, 1)];
+}
+
 // y[i] += b[i % w]; b is a weight-region pointer, or NULL to add buffer bb
 static void add_bcast(CIMetal *mt, id<MTLComputeCommandEncoder> e, id<MTLBuffer> y, const float *b, id<MTLBuffer> bb, uint32_t w, size_t n) {
     [e setComputePipelineState:P(mt, @"add_bcast")];
@@ -331,15 +361,17 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         write_buf(B(mt, @"tab", 4 * tab_n), tab, 4 * tab_n);
         RowInfo *ri_full = malloc(sizeof(RowInfo) * n), *ri_swa = malloc(sizeof(RowInfo) * n);
         uint64_t *slot_full = malloc(8 * n), *slot_swa = malloc(8 * n);
-        uint32_t max_full = 1, max_swa = 1;
+        uint32_t max_sp_full = 1, max_sp_swa = 1; // max attention splits over rows
         for (int i = 0; i < n; i++) {
             const row_t *r = &rows[i];
             const seq_pages *pg = pages[r->seq];
             uint32_t sw = kv->window && r->ctx_end + 1 > kv->window ? (uint32_t)(r->ctx_end + 1 - kv->window) : 0;
-            ri_full[i] = (RowInfo){ (uint32_t)r->ctx_end, 0, off_full[r->seq], 0 };
-            ri_swa[i] = (RowInfo){ (uint32_t)r->ctx_end, sw, off_swa[r->seq], 0 };
-            if ((uint32_t)r->ctx_end + 1 > max_full) max_full = r->ctx_end + 1;
-            if ((uint32_t)r->ctx_end + 1 - sw > max_swa) max_swa = r->ctx_end + 1 - sw;
+            uint32_t nf = (uint32_t)r->ctx_end + 1, nw = nf - sw;
+            ri_full[i] = (RowInfo){ (uint32_t)r->ctx_end, 0, off_full[r->seq], attn_split(nf) };
+            ri_swa[i] = (RowInfo){ (uint32_t)r->ctx_end, sw, off_swa[r->seq], attn_split(nw) };
+            uint32_t sf = (nf + ri_full[i].split - 1) / ri_full[i].split, ss = (nw + ri_swa[i].split - 1) / ri_swa[i].split;
+            if (sf > max_sp_full) max_sp_full = sf;
+            if (ss > max_sp_swa) max_sp_swa = ss;
             slot_full[i] = (uint64_t)pg->full[r->pos / KV_PAGE] * kv->full.page_elems + (uint64_t)(r->pos % KV_PAGE) * hd;
             slot_swa[i] = kv->window ? (uint64_t)pg->swa[r->pos / KV_PAGE] * kv->swa.page_elems + (uint64_t)(r->pos % KV_PAGE) * hd : 0;
         }
@@ -351,7 +383,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         uint32_t *sel = malloc(4 * n);
         for (int i = 0; i < n; i++) if (rows[i].logits) sel[ns++] = (uint32_t)i;
         if (ns) write_buf(B(mt, @"sel", 4 * ns), sel, 4 * ns);
-        int n_split_max = (int)((max_full > max_swa ? max_full : max_swa) + ATTN_SPLIT - 1) / ATTN_SPLIT;
+        int n_split_max = (int)(max_sp_full > max_sp_swa ? max_sp_full : max_sp_swa);
         id<MTLBuffer> part = B(mt, @"part", (size_t)n * c->n_head * n_split_max * (hd + 2) * 4);
         id<MTLBuffer> full_pool = (__bridge id<MTLBuffer>)kv->full.handle;
         id<MTLBuffer> swa_pool = kv->window ? (__bridge id<MTLBuffer>)kv->swa.handle : full_pool;
@@ -363,7 +395,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         if (!fd) { fprintf(stderr, "metal: head_dim %d / GQA group %d not supported by attention kernel\n", hd, c->n_head / c->n_kv); exit(1); }
         for (int li = 0; li < c->n_layer; li++) {
             const layer *l = &m->layers[li];
-            rms(mt, e, xb, hb, l->attn_norm, d, c->eps, false, n, nil);
+            bool fuse_norms = add_norm_ok(d);
+            if (li == 0 || !fuse_norms) rms(mt, e, xb, hb, l->attn_norm, d, c->eps, false, n, nil); // else done by the previous layer
             // q/k/v/gate: one fused matmul into [n][q|k|v|g] rows, or four separate ones
             id<MTLBuffer> qB = qb, kB = kb, vB = vb, gB = gb;
             NSUInteger qO = 0, kO = 0, vO = 0, gO = 0;
@@ -409,8 +442,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             }
             {
                 AttnArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->attn_scale, pl->page_elems, layer_off, KV_PAGE, l->wg.data != NULL, qs, gs, mt->h16, 0 };
-                uint32_t mx = l->swa ? max_swa : max_full;
-                uint32_t sp[2] = { ATTN_SPLIT, (mx + ATTN_SPLIT - 1) / ATTN_SPLIT };
+                uint32_t sp[2] = { 0, l->swa ? max_sp_swa : max_sp_full }; // .x unused (per-row split sizes)
                 [e setComputePipelineState:P(mt, [NSString stringWithFormat:@"attn_fd_%d", hd])];
                 [e setBuffer:qB offset:qO atIndex:0];
                 [e setBuffer:pool offset:0 atIndex:1];
@@ -429,9 +461,12 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                 [e dispatchThreadgroups:MTLSizeMake(n, c->n_head, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
             }
             matmul(mt, e, &l->wo, ab, ob, d, n);
-            if (l->post_attn_norm) rms(mt, e, ob, xb, l->post_attn_norm, d, c->post_eps, true, n, nil);
-            else add_bcast(mt, e, xb, NULL, ob, (uint32_t)(n * d), (size_t)n * d);
-            rms(mt, e, xb, hb, l->ffn_norm, d, c->eps, false, n, nil);
+            if (fuse_norms) add_norm(mt, e, ob, xb, hb, l->post_attn_norm, c->post_eps, l->ffn_norm, c->eps, d, n);
+            else {
+                if (l->post_attn_norm) rms(mt, e, ob, xb, l->post_attn_norm, d, c->post_eps, true, n, nil);
+                else add_bcast(mt, e, xb, NULL, ob, (uint32_t)(n * d), (size_t)n * d);
+                rms(mt, e, xb, hb, l->ffn_norm, d, c->eps, false, n, nil);
+            }
             uint32_t sa[3] = { (uint32_t)c->ff, (uint32_t)c->ff, mt->h16 };
             if (mt->f_gu[li].type) {
                 matmul(mt, e, &mt->f_gu[li], hb, gub, 2 * c->ff, n);
@@ -450,7 +485,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             set_bytes(e, sa, sizeof sa, 3);
             [e dispatchThreads:MTLSizeMake((size_t)n * c->ff, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
             matmul(mt, e, &l->w_down, actb, ob, d, n);
-            if (l->post_ffn_norm) rms(mt, e, ob, xb, l->post_ffn_norm, d, c->post_eps, true, n, nil);
+            if (fuse_norms && li + 1 < c->n_layer) add_norm(mt, e, ob, xb, hb, l->post_ffn_norm, c->post_eps, m->layers[li + 1].attn_norm, c->eps, d, n);
+            else if (l->post_ffn_norm) rms(mt, e, ob, xb, l->post_ffn_norm, d, c->post_eps, true, n, nil);
             else add_bcast(mt, e, xb, NULL, ob, (uint32_t)(n * d), (size_t)n * d);
         }
         if (ns) {
@@ -523,7 +559,7 @@ static size_t fuse_tiled(CIMetal *mt, qmat **ws, int n, qmat *out) {
     if (!buf) { fprintf(stderr, "metal: allocation of %zu bytes for repacked weights failed\n", bytes); exit(1); }
     tiled_t *tw = calloc(1, sizeof *tw);
     tw->buf = (__bridge_retained void *)buf;
-    tw->split = tiled_split(out, 1, 2048, 4);
+    tw->split = tiled_split(out, 2, 2048, 4);
     tw->split_mv = tiled_split(out, 8, 8192, 8);
     uint8_t *dst = buf.contents;
     for (int i = 0; i < n; i++) {
@@ -567,13 +603,13 @@ backend *metal_backend_new(model *m) {
                 [inst appendFormat:@"template [[host_name(\"amv_%@_%d\")]] kernel decltype(amv<%s, %d, %d, %d>) amv<%s, %d, %d, %d>;\n", key, nt, st, w->group, w->bits, nt, st, w->group, w->bits, nt];
             if (tiled_ok(w)) {
                 NSString *kg = [key substringToIndex:[key rangeOfString:@"_" options:NSBackwardsSearch].location];
-                for (int nt = 1; nt <= TMV_MAX; nt++)
+                for (int nt = 1; nt <= TMV_MAX; nt = nt == 2 ? 4 : nt + 1)
                     [inst_nax appendFormat:@"template [[host_name(\"tmv_%@_%d\")]] [[kernel]] decltype(tmv<%s, %d, %d>) tmv<%s, %d, %d>;\n", kg, nt, st, w->group, nt, st, w->group, nt];
             }
             if (tiled_ok(w))
-                for (int bm = 16; bm <= 64; bm *= 2)
-                    [inst_nax appendFormat:@"template [[host_name(\"aqmt_%@_%d\")]] [[kernel]] decltype(aqmt<%s, half, %d, %d, %d, %d, 2>) aqmt<%s, half, %d, %d, %d, %d, 2>;\n", [key substringToIndex:[key rangeOfString:@"_" options:NSBackwardsSearch].location], bm,
-                                           st, w->group, w->bits, bm, bm == 16 ? 1 : 2, st, w->group, w->bits, bm, bm == 16 ? 1 : 2];
+                for (int bm = 16; bm <= 32; bm *= 2)
+                    [inst_nax appendFormat:@"template [[host_name(\"aqms_%@_%d\")]] [[kernel]] decltype(aqms<%s, half, %d, %d, %d>) aqms<%s, half, %d, %d, %d>;\n", [key substringToIndex:[key rangeOfString:@"_" options:NSBackwardsSearch].location], bm,
+                                           st, w->group, w->bits, bm, st, w->group, w->bits, bm];
         }
         mt->pso = [NSMutableDictionary new];
         NSString *src = [[NSString alloc] initWithBytes:kernels_metal length:kernels_metal_len encoding:NSUTF8StringEncoding];
@@ -615,7 +651,7 @@ backend *metal_backend_new(model *m) {
             parallel_for(tiles, 4, repack_rows, &j);
             tiled_t *tw = calloc(1, sizeof *tw);
             tw->buf = (__bridge_retained void *)buf;
-            tw->split = tiled_split(w, 1, 2048, 4);
+            tw->split = tiled_split(w, 2, 2048, 4);
             tw->split_mv = tiled_split(w, 8, 8192, 8);
             w->gpu = tw;
             repacked += bytes;

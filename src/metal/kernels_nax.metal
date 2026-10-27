@@ -39,91 +39,6 @@ struct TiledBlock {
     STEEL_CONST int bytes = code_bytes + TR * GPT * 2 * sizeof(S);
 };
 
-template <typename S, typename XT, const int group_size, const int bits, const int BM, const int WM, const int WN>
-[[kernel]] void aqmt(const device uint8_t* w [[buffer(0)]], const device XT* x [[buffer(3)]], device float* y [[buffer(4)]],
-                     const constant AtArgs& a [[buffer(5)]], uint3 tid [[threadgroup_position_in_grid]],
-                     uint simd_gid [[simdgroup_index_in_threadgroup]], uint simd_lid [[thread_index_in_simdgroup]]) {
-    using TB = TiledBlock<S, group_size, bits>;
-    constexpr int BN = 64, BK = 64, NT = 32 * WM * WN;
-    constexpr int BK_padded = BK + 8;
-    constexpr int TPR = NT / BN;                 // threads per weight row
-    constexpr int VPT = BK / TPR;                // values per thread per K step
-    constexpr int WPT = VPT * bits / 32;         // 32-bit words per thread per K step
-    static_assert(bits == 4, "tiled path: 4-bit only for now");
-    static_assert(WPT >= 1, "bad thread mapping");
-    static_assert(group_size >= 8, "group must cover whole 32-bit words");
-    threadgroup half Ws[BN * BK_padded];
-
-    const int K = a.K, N = a.N, M = a.M;
-    const int n_kt_all = K / BK;
-    const int kt0 = tid.z * n_kt_all / a.split, kt1 = (tid.z + 1) * n_kt_all / a.split, n_kt = kt1 - kt0;
-    const int y_row = tid.y * BM, y_col = tid.x * BN;
-    const short t = simd_gid * 32 + simd_lid;
-    const short wr = t / TPR, wc = (t % TPR) * VPT; // weight row in tile, first K value
-    const device uint8_t* blk = w + ((size_t)tid.x * n_kt_all + kt0) * TB::bytes;
-    threadgroup half* dst = Ws + wr * BK_padded + wc;
-    const short gi = TB::GPT > 1 ? wc / group_size : 0;
-
-    constexpr short SM = BM / WM, SN = BN / WN, SK = 32;
-    constexpr short TM = SM / 16, TN = SN / 16, TKf = SK / 16;
-    const short tm = SM * (simd_gid / WN), tn = SN * (simd_gid % WN);
-    const short sgp_sm = max(0, min(int(SM), M - (y_row + tm)));
-    const short sgp_sn = min(int(SN), N - (y_col + tn));
-
-    x += (y_row + tm) * static_cast<int64_t>(K) + kt0 * BK;
-    y += (a.split > 1 ? (size_t)tid.z * a.part_stride : 0) + (y_row + tm) * static_cast<int64_t>(a.ldy) + y_col + tn;
-
-    NAXTile<float, TM, TN> Dtile;
-    Dtile.clear();
-
-    constexpr int NG = VPT > group_size ? VPT / group_size : 1; // groups a thread's values span
-    uint raw[WPT];
-    S ps[NG], pb[NG];
-    auto fetch = [&](const device uint8_t* b) {
-        const device uint* cw = (const device uint*)(b + wr * (BK * bits / 8) + wc * bits / 8);
-        STEEL_PRAGMA_UNROLL
-        for (short i = 0; i < WPT; i++) raw[i] = cw[i];
-        const device S* pp = (const device S*)(b + TB::code_bytes) + (wr * TB::GPT + gi) * 2;
-        STEEL_PRAGMA_UNROLL
-        for (short g = 0; g < NG; g++) { ps[g] = pp[2 * g]; pb[g] = pp[2 * g + 1]; }
-    };
-    fetch(blk);
-    for (int kt = 0; kt < n_kt; kt++) {
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        {
-            const half2 m2 = half2(1024.0h);
-            STEEL_PRAGMA_UNROLL
-            for (short i = 0; i < WPT; i++) {
-                const short g = NG > 1 ? i * 8 / group_size : 0;
-                const half2 s2 = half2(half(ps[g])), b2 = half2(half(pb[g]));
-                uint v = raw[i];
-                half2 p0 = fma(as_type<half2>((v & 0x000F000Fu) | 0x64006400u) - m2, s2, b2);
-                half2 p1 = fma(as_type<half2>(((v >> 4) & 0x000F000Fu) | 0x64006400u) - m2, s2, b2);
-                half2 p2 = fma(as_type<half2>(((v >> 8) & 0x000F000Fu) | 0x64006400u) - m2, s2, b2);
-                half2 p3 = fma(as_type<half2>(((v >> 12) & 0x000F000Fu) | 0x64006400u) - m2, s2, b2);
-                half4 lo = half4(p0.x, p1.x, p2.x, p3.x), hi = half4(p0.y, p1.y, p2.y, p3.y);
-                *((threadgroup uint4*)(dst + 8 * i)) = uint4(as_type<uint2>(lo), as_type<uint2>(hi));
-            }
-        }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        blk += TB::bytes;
-        if (kt + 1 < n_kt) fetch(blk);
-        STEEL_PRAGMA_NO_UNROLL
-        for (int kk1 = 0; kk1 < BK; kk1 += SK) {
-            NAXTile<half, TM, TKf> Atile;
-            NAXTile<half, TN, TKf> Btile;
-            volatile int compiler_barrier;
-            Atile.load(x + kk1, K);
-            Btile.template load<half, BK_padded, 1>(Ws + tn * BK_padded + kk1);
-            tile_matmad_nax(Dtile, Atile, metal::bool_constant<false>{}, Btile, metal::bool_constant<true>{});
-            (void)compiler_barrier;
-        }
-        x += BK;
-    }
-    if (sgp_sm == SM && sgp_sn == SN) Dtile.store(y, a.ldy);
-    else if (sgp_sm > 0 && sgp_sn > 0) Dtile.store_safe(y, a.ldy, short2(sgp_sn, sgp_sm));
-}
-
 // y[t*ldy + n] = sum_z part[z][t][n] (split-K reduction; part rows have stride N)
 kernel void split_sum(device const float* part [[buffer(0)]], device float* y [[buffer(1)]], constant int4& a [[buffer(2)]],
                       uint2 gid [[thread_position_in_grid]]) {
@@ -142,7 +57,9 @@ kernel void split_sum(device const float* part [[buffer(0)]], device float* y [[
 // threadgroup; grid.x = row tiles * 4, grid.y = token groups of NT, grid.z
 // splits K (as in aqmt).
 // ---------------------------------------------------------------------------
-template <typename S, const int group_size, const int NT>
+// HALF_DOT: the 16-value partial dot products run in f16 (needed to stay
+// bandwidth-bound at 3-4 tokens); otherwise f32.
+template <typename S, const int group_size, const int NT, const bool HALF_DOT = (NT > 2)>
 [[kernel]] void tmv(const device uint8_t* w [[buffer(0)]], const device half* x [[buffer(3)]], device float* y [[buffer(4)]],
                     const constant AtArgs& a [[buffer(5)]], uint3 tg [[threadgroup_position_in_grid]],
                     ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]]) {
@@ -159,7 +76,8 @@ template <typename S, const int group_size, const int NT>
     for (int t = 0; t < NT; t++) xp[t] = x + (size_t)min(t0 + t, a.M - 1) * K + kt_begin * 64 + kq;
     float acc[NT];
     for (int t = 0; t < NT; t++) acc[t] = 0.0f;
-    const half2 m2 = half2(1024.0h);
+    // HALF_DOT: codes decode to q - 8 (1032 = 1024 + 8) and the bias absorbs 8 * scale
+    const half2 m2 = half2(HALF_DOT ? 1032.0h : 1024.0h);
     // UK K tiles per iteration with all loads issued first (memory-level parallelism)
     constexpr int UK = NT == 1 ? 4 : NT == 2 ? 2 : 1;
     for (int kt0 = 0; kt0 < n_kt; kt0 += UK) {
@@ -169,7 +87,7 @@ template <typename S, const int group_size, const int NT>
             const int kt = min(kt0 + u, n_kt - 1);
             v[u] = cw[kt * bstride_w];
             s[u] = float(pp[kt * bstride_p]);
-            b[u] = float(pp[kt * bstride_p + 1]);
+            b[u] = float(pp[kt * bstride_p + 1]) + (HALF_DOT ? 8.0f * s[u] : 0.0f);
         }
         for (int u = 0; u < UK && kt0 + u < n_kt; u++) {
             const int kt = kt0 + u;
@@ -188,11 +106,20 @@ template <typename S, const int group_size, const int NT>
             }
             for (int t = 0; t < NT; t++) {
                 const device half4* xv = (const device half4*)(xp[t] + kt * 64);
-                float d = 0.0f, sx = 0.0f;
-                for (int i = 0; i < 4; i++) {
-                    float4 xf = float4(xv[i]);
-                    d += dot(xf, float4(q[i]));
-                    sx += xf.x + xf.y + xf.z + xf.w;
+                float d, sx;
+                if (HALF_DOT) { // codes are centered (q - 8), so the f16 partial sums stay small
+                    half4 dh = half4(0.0h), sh = half4(0.0h);
+                    for (int i = 0; i < 4; i++) { half4 xh = xv[i]; dh = fma(xh, q[i], dh); sh += xh; }
+                    d = float(dh.x) + float(dh.y) + float(dh.z) + float(dh.w);
+                    sx = float(sh.x) + float(sh.y) + float(sh.z) + float(sh.w);
+                } else {
+                    d = 0.0f;
+                    sx = 0.0f;
+                    for (int i = 0; i < 4; i++) {
+                        float4 xf = float4(xv[i]);
+                        d += dot(xf, float4(q[i]));
+                        sx += xf.x + xf.y + xf.z + xf.w;
+                    }
                 }
                 acc[t] += s[u] * d + b[u] * sx;
             }
@@ -205,4 +132,75 @@ template <typename S, const int group_size, const int NT>
         const int row = rt * 64 + r_in;
         if (lane % 4 == 0 && row < a.N && t0 + t < a.M) y[(a.split > 1 ? (size_t)tg.z * a.part_stride : 0) + (size_t)(t0 + t) * a.ldy + row] = r;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Single-simdgroup variant: a threadgroup is one simdgroup owning 32 rows of a
+// row tile (half a block) and BM tokens, so there is no cross-simdgroup
+// barrier; lane = weight row, 64 values decoded per lane per K step.
+// grid.x = row tiles * 2, grid.y = token tiles of BM, grid.z = K split.
+// ---------------------------------------------------------------------------
+template <typename S, typename XT, const int group_size, const int bits, const int BM = 16>
+[[kernel]] void aqms(const device uint8_t* w [[buffer(0)]], const device XT* x [[buffer(3)]], device float* y [[buffer(4)]],
+                     const constant AtArgs& a [[buffer(5)]], uint3 tid [[threadgroup_position_in_grid]],
+                     uint simd_lid [[thread_index_in_simdgroup]]) {
+    using TB = TiledBlock<S, group_size, bits>;
+    static_assert(bits == 4, "tiled path: 4-bit only for now");
+    constexpr int BK = 64, BKP = BK + 8, NG = BK > group_size ? BK / group_size : 1;
+    threadgroup half Ws[32 * BKP];
+    const int K = a.K, N = a.N, M = a.M;
+    const int n_kt_all = K / BK;
+    const int kt0 = tid.z * n_kt_all / a.split, n_kt = (tid.z + 1) * n_kt_all / a.split - kt0;
+    const int rt = tid.x / 2, half_ = tid.x % 2;
+    const int y_col = rt * 64 + half_ * 32, y_row = tid.y * BM;
+    const short wr = half_ * 32 + simd_lid; // row within the 64-row block
+    const device uint8_t* blk = w + ((size_t)rt * n_kt_all + kt0) * TB::bytes;
+    threadgroup half* dst = Ws + simd_lid * BKP;
+
+    x += y_row * static_cast<int64_t>(K) + kt0 * BK;
+    y += (a.split > 1 ? (size_t)tid.z * a.part_stride : 0) + y_row * static_cast<int64_t>(a.ldy) + y_col;
+    const short sgp_sm = max(0, min(BM, M - y_row)), sgp_sn = min(32, N - y_col);
+
+    NAXTile<float, BM / 16, 2> Dtile;
+    Dtile.clear();
+    uint4 raw[2];
+    S ps[NG], pb[NG];
+    auto fetch = [&](const device uint8_t* b) {
+        const device uint4* cw = (const device uint4*)(b + wr * 32);
+        raw[0] = cw[0];
+        raw[1] = cw[1];
+        const device S* pp = (const device S*)(b + TB::code_bytes) + wr * TB::GPT * 2;
+        for (short g = 0; g < NG; g++) { ps[g] = pp[2 * g]; pb[g] = pp[2 * g + 1]; }
+    };
+    fetch(blk);
+    const half2 m2 = half2(1024.0h);
+    for (int kt = 0; kt < n_kt; kt++) {
+        simdgroup_barrier(mem_flags::mem_threadgroup);
+        STEEL_PRAGMA_UNROLL
+        for (short i = 0; i < 8; i++) {
+            const short g = NG > 1 ? i * 8 / group_size : 0;
+            const half2 s2 = half2(half(ps[g])), b2 = half2(half(pb[g]));
+            const uint v = raw[i / 4][i % 4];
+            half2 p0 = fma(as_type<half2>((v & 0x000F000Fu) | 0x64006400u) - m2, s2, b2);
+            half2 p1 = fma(as_type<half2>(((v >> 4) & 0x000F000Fu) | 0x64006400u) - m2, s2, b2);
+            half2 p2 = fma(as_type<half2>(((v >> 8) & 0x000F000Fu) | 0x64006400u) - m2, s2, b2);
+            half2 p3 = fma(as_type<half2>(((v >> 12) & 0x000F000Fu) | 0x64006400u) - m2, s2, b2);
+            half4 lo = half4(p0.x, p1.x, p2.x, p3.x), hi = half4(p0.y, p1.y, p2.y, p3.y);
+            *((threadgroup uint4*)(dst + 8 * i)) = uint4(as_type<uint2>(lo), as_type<uint2>(hi));
+        }
+        simdgroup_barrier(mem_flags::mem_threadgroup);
+        blk += TB::bytes;
+        if (kt + 1 < n_kt) fetch(blk);
+        STEEL_PRAGMA_UNROLL
+        for (int kk1 = 0; kk1 < BK; kk1 += 32) {
+            NAXTile<half, BM / 16, 2> Atile;
+            NAXTile<half, 2, 2> Btile;
+            Atile.load(x + kk1, K);
+            Btile.template load<half, BKP, 1>(Ws + kk1);
+            tile_matmad_nax(Dtile, Atile, metal::bool_constant<false>{}, Btile, metal::bool_constant<true>{});
+        }
+        x += BK;
+    }
+    if (sgp_sm == BM && sgp_sn == 32) Dtile.store(y, a.ldy);
+    else if (sgp_sm > 0 && sgp_sn > 0) Dtile.store_safe(y, a.ldy, short2(sgp_sn, sgp_sm));
 }

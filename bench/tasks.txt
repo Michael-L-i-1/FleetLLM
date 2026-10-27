@@ -1,0 +1,58 @@
+Add Python type hints and a one-line docstring to every function below. Return the complete updated code only.
+
+def merge_intervals(intervals):
+    if not intervals:
+        return []
+    intervals.sort(key=lambda x: x[0])
+    merged = [intervals[0]]
+    for start, end in intervals[1:]:
+        last_start, last_end = merged[-1]
+        if start <= last_end:
+            merged[-1] = (last_start, max(last_end, end))
+        else:
+            merged.append((start, end))
+    return merged
+
+def count_words(text):
+    counts = {}
+    for word in text.lower().split():
+        word = word.strip(".,!?;:")
+        if word:
+            counts[word] = counts.get(word, 0) + 1
+    return counts
+=====
+Extract a JSON object with keys name, founded, city, ceo, cto, revenue_2025, employees, product from this text. Output JSON only.
+
+Northwind Robotics was founded in 2014 in Pittsburgh, Pennsylvania by Dana Okafor and Luis Brandt. The company builds autonomous inspection drones for bridges and wind turbines. Dana Okafor has served as CEO since founding, while Luis Brandt leads engineering as CTO. In 2025 the company reported revenue of $84 million and employed 410 people across offices in Pittsburgh, Hamburg and Osaka. Its flagship product, the Kestrel X2, can stay airborne for 55 minutes and carries a lidar unit and a thermal camera.
+=====
+Solve: Aya walks 9 km. At s km/h the walk takes 4 hours including t minutes in a coffee shop; at s+2 km/h it takes 2 hours 24 minutes including the same t minutes. How many minutes does the walk take at s+1/2 km/h, including t? Show brief steps.
+=====
+Write a short story (about 150 words) about a lighthouse keeper who finds a message in a bottle.
+=====
+Rename the variables and functions in this JavaScript to descriptive names. Keep the logic identical and return the complete code only.
+
+function f(a, b) {
+  let r = [];
+  for (let i = 0; i < a.length; i++) {
+    let x = a[i];
+    if (b.indexOf(x) !== -1 && r.indexOf(x) === -1) {
+      r.push(x);
+    }
+  }
+  return r;
+}
+function g(s) {
+  let m = {};
+  for (let c of s) { m[c] = (m[c] || 0) + 1; }
+  let best = null;
+  for (let k in m) { if (best === null || m[k] > m[best]) best = k; }
+  return best;
+}
+=====
+Summarize this in three bullet points.
+
+Northwind Robotics was founded in 2014 in Pittsburgh, Pennsylvania by Dana Okafor and Luis Brandt. The company builds autonomous inspection drones for bridges and wind turbines. Dana Okafor has served as CEO since founding, while Luis Brandt leads engineering as CTO. In 2025 the company reported revenue of $84 million and employed 410 people across offices in Pittsburgh, Hamburg and Osaka. Its flagship product, the Kestrel X2, can stay airborne for 55 minutes and carries a lidar unit and a thermal camera.
+=====
+Translate to French: 'The meeting has been moved to Thursday at 10 am. Please bring the quarterly report and the updated budget spreadsheet.'
+=====
+Tables: users(id, name, signup_date), orders(id, user_id, total, created_at). Write a SQL query returning each user's name and their total spend in 2025, highest first.

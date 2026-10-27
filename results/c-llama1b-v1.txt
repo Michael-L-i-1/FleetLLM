@@ -1,0 +1,8 @@
+engine=cinfer backend=metal model=llama gen=128
+   N   wall s   TTFT ms  agg tok/s  per-agent
+   1     0.77        92      165.3      165.3
+   2     0.96       134      265.7      132.9
+   4     1.28       174      399.3       99.8
+   8     2.29       267      448.1       56.0
+  16     5.55       485      368.8       23.1
+  32     7.21       962      567.9       17.7

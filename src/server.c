@@ -69,6 +69,7 @@ typedef struct req {
     buf text[2];      // content, reasoning (complete UTF-8 only)
     buf raw[2];       // bytes not yet known to be complete UTF-8
     int n_gen;        // generated tokens
+    int n_cached;     // prompt tokens whose KV was reused (prefix sharing)
     bool done, cancelled, started;
     const char *finish;
     double t_submit, t_first, t_done;
@@ -174,6 +175,7 @@ static void *engine_loop(void *arg) {
             sv->queue = r->next;
             if (sv->n_active == sv->cap_active) { sv->cap_active = sv->cap_active ? sv->cap_active * 2 : 64; sv->active = realloc(sv->active, sizeof(req *) * sv->cap_active); }
             r->seq = engine_create(e, r->prompt, r->n_prompt);
+            r->n_cached = e->seqs[r->seq].n_tokens + e->seqs[r->seq].wait_len;
             engine_start(e, r->seq, r->p);
             r->started = true;
             sv->active[sv->n_active++] = r;
@@ -409,7 +411,8 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         if (usage) {
             bfmt(&ev, "{\"id\":\"%s\",\"object\":\"%s\",\"created\":%ld,\"model\":", id, chat ? "chat.completion.chunk" : "text_completion", created);
             bjson(&ev, sv->o->model_id, strlen(sv->o->model_id));
-            bfmt(&ev, ",\"choices\":[],\"usage\":{\"prompt_tokens\":%d,\"completion_tokens\":%d,\"total_tokens\":%d}}", r->n_prompt, r->n_gen, r->n_prompt + r->n_gen);
+            bfmt(&ev, ",\"choices\":[],\"usage\":{\"prompt_tokens\":%d,\"completion_tokens\":%d,\"total_tokens\":%d,\"prompt_tokens_details\":{\"cached_tokens\":%d}}}", r->n_prompt, r->n_gen,
+                 r->n_prompt + r->n_gen, r->n_cached);
             sse(c->fd, &ok, &ev);
         }
         const char *done = "data: [DONE]\n\n";
@@ -432,7 +435,8 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
             bjson(&b, r->text[0].s ? r->text[0].s : "", r->text[0].n);
             bfmt(&b, ",\"finish_reason\":\"%s\"}]", r->finish);
         }
-        bfmt(&b, ",\"usage\":{\"prompt_tokens\":%d,\"completion_tokens\":%d,\"total_tokens\":%d}}", r->n_prompt, r->n_gen, r->n_prompt + r->n_gen);
+        bfmt(&b, ",\"usage\":{\"prompt_tokens\":%d,\"completion_tokens\":%d,\"total_tokens\":%d,\"prompt_tokens_details\":{\"cached_tokens\":%d}}}", r->n_prompt, r->n_gen,
+             r->n_prompt + r->n_gen, r->n_cached);
         ok = respond(c->fd, 200, "application/json", b.s, b.n);
         free(b.s);
     }

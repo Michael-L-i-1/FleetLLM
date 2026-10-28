@@ -485,7 +485,7 @@ kernel void qk_norm_rope(device float* q [[buffer(0)]], device float* k [[buffer
 // ---------------------------------------------------------------------------
 // Write K/V rows into their paged f16 slots. slot[row] = page*page_elems + (pos%PAGE)*hd.
 // ---------------------------------------------------------------------------
-struct KvwArgs { uint nkv, hd, page, ks; ulong layer_off; uint vs, pad; }; // ks/vs: row strides of k/v
+struct KvwArgs { uint nkv, hd, page, ks; ulong layer_off; uint vs, layer; }; // ks/vs: row strides of k/v; layer: pool layer (8-bit scales)
 
 kernel void kv_write(device const float* k [[buffer(0)]], device const float* v [[buffer(1)]], device half* pool [[buffer(2)]],
                      device const ulong* slot [[buffer(3)]], constant KvwArgs& a [[buffer(4)]], uint2 gid [[thread_position_in_grid]]) {
@@ -497,35 +497,77 @@ kernel void kv_write(device const float* k [[buffer(0)]], device const float* v 
     pool[base + a.nkv * a.page * a.hd] = half(v[row * a.vs + e]);
 }
 
+// 8-bit KV write: one threadgroup (head_dim threads) per (row, kv head); symmetric
+// int8 per token and head with an f16 scale (max |x| / 127). sslot[row] is the
+// byte offset of the row's scale slot for layer 0, k, head 0.
+kernel void kv_write8(device const float* k [[buffer(0)]], device const float* v [[buffer(1)]], device char* pool [[buffer(2)]],
+                      device const ulong* slot [[buffer(3)]], constant KvwArgs& a [[buffer(4)]], device const ulong* sslot [[buffer(5)]],
+                      uint2 tg [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]],
+                      ushort lane [[thread_index_in_simdgroup]], ushort sg [[simdgroup_index_in_threadgroup]]) {
+    threadgroup float red[2][8];
+    const uint row = tg.x, h = tg.y, dd = tid;
+    float xk = k[row * a.ks + h * a.hd + dd], xv = v[row * a.vs + h * a.hd + dd];
+    float mk = simd_max(fabs(xk)), mv = simd_max(fabs(xv));
+    if (lane == 0) { red[0][sg] = mk; red[1][sg] = mv; }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    mk = 0.0f; mv = 0.0f;
+    for (uint i = 0; i < a.hd / 32; i++) { mk = max(mk, red[0][i]); mv = max(mv, red[1][i]); }
+    half hk = half(mk > 0.0f ? mk / 127.0f : 1.0f), hv = half(mv > 0.0f ? mv / 127.0f : 1.0f);
+    ulong base = slot[row] + a.layer_off + (ulong)h * a.page * a.hd + dd;
+    pool[base] = char(clamp(rint(xk / float(hk)), -127.0f, 127.0f));
+    pool[base + (ulong)a.nkv * a.page * a.hd] = char(clamp(rint(xv / float(hv)), -127.0f, 127.0f));
+    if (tid == 0) {
+        ulong sb = sslot[row] + (((ulong)a.layer * 2) * a.nkv + h) * a.page * 2;
+        *(device half*)(pool + sb) = hk;
+        *(device half*)(pool + sb + (ulong)a.nkv * a.page * 2) = hv;
+    }
+}
+
 // ---------------------------------------------------------------------------
-// Flash-decoding attention. grid (rows, kv_heads, splits); one simdgroup per q
-// head of the GQA group (G = nh/nkv <= 16). K/V tiles of AT positions are
-// loaded once into threadgroup memory and shared by the group; scores are
-// position-parallel (lane = position) with online softmax; partial (m, l, o)
-// per split; attn_reduce merges splits and applies the optional sigmoid gate.
+// Flash-decoding attention over row groups. grid (groups, kv_heads, splits);
+// a group is up to R consecutive rows of one sequence (a prefill chunk, a
+// speculative verify block) sharing split size and origin; one simdgroup per
+// (row, q head of the GQA group). K/V tiles of AT positions are loaded once
+// into threadgroup memory and shared by every row and head of the group, so
+// appending n tokens to a long context reads that context once per group
+// instead of once per row. Scores are position-parallel (lane = position) with
+// online softmax; each row masks to [start, ctx_end]. Splits are aligned to a
+// per-row origin (start rounded down to the split size), so a row's result does
+// not depend on how rows are grouped. Partial (m, l, o) per (row, head, split);
+// attn_reduce merges splits and applies the optional sigmoid gate.
 // ---------------------------------------------------------------------------
-struct AttnArgs { uint nh, nkv, hd; float scale; ulong page_elems, layer_off; uint page, gate, qs, gs, half_out, pad; }; // qs/gs: row strides of q/gate
+// page_elems: page stride in storage units; Q8 pools also give the layer index and
+// the in-page byte offset of the scales
+struct AttnArgs { uint nh, nkv, hd; float scale; ulong page_elems, layer_off; uint page, gate, qs, gs, half_out, layer; ulong scale_off; }; // qs/gs: row strides of q/gate
 struct RowInfo { uint ctx_end, start, tab, split; }; // split: positions per split for this row
 #define AT 32
+#define ATTN_GROUP_MAX 32 // simdgroups (rows x heads) per threadgroup
 
-template <int HD>
+template <int HD, bool Q8>
 kernel void attn_fd(device const float* q [[buffer(0)]], device const half* pool [[buffer(1)]], device const RowInfo* ri [[buffer(2)]],
                     device const uint* tab [[buffer(3)]], device float* part [[buffer(4)]], constant AttnArgs& a [[buffer(5)]],
-                    constant uint2& sp [[buffer(6)]], uint3 tg [[threadgroup_position_in_grid]],
+                    constant uint2& sp [[buffer(6)]], device const uint2* groups [[buffer(7)]], uint3 tg [[threadgroup_position_in_grid]],
                     ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]],
                     uint tid [[thread_index_in_threadgroup]], uint3 ntg3 [[threads_per_threadgroup]]) {
     constexpr int E = HD / 32;
     constexpr int KS = HD + 2; // padded K row stride: lanes (= positions) hit distinct banks
     const uint ntg = ntg3.x;
-    threadgroup float qs[16 * HD];
+    threadgroup half qs[ATTN_GROUP_MAX * HD];
     threadgroup half ks[AT * KS];
     threadgroup half vs[AT * HD];
-    const uint row = tg.x, kvh = tg.y, split = tg.z;
-    const uint G = a.nh / a.nkv, h = kvh * G + sg;
-    const RowInfo r = ri[row];
-    const uint s0 = r.start + split * r.split;
-    const uint s1 = min(r.ctx_end + 1, s0 + r.split); // s0 >= s1: empty split (l = 0)
-    for (uint i = tid; i < G * HD; i += ntg) qs[i] = q[row * a.qs + kvh * G * HD + i] * a.scale;
+    const uint kvh = tg.y, split = tg.z, G = a.nh / a.nkv;
+    const uint2 grp = groups[tg.x];
+    const uint jr = sg / G, h = kvh * G + sg % G;
+    const bool live = jr < grp.y;
+    const uint row = grp.x + (live ? jr : 0);
+    const RowInfo r = ri[row], last = ri[grp.x + grp.y - 1];
+    const uint S = last.split, origin = (last.start / S) * S; // shared by the group (host guarantees)
+    const uint s0 = origin + split * S, s1 = min(last.ctx_end + 1, s0 + S);
+    // queries of every (row, head) in the group, pre-scaled, as f16
+    for (uint i = tid; i < grp.y * G * HD; i += ntg) {
+        uint jj = i / (G * HD), rem = i % (G * HD);
+        qs[i] = half(q[(grp.x + jj) * a.qs + kvh * G * HD + rem] * a.scale);
+    }
     const ulong vofs = (ulong)a.nkv * a.page * HD;
     float m = -INFINITY, l = 0.0f, o[E];
     for (int i = 0; i < E; i++) o[i] = 0.0f;
@@ -535,45 +577,61 @@ kernel void attn_fd(device const float* q [[buffer(0)]], device const half* pool
             uint j = i / HD, dd = i % HD, p = t0 + j;
             half kv = 0.0h, vv = 0.0h;
             if (p < s1) {
-                ulong base = (ulong)tab[r.tab + p / a.page] * a.page_elems + a.layer_off + (ulong)kvh * a.page * HD + (p % a.page) * HD + dd;
-                kv = pool[base];
-                vv = pool[base + vofs];
+                ulong page = tab[r.tab + p / a.page];
+                ulong base = page * a.page_elems + a.layer_off + (ulong)kvh * a.page * HD + (p % a.page) * HD + dd;
+                if (Q8) { // int8 values, one f16 scale per (layer, k|v, head, token)
+                    device const char* pc = (device const char*)pool;
+                    ulong sb = page * a.page_elems + a.scale_off + (((ulong)a.layer * 2) * a.nkv + kvh) * a.page * 2 + (p % a.page) * 2;
+                    kv = half(pc[base]) * *(device const half*)(pc + sb);
+                    vv = half(pc[base + vofs]) * *(device const half*)(pc + sb + (ulong)a.nkv * a.page * 2);
+                } else {
+                    kv = pool[base];
+                    vv = pool[base + vofs];
+                }
             }
             ks[j * KS + dd] = kv;
             vs[j * HD + dd] = vv;
         }
         threadgroup_barrier(mem_flags::mem_threadgroup);
-        const uint p = t0 + lane;
-        float s = -INFINITY;
-        if (p < s1) {
-            threadgroup const float* qh = qs + sg * HD;
-            threadgroup const half* kr = ks + lane * KS;
-            float acc = 0.0f;
-            for (int d = 0; d < HD; d += 2) acc += qh[d] * float(kr[d]) + qh[d + 1] * float(kr[d + 1]);
-            s = acc;
+        if (live) {
+            const uint p = t0 + lane;
+            const bool valid = p < s1 && p >= r.start && p <= r.ctx_end;
+            float s = -INFINITY;
+            if (valid) {
+                threadgroup const half* qh = qs + (jr * G + sg % G) * HD;
+                threadgroup const half* kr = ks + lane * KS;
+                float acc = 0.0f;
+                for (int d = 0; d < HD; d += 2) acc += float(qh[d]) * float(kr[d]) + float(qh[d + 1]) * float(kr[d + 1]);
+                s = acc;
+            }
+            const float mn = max(m, simd_max(s));
+            if (mn > -INFINITY) { // some position of this tile is visible to the row
+                const float c = exp(m - mn);
+                const float pl = valid ? exp(s - mn) : 0.0f;
+                l = l * c + simd_sum(pl);
+                for (int i = 0; i < E; i++) o[i] *= c;
+                const uint nj = min((uint)AT, s1 - t0);
+                for (uint j = 0; j < nj; j++) {
+                    float pj = simd_shuffle(pl, j);
+                    threadgroup const half* vr = vs + j * HD + lane * E;
+                    for (int i = 0; i < E; i++) o[i] += pj * float(vr[i]);
+                }
+                m = mn;
+            }
         }
-        const float mn = max(m, simd_max(s));
-        const float c = exp(m - mn);
-        const float pl = p < s1 ? exp(s - mn) : 0.0f;
-        l = l * c + simd_sum(pl);
-        for (int i = 0; i < E; i++) o[i] *= c;
-        const uint nj = min((uint)AT, s1 - t0);
-        for (uint j = 0; j < nj; j++) {
-            float pj = simd_shuffle(pl, j);
-            threadgroup const half* vr = vs + j * HD + lane * E;
-            for (int i = 0; i < E; i++) o[i] += pj * float(vr[i]);
-        }
-        m = mn;
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
+    if (!live) return;
     device float* dst = part + ((row * a.nh + h) * sp.y + split) * (HD + 2);
     if (lane == 0) { dst[0] = m; dst[1] = l; }
     for (int i = 0; i < E; i++) dst[2 + lane * E + i] = o[i];
 }
 
-typedef decltype(attn_fd<128>) attn_fd_t;
-template [[host_name("attn_fd_64")]] kernel attn_fd_t attn_fd<64>;
-template [[host_name("attn_fd_128")]] kernel attn_fd_t attn_fd<128>;
+typedef decltype(attn_fd<128, false>) attn_fd_t;
+template [[host_name("attn_fd_64")]] kernel attn_fd_t attn_fd<64, false>;
+template [[host_name("attn_fd_128")]] kernel attn_fd_t attn_fd<128, false>;
+template [[host_name("attn_fd8_64")]] kernel attn_fd_t attn_fd<64, true>;
+template [[host_name("attn_fd8_128")]] kernel attn_fd_t attn_fd<128, true>;
 
 kernel void attn_reduce(device const float* part [[buffer(0)]], device const float* g [[buffer(1)]], device float* out [[buffer(2)]],
                         constant AttnArgs& a [[buffer(3)]], constant uint2& sp [[buffer(4)]],

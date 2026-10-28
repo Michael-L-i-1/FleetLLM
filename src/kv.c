@@ -10,8 +10,10 @@ static void pool_init(kv_pool *p, int n_layers, int kv_heads, int head_dim, uint
     p->head_dim = head_dim;
     p->elem = elem;
     p->page_elems = (size_t)n_layers * 2 * kv_heads * KV_PAGE * head_dim;
+    p->scale_off = p->page_elems;
+    p->page_stride = p->page_elems + (elem == 1 ? (size_t)n_layers * 2 * kv_heads * KV_PAGE * 2 : 0);
     p->n_pages = pages;
-    p->bytes = p->page_elems * pages * elem;
+    p->bytes = p->page_stride * pages * elem;
     p->data = pages ? alloc(user, p->bytes, &p->handle) : NULL;
     p->refcnt = calloc(pages ? pages : 1, sizeof(uint32_t));
     p->free_list = malloc(sizeof(uint32_t) * (pages ? pages : 1));
@@ -20,8 +22,8 @@ static void pool_init(kv_pool *p, int n_layers, int kv_heads, int head_dim, uint
 }
 
 void kv_init(kv_cache *kv, int full_layers, int swa_layers, int kv_heads, int head_dim, int window, size_t budget, int elem, kv_alloc_fn alloc, void *user) {
-    size_t full_pb = (size_t)full_layers * 2 * kv_heads * KV_PAGE * head_dim * elem;
-    size_t swa_pb = (size_t)swa_layers * 2 * kv_heads * KV_PAGE * head_dim * elem;
+    size_t per = (size_t)2 * kv_heads * KV_PAGE * (head_dim * elem + (elem == 1 ? 2 : 0)); // bytes per layer per page
+    size_t full_pb = full_layers * per, swa_pb = swa_layers * per;
     uint32_t swa_pages = 0;
     if (swa_layers && window) {
         // a sequence needs one full page per 16 tokens but at most window/16+2 SWA pages;
@@ -52,7 +54,7 @@ static bool pcow(kv_pool *p, uint32_t *page) {
     if (p->refcnt[*page] == 1) return true;
     uint32_t n;
     if (!palloc(p, &n)) return false;
-    size_t pb = p->page_elems * p->elem;
+    size_t pb = p->page_stride * p->elem;
     memcpy(p->data + (size_t)n * pb, p->data + (size_t)*page * pb, pb);
     prelease(p, *page);
     *page = n;

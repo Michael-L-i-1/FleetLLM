@@ -16,6 +16,10 @@ typedef struct {
     uint8_t *data; // host-visible storage (backend-owned)
     void *handle;  // backend object (e.g. MTLBuffer)
     size_t bytes, page_elems;
+    // page size in storage units: page_elems, plus for 8-bit KV (elem 1) one f16
+    // scale per (layer, k|v, head, token) after the values: page_stride bytes,
+    // scales at byte scale_off = page_elems within the page
+    size_t page_stride, scale_off;
     int n_layers, kv_heads, head_dim, elem;
     uint32_t *refcnt;
     uint32_t *free_list;
@@ -36,7 +40,8 @@ typedef struct {
     int window; // 0 = no sliding-window layers
 } kv_cache;
 
-// Split budget_bytes between the pools; elem = bytes per KV element (4 f32, 2 f16).
+// Split budget_bytes between the pools; elem = bytes per KV element (4 f32, 2 f16,
+// 1 int8 with a per-token-per-head f16 scale).
 void kv_init(kv_cache *kv, int full_layers, int swa_layers, int kv_heads, int head_dim, int window,
              size_t budget_bytes, int elem, kv_alloc_fn alloc, void *user);
 // Make the slot for position pos (== len, or a COW of the current tail page) writable.
@@ -51,5 +56,5 @@ void kv_truncate(kv_cache *kv, seq_pages *s, int len);
 void kv_trim_window(kv_cache *kv, seq_pages *s);
 // Element offset of the [PAGE x head_dim] tile for (page, layer, k=0/v=1, head).
 static inline size_t kv_tile(const kv_pool *p, uint32_t page, int layer, int kv, int head) {
-    return (size_t)page * p->page_elems + ((size_t)(layer * 2 + kv) * p->kv_heads + head) * KV_PAGE * p->head_dim;
+    return (size_t)page * p->page_stride + ((size_t)(layer * 2 + kv) * p->kv_heads + head) * KV_PAGE * p->head_dim;
 }

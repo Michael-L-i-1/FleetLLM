@@ -118,6 +118,11 @@ batching). With the opt-in, lossy `--reuse-spans` (below): **43 / 64 / 111 s**
 before the shared K/V tile in `attn_nax`, 57 / 93 / 182 s before decode spans
 were shared across sequences (`attn_naxs`, below).
 
+**Muse Glimmer 30B** (MLX 4-bit, sliding-window layers, head dim 64), same
+8-agent workload, `--budget-gb 18 --kv-gb 2.5`: 368 s exact, **329 s** with
+`--reuse-spans` (61k tokens moved); prefill-bound at the GEMM ceiling (256-row
+chunk 463 ms; prefill 439 tok/s vs 235 tok/s with the attention kernels off).
+
 **One long-running agent** (1 agent x 14 turns, 0.5 s tools, context growing
 to 14k tokens): cinfer **50 s** vs vLLM 81 s (p50 turn 3.2 s vs 5.2 s).
 

@@ -27,6 +27,7 @@ static uint32_t attn_split(uint32_t ctx) {
     return sz < 32 ? 32 : sz > ATTN_SPLIT ? ATTN_SPLIT : sz;
 }
 
+
 typedef struct { uint32_t K, M, N, ldy, row_bytes, x_stride; } MvArgs;
 typedef struct { uint32_t K, rows, row_bytes, r0; } DqArgs;
 typedef struct { uint32_t K, rows, N, ldy, r0, x_stride; } GemmArgs;

@@ -775,86 +775,125 @@ template [[host_name("attn_fd8_128")]] kernel attn_fd_t attn_fd<128, true>;
 
 // Decode / verify attention: one row per threadgroup and KV head (its G query
 // heads), split like attn_fd (the row's own split size and origin), so a row's
-// result depends only on the row. 8 simdgroups take positions in turn; lanes
-// hold HD/32 dims of K and V (one coalesced load per position), scores reduce
-// with simd_sum, online softmax per head; the simdgroups' states merge in a
-// fixed order through threadgroup memory into attn_reduce's partials. Reads
-// K/V straight from device memory with little threadgroup memory, so many
-// threadgroups stay in flight (decode attention is bandwidth work). Structure
-// after MLX's sdpa_vector (MIT, Copyright © 2024 Apple Inc.).
+// result depends only on the row. A simdgroup's lanes form 32/LP groups of LP
+// lanes, each group on VU consecutive positions per step (DPL dims per lane:
+// 4-16 byte loads of K and of V, all issued before the math);
+// scores reduce across the LP lanes, every lane group keeps its own online
+// softmax state, and the states merge in a fixed order through threadgroup
+// memory into attn_reduce's partials. Decode attention is bandwidth work: K/V
+// come straight from device memory with many loads in flight. (Single-row
+// structure after MLX's sdpa_vector, MIT, Copyright © 2024 Apple Inc.)
+
+#define VEC_REG 16 // per-lane q and o registers per head group (sets dims per lane)
+#define VU 4      // positions per lane group per step
+template <int N> struct kv_bytes;
+template <> struct kv_bytes<4> { typedef uint T; };
+template <> struct kv_bytes<8> { typedef uint2 T; };
+template <> struct kv_bytes<16> { typedef uint4 T; };
+struct uint8x32 { uint4 a, b; };
+template <> struct kv_bytes<32> { typedef uint8x32 T; };
+
+// DPL values starting at p (int8 codes or f16) as floats
+template <int DPL, bool Q8>
+inline void kv_load(device const half* pool, ulong at, thread float* out) {
+    if (Q8) {
+        typedef typename kv_bytes<DPL>::T T;
+        const T w = *(device const T*)((device const char*)pool + at);
+        const thread char* c = (const thread char*)&w;
+        for (int i = 0; i < DPL; i++) out[i] = float(c[i]);
+    } else {
+        typedef typename kv_bytes<DPL * 2>::T T;
+        const T w = *(device const T*)(pool + at);
+        const thread half* c = (const thread half*)&w;
+        for (int i = 0; i < DPL; i++) out[i] = float(c[i]);
+    }
+}
+
 template <int HD, bool Q8, int GM>
 kernel void attn_vec(device const float* q [[buffer(0)]], device const half* pool [[buffer(1)]], device const RowInfo* ri [[buffer(2)]],
                      device const uint* tab [[buffer(3)]], device float* part [[buffer(4)]], constant AttnArgs& a [[buffer(5)]],
                      constant uint2& sp [[buffer(6)]], device const uint* vrows [[buffer(7)]], uint3 tg [[threadgroup_position_in_grid]],
                      ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]]) {
-    constexpr int E = HD / 32, NS = 8;
-    threadgroup float red[NS * (HD + 2)];
+    constexpr int NS = 8;                                                    // simdgroups
+    constexpr int DPL0 = VEC_REG / GM < 4 ? 4 : VEC_REG / GM > 16 ? 16 : VEC_REG / GM; // registers: GM x DPL of q and of o
+    constexpr int DPL = HD / DPL0 > 32 ? HD / 32 : DPL0, LP = HD / DPL, PP = 32 / LP; // lanes per position, positions per simdgroup
+    constexpr int NST = NS * PP;                                             // softmax states per head
+    threadgroup float red[NST * (HD + 2)];
     const uint row = vrows[tg.x], kvh = tg.y, split = tg.z, G = a.nh / a.nkv;
     const RowInfo r = ri[row];
     const uint S = r.split, origin = (r.start / S) * S;
     const uint s0 = origin + split * S, s1 = min(r.ctx_end + 1, s0 + S), lo = max(s0, r.start);
-    float qv[GM][E], o[GM][E], m[GM], l[GM];
+    const ushort pg = lane / LP, dl = lane % LP, st = sg * PP + pg; // position slot, dim block, state index
+    float qv[GM][DPL], o[GM][DPL], m[GM], l[GM];
     for (int g = 0; g < GM; g++) {
         m[g] = -INFINITY;
         l[g] = 0.0f;
-        for (int e = 0; e < E; e++) {
+        for (int e = 0; e < DPL; e++) {
             o[g][e] = 0.0f;
-            qv[g][e] = (uint)g < G ? q[row * a.qs + (kvh * G + g) * HD + lane * E + e] * a.scale : 0.0f;
+            qv[g][e] = (uint)g < G ? q[row * a.qs + (kvh * G + g) * HD + dl * DPL + e] * a.scale : 0.0f;
         }
     }
     const ulong vofs = (ulong)a.nkv * a.page * HD, head_off = a.layer_off + (ulong)kvh * a.page * HD;
     const ulong sc_off = a.scale_off + (((ulong)a.layer * 2) * a.nkv + kvh) * a.page * 2, sc_v = (ulong)a.nkv * a.page * 2;
-    for (uint p = lo + sg; p < s1; p += NS) {
-        const ulong page = tab[r.tab + p / a.page];
-        const ulong base = page * a.page_elems + head_off + (p % a.page) * HD + lane * E;
-        float k[E], v[E];
-        if (Q8) {
-            device const char* pb = (device const char*)pool;
-            device const char* sc = pb + page * a.page_elems + sc_off + (p % a.page) * 2;
-            const float sk = float(*(device const half*)sc), sv = float(*(device const half*)(sc + sc_v));
-            if (E == 4) {
-                const float4 kk = float4(*(device const char4*)(pb + base)), vv = float4(*(device const char4*)(pb + base + vofs));
-                for (int e = 0; e < E; e++) { k[e] = kk[e] * sk; v[e] = vv[e] * sv; }
-            } else {
-                const float2 kk = float2(*(device const char2*)(pb + base)), vv = float2(*(device const char2*)(pb + base + vofs));
-                for (int e = 0; e < E; e++) { k[e] = kk[e % 2] * sk; v[e] = vv[e % 2] * sv; }
+    // each lane group takes VU consecutive positions per step (one page lookup,
+    // all loads issued before the math); s0 is a multiple of 32, so blocks never
+    // straddle a page
+    for (uint b = s0 + st * VU; b < s1; b += NST * VU) {
+        if (b + VU <= lo) continue;
+        const ulong page = tab[r.tab + b / a.page];
+        const ulong pb0 = page * a.page_elems + head_off + (b % a.page) * HD + dl * DPL;
+        float k[VU][DPL], v[VU][DPL], sk[VU], sv[VU];
+        _Pragma("clang loop unroll(full)")
+        for (int u = 0; u < VU; u++) {
+            sk[u] = sv[u] = 1.0f;
+            if (b + u >= s1) continue;
+            kv_load<DPL, Q8>(pool, pb0 + u * HD, k[u]);
+            kv_load<DPL, Q8>(pool, pb0 + u * HD + vofs, v[u]);
+            if (Q8) {
+                device const char* sc = (device const char*)pool + page * a.page_elems + sc_off + ((b + u) % a.page) * 2;
+                sk[u] = float(*(device const half*)sc);
+                sv[u] = float(*(device const half*)(sc + sc_v));
             }
-        } else if (E == 4) {
-            const float4 kk = float4(*(device const half4*)(pool + base)), vv = float4(*(device const half4*)(pool + base + vofs));
-            for (int e = 0; e < E; e++) { k[e] = kk[e]; v[e] = vv[e]; }
-        } else {
-            const float2 kk = float2(*(device const half2*)(pool + base)), vv = float2(*(device const half2*)(pool + base + vofs));
-            for (int e = 0; e < E; e++) { k[e] = kk[e % 2]; v[e] = vv[e % 2]; }
         }
-        for (int g = 0; g < GM; g++) {
-            if ((uint)g >= G) break;
-            float sdot = 0.0f;
-            for (int e = 0; e < E; e++) sdot += qv[g][e] * k[e];
-            sdot = simd_sum(sdot);
-            const float mn = max(m[g], sdot), c = exp(m[g] - mn), pe = exp(sdot - mn);
-            l[g] = l[g] * c + pe;
-            for (int e = 0; e < E; e++) o[g][e] = o[g][e] * c + pe * v[e];
-            m[g] = mn;
+        _Pragma("clang loop unroll(full)")
+        for (int u = 0; u < VU; u++) {
+            if (b + u < lo || b + u >= s1) continue;
+            _Pragma("clang loop unroll(full)")
+            for (int g = 0; g < GM; g++) {
+                float sdot = 0.0f;
+                for (int e = 0; e < DPL; e++) sdot += qv[g][e] * k[u][e];
+                for (ushort x = 1; x < LP; x <<= 1) sdot += simd_shuffle_xor(sdot, x);
+                sdot *= sk[u];
+                if (sdot > m[g]) { // new running max (uniform across the lane group): rescale
+                    const float c = fast::exp(m[g] - sdot);
+                    l[g] *= c;
+                    for (int e = 0; e < DPL; e++) o[g][e] *= c;
+                    m[g] = sdot;
+                }
+                const float pe = fast::exp(sdot - m[g]), pv = pe * sv[u];
+                l[g] += pe;
+                for (int e = 0; e < DPL; e++) o[g][e] += pv * v[u][e];
+            }
         }
     }
-    threadgroup float* rm = red + NS * HD;
+    threadgroup float* rm = red + NST * HD;
+    const uint tid = sg * 32 + lane;
     for (uint g = 0; g < G && g < (uint)GM; g++) {
-        if (lane == 0) { rm[2 * sg] = m[g]; rm[2 * sg + 1] = l[g]; }
-        for (int e = 0; e < E; e++) red[sg * HD + lane * E + e] = o[g][e];
+        if (dl == 0) { rm[2 * st] = m[g]; rm[2 * st + 1] = l[g]; }
+        for (int e = 0; e < DPL; e++) red[st * HD + dl * DPL + e] = o[g][e];
         threadgroup_barrier(mem_flags::mem_threadgroup);
-        if (sg == 0) {
+        if (tid < (uint)HD) { // thread = output dim, states merged in order
             float M = -INFINITY;
-            for (int s = 0; s < NS; s++) M = max(M, rm[2 * s]);
-            float L = 0.0f, acc[E];
-            for (int e = 0; e < E; e++) acc[e] = 0.0f;
-            for (int s = 0; s < NS; s++) {
+            for (int s = 0; s < NST; s++) M = max(M, rm[2 * s]);
+            float L = 0.0f, acc = 0.0f;
+            for (int s = 0; s < NST; s++) {
                 const float w = rm[2 * s + 1] > 0.0f ? exp(rm[2 * s] - M) : 0.0f;
                 L += rm[2 * s + 1] * w;
-                for (int e = 0; e < E; e++) acc[e] += red[s * HD + lane * E + e] * w;
+                acc += red[s * HD + tid] * w;
             }
             device float* dst = part + ((r.part * a.nh + kvh * G + g) * sp.y + split) * (HD + 2);
-            if (lane == 0) { dst[0] = M; dst[1] = L; }
-            for (int e = 0; e < E; e++) dst[2 + lane * E + e] = acc[e];
+            if (tid == 0) { dst[0] = M; dst[1] = L; }
+            dst[2 + tid] = acc;
         }
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }

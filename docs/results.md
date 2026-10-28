@@ -192,6 +192,9 @@ continuation; Llama 8B, 8-bit KV, 10 file triples):
 | moved, nothing recomputed | 3.679 (+0.8%) |
 | moved, first 64 + last 64 recomputed (default) | 3.664 (+0.36%) |
 
+Muse Glimmer 30B (sliding-window layers), same test: exact 2.634, moved with
+first/last 64 recomputed 2.640 (+0.24%).
+
 **Harnesses that edit their context.** Many agent frameworks drop or condense
 old tool outputs; after the edit, every later message is the same text at
 shifted positions, which prefix caching must recompute every turn. With

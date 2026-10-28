@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
             int k = len - 1 - p0 < chunk ? len - 1 - p0 : chunk;
             for (int t = 0; t < k; t++) {
                 if (!kv_reserve(&rt.e->kv, &pg, p0 + t)) { fprintf(stderr, "ppl: KV full\n"); return 1; }
-                rows[t] = (row_t){ .seq = 0, .pos = p0 + t, .token = win[p0 + t], .ctx_end = p0 + t, .logits = true };
+                rows[t] = (row_t){ .seq = 0, .pos = p0 + t, .token = win[p0 + t], .ctx_end = p0 + t, .logits = true, .input = true };
             }
             if (rt.be->forward(rt.be, rt.m, &rt.e->kv, &pp, rows, k, logits)) return 1;
             pg.len += k;

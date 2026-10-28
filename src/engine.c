@@ -538,7 +538,10 @@ bool engine_step(engine *e, const int *ids, int n) {
         for (int t = 0; t < plan[i].take; t++) {
             bool lg = wants && (plan[i].spec || t == plan[i].take - 1);
             int32_t tok = t == 0 || !plan[i].spec ? s->pending[t] : s->drafts[t - 1];
-            e->rows[r++] = (row_t){ .seq = i, .pos = base + t, .token = tok, .ctx_end = base + t, .logits = lg };
+            // decode / verify items carry the last sampled token (plus drafts); a lone
+            // pending token before anything was sampled is a prompt tail
+            bool input = !plan[i].spec && !(s->n_pending == 1 && s->n_gen > 0);
+            e->rows[r++] = (row_t){ .seq = i, .pos = base + t, .token = tok, .ctx_end = base + t, .logits = lg, .input = input };
             n_logits += lg;
         }
         pages[i] = &s->pages;

@@ -11,6 +11,9 @@ typedef struct {
     int32_t token;
     int ctx_end;   // last position this row attends to (== pos for causal decoding)
     bool logits;   // return logits for this row
+    bool input;    // an input token (prompt, appended text, recompute), not one just sampled:
+                   // backends may route these to a prefill kernel, chosen per row so a row's
+                   // result does not depend on how its prompt was chunked
 } row_t;
 
 // A row of a speculative drafter step (DFlash). Context rows write the

@@ -534,12 +534,13 @@ kernel void kv_write8(device const float* k [[buffer(0)]], device const float* v
 // online softmax; each row masks to [start, ctx_end]. Splits are aligned to a
 // per-row origin (start rounded down to the split size), so a row's result does
 // not depend on how rows are grouped. Partial (m, l, o) per (row, head, split);
-// attn_reduce merges splits and applies the optional sigmoid gate.
+// attn_reduce merges splits and applies the optional sigmoid gate (rows whose
+// slot[row] is ~0 belong to another kernel's partials and are skipped).
 // ---------------------------------------------------------------------------
 // page_elems: page stride in storage units; Q8 pools also give the layer index and
 // the in-page byte offset of the scales
 struct AttnArgs { uint nh, nkv, hd; float scale; ulong page_elems, layer_off; uint page, gate, qs, gs, half_out, layer; ulong scale_off; }; // qs/gs: row strides of q/gate
-struct RowInfo { uint ctx_end, start, tab, split; }; // split: positions per split for this row
+struct RowInfo { uint ctx_end, start, tab, split, part; }; // split: positions per split; part: partials slot (~0: attn_nax row)
 #define AT 32
 #define ATTN_GROUP_MAX 32 // simdgroups (rows x heads) per threadgroup
 
@@ -622,10 +623,149 @@ kernel void attn_fd(device const float* q [[buffer(0)]], device const half* pool
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
     if (!live) return;
-    device float* dst = part + ((row * a.nh + h) * sp.y + split) * (HD + 2);
+    device float* dst = part + ((r.part * a.nh + h) * sp.y + split) * (HD + 2);
     if (lane == 0) { dst[0] = m; dst[1] = l; }
     for (int i = 0; i < E; i++) dst[2 + lane * E + i] = o[i];
 }
+
+// Matrix-unit variant (simdgroup 8x8 MMA, every Apple GPU): the group's up to
+// 32 queries (rows x GQA heads) form a 32 x HD tile, 4 simdgroups x 8 queries.
+// Per K/V tile: S = Q K^T on the matrix units, online softmax per query row
+// (lane = position, causal / window masks per row), rows of O rescaled through
+// the lanes' own fragment elements, O += P V on the matrix units. Same inputs
+// and partial outputs as attn_fd (attn_reduce merges the splits).
+template <int HD, bool Q8>
+kernel void attn_mma(device const float* q [[buffer(0)]], device const half* pool [[buffer(1)]], device const RowInfo* ri [[buffer(2)]],
+                     device const uint* tab [[buffer(3)]], device float* part [[buffer(4)]], constant AttnArgs& a [[buffer(5)]],
+                     constant uint2& sp [[buffer(6)]], device const uint2* groups [[buffer(7)]], uint3 tg [[threadgroup_position_in_grid]],
+                     ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]],
+                     uint tid [[thread_index_in_threadgroup]]) {
+    constexpr int KS = HD + 8;          // padded tile row stride (halves)
+    constexpr int NQ = 32, NT = 128;    // queries and threads per threadgroup
+    constexpr int NF = HD / 8;          // 8x8 fragments across head_dim
+    constexpr int QB = NQ * KS > 3 * NQ * AT ? NQ * KS : 3 * NQ * AT; // halves: queries, then S (f32) + P (f16) tiles
+    threadgroup half qbuf[QB];
+    threadgroup half kv[2 * AT * KS];   // K and V tiles; at the end, O (f32)
+    threadgroup half* ks = kv;
+    threadgroup half* vs = kv + AT * KS;
+    const uint kvh = tg.y, split = tg.z, G = a.nh / a.nkv;
+    const uint2 grp = groups[tg.x];
+    const uint nq = grp.y * G;
+    const RowInfo first = ri[grp.x], last = ri[grp.x + grp.y - 1];
+    const uint S = last.split, origin = (last.start / S) * S;
+    const uint s0 = origin + split * S, s1 = min(last.ctx_end + 1, s0 + S);
+    for (uint i = tid; i < NQ * HD; i += NT) {
+        uint qi = i / HD, d = i % HD;
+        float v = 0.0f;
+        if (qi < nq) v = q[(grp.x + qi / G) * a.qs + (kvh * G + qi % G) * HD + d] * a.scale;
+        qbuf[qi * KS + d] = half(v);
+    }
+    uint qs_[8], qe_[8];
+    for (int i = 0; i < 8; i++) {
+        uint qi = sg * 8 + i;
+        if (qi < nq) { RowInfo r = ri[grp.x + qi / G]; qs_[i] = r.start; qe_[i] = r.ctx_end; }
+        else { qs_[i] = 1; qe_[i] = 0; } // empty range: padding query
+    }
+    float m[8], l[8];
+    for (int i = 0; i < 8; i++) { m[i] = -INFINITY; l[i] = 0.0f; }
+    simdgroup_float8x8 O[NF];
+    for (int f = 0; f < NF; f++) O[f] = make_filled_simdgroup_matrix<float, 8, 8>(0.0f);
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    simdgroup_half8x8 Qf[NF];
+    for (int f = 0; f < NF; f++) simdgroup_load(Qf[f], qbuf + sg * 8 * KS + f * 8, KS);
+    threadgroup_barrier(mem_flags::mem_threadgroup); // qbuf becomes S/P scratch
+    threadgroup float* sc = (threadgroup float*)qbuf + sg * 8 * AT; // 8 x AT scores of this simdgroup
+    threadgroup half* pc = (threadgroup half*)((threadgroup float*)qbuf + 4 * 8 * AT) + sg * 8 * AT;
+    const ushort qid = lane / 4, fm = (qid & 4) + ((lane / 2) % 4); // fragment row of this lane's elements
+    const ulong vofs = (ulong)a.nkv * a.page * HD;
+    (void)first;
+    for (uint t0 = s0; t0 < s1; t0 += AT) {
+        // tiles start on page boundaries: 16-byte chunks (16 int8 / 8 f16 values of
+        // one position), one page lookup and one scale per chunk
+        constexpr int VE = Q8 ? 16 : 8, CR = HD / VE;
+        for (uint i = tid; i < AT * CR; i += NT) {
+            const uint j = i / CR, d0 = (i % CR) * VE, p = t0 + j;
+            threadgroup half4* kd = (threadgroup half4*)(ks + j * KS + d0);
+            threadgroup half4* vd = (threadgroup half4*)(vs + j * KS + d0);
+            if (p >= s1) {
+                for (int u = 0; u < VE / 4; u++) { kd[u] = half4(0.0h); vd[u] = half4(0.0h); }
+                continue;
+            }
+            const ulong page = tab[last.tab + p / a.page];
+            const ulong base = page * a.page_elems + a.layer_off + (ulong)kvh * a.page * HD + (p % a.page) * HD + d0;
+            if (Q8) {
+                device const char* pb = (device const char*)pool;
+                const ulong sb = page * a.page_elems + a.scale_off + (((ulong)a.layer * 2) * a.nkv + kvh) * a.page * 2 + (p % a.page) * 2;
+                const half sk = *(device const half*)(pb + sb), sv = *(device const half*)(pb + sb + (ulong)a.nkv * a.page * 2);
+                const device char4* kq = (const device char4*)(pb + base);
+                const device char4* vq = (const device char4*)(pb + base + vofs);
+                for (int u = 0; u < 4; u++) { kd[u] = half4(kq[u]) * sk; vd[u] = half4(vq[u]) * sv; }
+            } else {
+                const device half4* kq = (const device half4*)(pool + base);
+                const device half4* vq = (const device half4*)(pool + base + vofs);
+                for (int u = 0; u < 2; u++) { kd[u] = kq[u]; vd[u] = vq[u]; }
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        // S (8 x AT) = Q (8 x HD) K^T
+        for (int c = 0; c < AT / 8; c++) {
+            simdgroup_float8x8 acc = make_filled_simdgroup_matrix<float, 8, 8>(0.0f);
+            for (int f = 0; f < NF; f++) {
+                simdgroup_half8x8 Kf;
+                simdgroup_load(Kf, ks + c * 8 * KS + f * 8, KS, ulong2(0, 0), true);
+                simdgroup_multiply_accumulate(acc, Qf[f], Kf, acc);
+            }
+            simdgroup_store(acc, sc + c * 8, AT);
+        }
+        simdgroup_barrier(mem_flags::mem_threadgroup);
+        float cs[8];
+        const uint p = t0 + lane;
+        for (int i = 0; i < 8; i++) {
+            const bool valid = p < s1 && p >= qs_[i] && p <= qe_[i];
+            const float sv = valid ? sc[i * AT + lane] : -INFINITY;
+            const float mn = max(m[i], simd_max(sv));
+            cs[i] = 1.0f;
+            float pe = 0.0f;
+            if (mn > -INFINITY) {
+                cs[i] = exp(m[i] - mn);
+                pe = valid ? exp(sv - mn) : 0.0f;
+                l[i] = l[i] * cs[i] + simd_sum(pe);
+                m[i] = mn;
+            }
+            pc[i * AT + lane] = half(pe);
+        }
+        simdgroup_barrier(mem_flags::mem_threadgroup);
+        const float cr = cs[fm];
+        for (int f = 0; f < NF; f++) { O[f].thread_elements()[0] *= cr; O[f].thread_elements()[1] *= cr; }
+        // O (8 x HD) += P (8 x AT) V (AT x HD)
+        for (int k = 0; k < AT / 8; k++) {
+            simdgroup_half8x8 Pf;
+            simdgroup_load(Pf, pc + k * 8, AT);
+            for (int f = 0; f < NF; f++) {
+                simdgroup_half8x8 Vf;
+                simdgroup_load(Vf, vs + k * 8 * KS + f * 8, KS);
+                simdgroup_multiply_accumulate(O[f], Pf, Vf, O[f]);
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+    threadgroup float* ob = (threadgroup float*)kv + sg * 8 * HD;
+    for (int f = 0; f < NF; f++) simdgroup_store(O[f], ob + f * 8, HD);
+    simdgroup_barrier(mem_flags::mem_threadgroup);
+    for (int i = 0; i < 8; i++) {
+        uint qi = sg * 8 + i;
+        if (qi >= nq) break;
+        uint row = grp.x + qi / G, h = kvh * G + qi % G;
+        device float* dst = part + ((ri[row].part * a.nh + h) * sp.y + split) * (HD + 2);
+        if (lane == 0) { dst[0] = m[i]; dst[1] = l[i]; }
+        for (uint e = lane; e < HD; e += 32) dst[2 + e] = ob[i * HD + e];
+    }
+}
+
+template [[host_name("attn_mma_64")]] kernel decltype(attn_mma<64, false>) attn_mma<64, false>;
+template [[host_name("attn_mma_128")]] kernel decltype(attn_mma<128, false>) attn_mma<128, false>;
+template [[host_name("attn_mma8_64")]] kernel decltype(attn_mma<64, true>) attn_mma<64, true>;
+template [[host_name("attn_mma8_128")]] kernel decltype(attn_mma<128, true>) attn_mma<128, true>;
 
 typedef decltype(attn_fd<128, false>) attn_fd_t;
 template [[host_name("attn_fd_64")]] kernel attn_fd_t attn_fd<64, false>;
@@ -633,11 +773,105 @@ template [[host_name("attn_fd_128")]] kernel attn_fd_t attn_fd<128, false>;
 template [[host_name("attn_fd8_64")]] kernel attn_fd_t attn_fd<64, true>;
 template [[host_name("attn_fd8_128")]] kernel attn_fd_t attn_fd<128, true>;
 
+// Decode / verify attention: one row per threadgroup and KV head (its G query
+// heads), split like attn_fd (the row's own split size and origin), so a row's
+// result depends only on the row. 8 simdgroups take positions in turn; lanes
+// hold HD/32 dims of K and V (one coalesced load per position), scores reduce
+// with simd_sum, online softmax per head; the simdgroups' states merge in a
+// fixed order through threadgroup memory into attn_reduce's partials. Reads
+// K/V straight from device memory with little threadgroup memory, so many
+// threadgroups stay in flight (decode attention is bandwidth work). Structure
+// after MLX's sdpa_vector (MIT, Copyright © 2024 Apple Inc.).
+template <int HD, bool Q8, int GM>
+kernel void attn_vec(device const float* q [[buffer(0)]], device const half* pool [[buffer(1)]], device const RowInfo* ri [[buffer(2)]],
+                     device const uint* tab [[buffer(3)]], device float* part [[buffer(4)]], constant AttnArgs& a [[buffer(5)]],
+                     constant uint2& sp [[buffer(6)]], device const uint* vrows [[buffer(7)]], uint3 tg [[threadgroup_position_in_grid]],
+                     ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]]) {
+    constexpr int E = HD / 32, NS = 8;
+    threadgroup float red[NS * (HD + 2)];
+    const uint row = vrows[tg.x], kvh = tg.y, split = tg.z, G = a.nh / a.nkv;
+    const RowInfo r = ri[row];
+    const uint S = r.split, origin = (r.start / S) * S;
+    const uint s0 = origin + split * S, s1 = min(r.ctx_end + 1, s0 + S), lo = max(s0, r.start);
+    float qv[GM][E], o[GM][E], m[GM], l[GM];
+    for (int g = 0; g < GM; g++) {
+        m[g] = -INFINITY;
+        l[g] = 0.0f;
+        for (int e = 0; e < E; e++) {
+            o[g][e] = 0.0f;
+            qv[g][e] = (uint)g < G ? q[row * a.qs + (kvh * G + g) * HD + lane * E + e] * a.scale : 0.0f;
+        }
+    }
+    const ulong vofs = (ulong)a.nkv * a.page * HD, head_off = a.layer_off + (ulong)kvh * a.page * HD;
+    const ulong sc_off = a.scale_off + (((ulong)a.layer * 2) * a.nkv + kvh) * a.page * 2, sc_v = (ulong)a.nkv * a.page * 2;
+    for (uint p = lo + sg; p < s1; p += NS) {
+        const ulong page = tab[r.tab + p / a.page];
+        const ulong base = page * a.page_elems + head_off + (p % a.page) * HD + lane * E;
+        float k[E], v[E];
+        if (Q8) {
+            device const char* pb = (device const char*)pool;
+            device const char* sc = pb + page * a.page_elems + sc_off + (p % a.page) * 2;
+            const float sk = float(*(device const half*)sc), sv = float(*(device const half*)(sc + sc_v));
+            if (E == 4) {
+                const float4 kk = float4(*(device const char4*)(pb + base)), vv = float4(*(device const char4*)(pb + base + vofs));
+                for (int e = 0; e < E; e++) { k[e] = kk[e] * sk; v[e] = vv[e] * sv; }
+            } else {
+                const float2 kk = float2(*(device const char2*)(pb + base)), vv = float2(*(device const char2*)(pb + base + vofs));
+                for (int e = 0; e < E; e++) { k[e] = kk[e % 2] * sk; v[e] = vv[e % 2] * sv; }
+            }
+        } else if (E == 4) {
+            const float4 kk = float4(*(device const half4*)(pool + base)), vv = float4(*(device const half4*)(pool + base + vofs));
+            for (int e = 0; e < E; e++) { k[e] = kk[e]; v[e] = vv[e]; }
+        } else {
+            const float2 kk = float2(*(device const half2*)(pool + base)), vv = float2(*(device const half2*)(pool + base + vofs));
+            for (int e = 0; e < E; e++) { k[e] = kk[e % 2]; v[e] = vv[e % 2]; }
+        }
+        for (int g = 0; g < GM; g++) {
+            if ((uint)g >= G) break;
+            float sdot = 0.0f;
+            for (int e = 0; e < E; e++) sdot += qv[g][e] * k[e];
+            sdot = simd_sum(sdot);
+            const float mn = max(m[g], sdot), c = exp(m[g] - mn), pe = exp(sdot - mn);
+            l[g] = l[g] * c + pe;
+            for (int e = 0; e < E; e++) o[g][e] = o[g][e] * c + pe * v[e];
+            m[g] = mn;
+        }
+    }
+    threadgroup float* rm = red + NS * HD;
+    for (uint g = 0; g < G && g < (uint)GM; g++) {
+        if (lane == 0) { rm[2 * sg] = m[g]; rm[2 * sg + 1] = l[g]; }
+        for (int e = 0; e < E; e++) red[sg * HD + lane * E + e] = o[g][e];
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (sg == 0) {
+            float M = -INFINITY;
+            for (int s = 0; s < NS; s++) M = max(M, rm[2 * s]);
+            float L = 0.0f, acc[E];
+            for (int e = 0; e < E; e++) acc[e] = 0.0f;
+            for (int s = 0; s < NS; s++) {
+                const float w = rm[2 * s + 1] > 0.0f ? exp(rm[2 * s] - M) : 0.0f;
+                L += rm[2 * s + 1] * w;
+                for (int e = 0; e < E; e++) acc[e] += red[s * HD + lane * E + e] * w;
+            }
+            device float* dst = part + ((r.part * a.nh + kvh * G + g) * sp.y + split) * (HD + 2);
+            if (lane == 0) { dst[0] = M; dst[1] = L; }
+            for (int e = 0; e < E; e++) dst[2 + lane * E + e] = acc[e];
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+}
+
+#define ATTN_VEC(hd, q8, gm, nm) template [[host_name(nm)]] kernel decltype(attn_vec<hd, q8, gm>) attn_vec<hd, q8, gm>;
+ATTN_VEC(64, false, 4, "attn_vec_64_4") ATTN_VEC(64, false, 8, "attn_vec_64_8") ATTN_VEC(64, false, 16, "attn_vec_64_16")
+ATTN_VEC(128, false, 4, "attn_vec_128_4") ATTN_VEC(128, false, 8, "attn_vec_128_8") ATTN_VEC(128, false, 16, "attn_vec_128_16")
+ATTN_VEC(64, true, 4, "attn_vec8_64_4") ATTN_VEC(64, true, 8, "attn_vec8_64_8") ATTN_VEC(64, true, 16, "attn_vec8_64_16")
+ATTN_VEC(128, true, 4, "attn_vec8_128_4") ATTN_VEC(128, true, 8, "attn_vec8_128_8") ATTN_VEC(128, true, 16, "attn_vec8_128_16")
+
 kernel void attn_reduce(device const float* part [[buffer(0)]], device const float* g [[buffer(1)]], device float* out [[buffer(2)]],
-                        constant AttnArgs& a [[buffer(3)]], constant uint2& sp [[buffer(4)]],
+                        constant AttnArgs& a [[buffer(3)]], constant uint2& sp [[buffer(4)]], device const uint* slot [[buffer(5)]],
                         uint2 tg [[threadgroup_position_in_grid]], ushort lane [[thread_index_in_simdgroup]]) {
-    const uint row = tg.x, h = tg.y, hd = a.hd, E = hd / 32, ns = sp.y;
-    device const float* src = part + (row * a.nh + h) * ns * (hd + 2);
+    const uint row = tg.x, h = tg.y, hd = a.hd, E = hd / 32, ns = sp.y, pi = slot[row];
+    if (pi == 0xffffffffu) return; // row not in this partials buffer
+    device const float* src = part + (pi * a.nh + h) * ns * (hd + 2);
     float M = -INFINITY;
     for (uint s = 0; s < ns; s++) M = max(M, src[s * (hd + 2)]);
     float L = 0.0f, o[8];

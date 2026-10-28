@@ -68,7 +68,7 @@ What closed the gap (8B, 8-bit KV; per-step GPU time from `CINFER_PROFILE_EACH=1
   f16 KV (2x the bytes) and a 4-page working set ran equally fast, so the
   kernel was issue/latency bound. `attn_vec` (one row per threadgroup, lane
   groups on 4 consecutive positions, loads issued before the math, unrolled
-  heads) brings it to 5.3 ms: decode at 10k context 17 -> 44 tok/s.
+  heads) brings it to 5.3 ms: decode at 10k context 17 -> 40 tok/s.
 - **Kernel choice per row, not per batch.** Input rows (prompt, appended text)
   always take `attn_nax`, sampled and drafted rows always take `attn_vec`, and
   both split context at row-local boundaries, so batched outputs stay identical
@@ -95,7 +95,7 @@ This subset does not separate the latest kernels: its prompts are ~200 tokens
 (attention is a small share of each step), different kernels change some greedy
 paths (token counts and repeated-text acceptance move with them), and the
 16-worker wall time is set by the slowest truncated question decoding alone
-(three runs of one build: 36 s, 42 s, and 36 s). The deterministic `bench`
+(two runs of one build: 36 s and 42 s). The deterministic `bench`
 (16 agents, `--ngram`, 512 tokens each) measures the same build at 510 tok/s
 vs 368 with the previous decode kernel.
 

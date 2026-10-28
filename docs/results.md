@@ -107,13 +107,26 @@ swap-outs, 39 swap-ins, 1.9 s of IO for the whole run). 8 agents are unaffected
 
 | Agents | Live session state | **cinfer** wall | vLLM wall | Speedup | cinfer p95 turn | vLLM p95 turn |
 |---|---|---|---|---|---|---|
-| 8 | ~65k tokens | **57 s** | 158 s | **2.76x** | 10 s | 42 s |
-| 16 | ~130k tokens | **93 s** | 315 s | **3.40x** | 19 s | 77 s |
-| 32 | ~260k tokens | **182 s** | 595 s | **3.27x** | 36 s | 162 s |
+| 8 | ~65k tokens | **52 s** | 158 s | **3.0x** | 9 s | 42 s |
+| 16 | ~130k tokens | **85 s** | 315 s | **3.7x** | 17 s | 77 s |
+| 32 | ~260k tokens | **163 s** | 595 s | **3.6x** | 31 s | 162 s |
 
-cinfer: `--ngram --kv-int8 --swap-gb 24`. Earlier versions of the cinfer column:
-86 / 150 / 292 s before `attn_naxd`, 68 / 117 / 229 s before the shared K/V tile
-in `attn_nax` (both below).
+cinfer: `--ngram --kv-int8 --swap-gb 24` (exact: outputs do not depend on
+batching). With the opt-in, lossy `--reuse-spans` (below): **43 / 64 / 111 s**
+(3.7x / 4.9x / 5.4x vLLM). Earlier versions of the exact column: 86 / 150 /
+292 s before decode attention on the neural accelerators, 68 / 117 / 229 s
+before the shared K/V tile in `attn_nax`, 57 / 93 / 182 s before decode spans
+were shared across sequences (`attn_naxs`, below).
+
+**Decode attention shared across agents (`attn_naxs`).** Every agent's context
+starts with the same system prompt (here ~3.5k tokens; real harnesses' tool
+definitions are often 5-20k), held once in memory through prefix sharing but
+read and dequantized once per agent per decode step. Decode attention now runs
+over fixed 512-position spans: within a span, the row groups of all sequences
+that hold the same pages share one threadgroup (one simdgroup each) and one
+dequantized K/V tile. Span boundaries depend only on positions and masked
+tiles contribute exactly nothing, so outputs stay batch-invariant (check,
+`--share` check and check-spec 8/8).
 
 **One dequantized K/V tile per threadgroup in `attn_nax`.** Its 4 simdgroups
 serve the same head, and each loaded and dequantized every K/V tile itself;
@@ -122,7 +135,7 @@ at 10k context: 190 ms with 8-bit KV vs 121 ms with 16-bit). The threadgroup now
 dequantizes each tile once into threadgroup memory: 110 ms (16-bit: 113 ms),
 prefill of a 10k-token prompt 910 -> 1300 tok/s, perplexity unchanged.
 
-**Decode and verify rows on the neural accelerators (`attn_naxd`).** Each
+**Decode and verify rows on the neural accelerators (`attn_naxd`, since folded into `attn_naxs`).** Each
 decode row brings its repeated-text drafts, and all of them read the same K/V;
 `attn_vec` read it once per row. `attn_naxd` packs a sequence's decode row,
 its drafts and the GQA heads into the 16 query slots of one MPP matmul tile, so
@@ -145,6 +158,8 @@ positions, except the first and last 64 tokens, which are recomputed.
 | 8 | 55 s | **50 s** | 158 s | 9.7k (16 spans) |
 | 16 | 93 s | **73 s** | 315 s | 29k (50 spans) |
 | 32 | 182 s | **131 s** | 595 s | 69k (117 spans, many from sessions on SSD) |
+
+(Measured before `attn_naxs`; with it: 52 / 85 / 163 s exact, 43 / 64 / 111 s with reuse.)
 
 Quality (`tools/reuse_eval`: a file chunk's KV computed after one context,
 moved behind another of different length; perplexity of the file's

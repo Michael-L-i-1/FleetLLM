@@ -56,7 +56,7 @@ its batch or on how its prompt was chunked:
 | Rows | Kernel |
 |---|---|
 | input (prompt, appended text, recompute), M5 | `attn_nax`: 64 rows x 1 head per threadgroup, QK^T and PV as MPP 16x32x16 matmuls, K/V from the pages into registers; fixed 8192-position spans merged by `attn_reduce` |
-| sampled / drafted (decode, verify), M5 | `attn_naxd`: a sequence's decode row + drafts x the G heads fill the 16 query slots of MPP matmul tiles; row-local flash-decoding splits |
+| sampled / drafted (decode, verify), M5 | `attn_naxs`: a sequence's decode row + drafts x the G heads fill the 16 query slots of an MPP matmul tile; fixed 512-position spans, and row groups of sequences holding the same pages in a span share one threadgroup and one dequantized K/V tile |
 | sampled / drafted, GPUs without NAX | `attn_vec`: 1 row x its G heads per threadgroup, lanes across the head dim, row-local splits |
 | input, GPUs without NAX | `attn_mma`: up to 8 consecutive rows x G heads share K/V tiles in threadgroup memory, 8x8 simdgroup MMA |
 

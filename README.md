@@ -40,19 +40,18 @@ MLX's reference on the same weights (GPQA prompt, 200 tokens).
 
 **Multi-turn agent sessions** (8 agents x 6 turns from a shared context,
 tool results appended, ~8k-token final contexts, 2.5 GB KV cap, same 4-bit
-Llama 3.1 8B as vLLM): **57 s vs vLLM's 158 s (2.76x)**, p95 turn 9.8 s vs
+Llama 3.1 8B as vLLM): **52 s vs vLLM's 158 s (3.0x)**, p95 turn 9.3 s vs
 41.9 s. From 975 s that morning: repeated-text speculation shared across agents,
 8-bit KV, attention for input rows on the M5 neural accelerators, and a
 latency-shaped decode attention kernel, with kernel choice per row so outputs
 stay batch-invariant. The same 16 GPQA questions take 121-130 s with 1 agent
 and 32-42 s with 16 (vLLM: 344 s / 80 s). With **16 agents** (~130k tokens of
 session state, 38k tokens of KV) sessions park on SSD between turns
-(share-aware swap + memory-aware admission): **93 s vs vLLM's 315 s (3.4x)**,
-p95 turn 19 s vs 77 s; 8 agents **57 s vs 158 s**, 32 agents **182 s vs 595 s**
-(p95 36 s vs 162 s). Opt-in **span reuse** (`--reuse-spans`: KV of text another
+(share-aware swap + memory-aware admission): **85 s vs vLLM's 315 s (3.7x)**,
+p95 turn 17 s vs 77 s; 32 agents **163 s vs 595 s** (p95 31 s vs 162 s). Opt-in **span reuse** (`--reuse-spans`: KV of text another
 agent already processed, e.g. the same file read by several subagents, is moved
-instead of recomputed; +0.36% perplexity on the reused text) brings 16 / 32
-agents to **73 s / 131 s** (4.3x / 4.5x vLLM), and a harness that drops old tool
+instead of recomputed; +0.36% perplexity on the reused text) brings 8 / 16 / 32
+agents to **43 / 64 / 111 s** (3.7x / 4.9x / 5.4x vLLM), and a harness that drops old tool
 outputs (history re-sent at shifted positions) to **68 s vs vLLM's 161 s**. See [docs/results.md](docs/results.md).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**

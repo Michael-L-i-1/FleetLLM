@@ -49,7 +49,10 @@ and 32-42 s with 16 (vLLM: 344 s / 80 s). With **16 agents** (~130k tokens of
 session state, 38k tokens of KV) sessions park on SSD between turns
 (share-aware swap + memory-aware admission): **93 s vs vLLM's 315 s (3.4x)**,
 p95 turn 19 s vs 77 s; 8 agents **57 s vs 158 s**, 32 agents **182 s vs 595 s**
-(p95 36 s vs 162 s). See [docs/results.md](docs/results.md).
+(p95 36 s vs 162 s). Opt-in **span reuse** (`--reuse-spans`: KV of text another
+agent already processed, e.g. the same file read by several subagents, is moved
+instead of recomputed; +0.36% perplexity on the reused text) brings 16 / 32
+agents to **73 s / 131 s** (4.3x / 4.5x vLLM). See [docs/results.md](docs/results.md).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 

@@ -131,6 +131,36 @@ slower than with `attn_vec` (4 of 16 slots used), but agent steps are mostly
 verify blocks. Row-local splits keep outputs identical (check 8/8, check-spec
 8/8 on 1B and 8B).
 
+**Span reuse (`--reuse-spans`, lossy, opt-in): text another agent already
+processed.** In this workload agents read overlapping files (as subagents on one
+repository do): 50% / 65% / 79% of tool reads at 8 / 16 / 32 agents return a
+file some agent read in an earlier turn, at a different position after a
+different history, so prefix sharing cannot help. A content-addressed index of
+16-token blocks finds runs of >= 256 pending tokens that another session holds
+(resident or swapped out); their KV is moved over with K re-rotated to the new
+positions, except the first and last 64 tokens, which are recomputed.
+
+| Agents | without | with `--reuse-spans` | vLLM | tokens moved instead of prefilled |
+|---|---|---|---|---|
+| 8 | 55 s | **50 s** | 158 s | 9.7k (16 spans) |
+| 16 | 93 s | **73 s** | 315 s | 29k (50 spans) |
+| 32 | 182 s | **131 s** | 595 s | 69k (117 spans, many from sessions on SSD) |
+
+Quality (`tools/reuse_eval`: a file chunk's KV computed after one context,
+moved behind another of different length; perplexity of the file's
+continuation; Llama 8B, 8-bit KV, 10 file triples):
+
+| Variant | Continuation ppl |
+|---|---|
+| exact (chunk computed in place) | 3.651 |
+| chunk with no preceding context at all | 3.646 |
+| moved, nothing recomputed | 3.679 (+0.8%) |
+| moved, first 64 + last 64 recomputed (default) | 3.664 (+0.36%) |
+
+The loss is context mismatch, not numerics: 16-bit KV loses the same, and a
+move from an identical context is exact. With the flag on, a session's output
+depends on what other sessions hold, so batch-invariance no longer applies.
+
 **More KV does not help here.** 32 agents with 4.0 GB instead of 2.5 GB of KV
 took 287 s instead of 292 s: past ~8 resident sessions the GPU, not memory, is
 the limit, which is why 4-bit KV was not pursued (simulated in the 8-bit writer:

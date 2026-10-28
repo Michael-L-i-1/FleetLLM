@@ -52,7 +52,10 @@ p95 turn 17 s vs 77 s; 32 agents **163 s vs 595 s** (p95 31 s vs 162 s). Opt-in 
 agent already processed, e.g. the same file read by several subagents, is moved
 instead of recomputed; +0.36% perplexity on the reused text) brings 8 / 16 / 32
 agents to **43 / 64 / 111 s** (3.7x / 4.9x / 5.4x vLLM), and a harness that drops old tool
-outputs (history re-sent at shifted positions) to **68 s vs vLLM's 161 s**. See [docs/results.md](docs/results.md).
+outputs (history re-sent at shifted positions) to **68 s vs vLLM's 161 s**.
+Agents that drive themselves through OpenAI tool calling (`bench/tool_agents.py`:
+real `grep` / `read_file` tools on this repository) make **406 model calls per
+minute vs vLLM's 219** at 16 agents (663 vs 438 at 32). See [docs/results.md](docs/results.md).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 
@@ -108,7 +111,7 @@ scripts/      verification against HF/gguf-py, build helpers
 | MLX / HF safetensors loading (config, shards, tokenizer.json, affine weights) | Glimmer, Llama verified on CPU and GPU; tokenizer matches HF 10/10 |
 | In-flight prefix dedup (agents fanned out together share one prefill) | done |
 | Speculative decoding with the DFlash drafter (batched, adaptive draft length) | done; outputs identical to plain greedy |
-| OpenAI-compatible server (streaming, reasoning split, KV cap + recompute preemption) | done; drives simple-evals GPQA at 16 workers |
+| OpenAI-compatible server (streaming, reasoning split, tool calling, KV cap, swap + memory-aware admission) | done; drives simple-evals GPQA and tool-calling agents (official `openai` client) |
 | Paged copy-on-write KV (full + sliding-window pools), continuous batching, automatic prefix sharing | done; batched greedy outputs identical to sequential (8/8) |
 
 ## Roadmap

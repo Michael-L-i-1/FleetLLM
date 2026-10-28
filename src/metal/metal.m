@@ -53,7 +53,7 @@ static bool attn_vec_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFE
 // (attn_nax), decode and verify rows the split kernels; CINFER_ATTN_NAX=0 keeps
 // every row on the split kernels. attn_nax splits contexts into fixed spans of
 // NAX_SPAN positions (CINFER_NAX_SPAN), merged by attn_reduce.
-#define NAX_SPAN 8192
+#define NAX_SPAN 4096
 static bool attn_nax_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_NAX") || atoi(getenv("CINFER_ATTN_NAX")); return v; }
 static uint32_t nax_span(void) {
     static int v = -1;

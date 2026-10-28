@@ -504,6 +504,18 @@ bool engine_step(engine *e, const int *ids, int n) {
         }
     }
     if (!np) { free(plan); return false; }
+    // The GEMMs compute whole 32-row tiles: rather than leave the last tile part
+    // empty (decode rows and drafts on top of a full prefill chunk), fill it with
+    // more pending prefill rows (free compute).
+    int planned = 0;
+    for (int i = 0; i < np; i++) planned += plan[i].take;
+    for (int i = 0, extra = planned > 16 ? (planned + 31) / 32 * 32 - planned : 0; i < np && extra > 0; i++) {
+        seq_t *s = &e->seqs[plan[i].seq];
+        if (plan[i].spec || s->n_pending <= 1) continue;
+        int more = s->n_pending - plan[i].take < extra ? s->n_pending - plan[i].take : extra;
+        plan[i].take += more;
+        extra -= more;
+    }
     uint32_t need = 0;
     int n_rows = 0;
     for (int i = 0; i < np; i++) need += plan[i].take / KV_PAGE + 2;

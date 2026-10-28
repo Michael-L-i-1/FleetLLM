@@ -427,3 +427,150 @@ template [[host_name("attn_nax_64")]] [[kernel]] decltype(attn_nax<64, false>) a
 template [[host_name("attn_nax_128")]] [[kernel]] decltype(attn_nax<128, false>) attn_nax<128, false>;
 template [[host_name("attn_nax8_64")]] [[kernel]] decltype(attn_nax<64, true>) attn_nax<64, true>;
 template [[host_name("attn_nax8_128")]] [[kernel]] decltype(attn_nax<128, true>) attn_nax<128, true>;
+
+// Decode / verify attention on the neural accelerators. A simdgroup's 16 query
+// slots are (row, head) pairs: up to 16/G consecutive rows of one sequence (a
+// decode row and its drafts) times the G query heads of one KV head, so the
+// rows and heads that read the same K/V share every tile and matmul. Splits
+// follow the rows' own split size and origin (as attn_vec; attn_groups keeps
+// them equal within a group) and land in attn_reduce's partials; a row's
+// arithmetic does not depend on the other rows of its group (fully masked tiles
+// add exactly nothing), so batched and speculative outputs match sequential.
+// Same tile loop as attn_nax.
+template <int HD, bool Q8>
+[[kernel, max_total_threads_per_threadgroup(32)]] void attn_naxd(
+    device const float* q [[buffer(0)]], device const half* pool [[buffer(1)]], device const RowInfo* ri [[buffer(2)]],
+    device const uint* tab [[buffer(3)]], device float* part [[buffer(4)]], constant AttnArgs& a [[buffer(5)]],
+    constant uint2& sp [[buffer(6)]], device const uint2* groups [[buffer(7)]], uint3 tg [[threadgroup_position_in_grid]],
+    ushort lane [[thread_index_in_simdgroup]]) {
+    constexpr int TD = HD / 16, TK = 32;
+    const uint2 grp = groups[tg.x]; // {first row, rows <= 16 / G}
+    const uint kvh = tg.y, split = tg.z, G = a.nh / a.nkv;
+    const short qid = lane >> 2, fm = (qid & 4) | ((lane >> 1) & 3), fn = ((qid & 2) | (lane & 1)) * 4;
+    const RowInfo first = ri[grp.x], last = ri[grp.x + grp.y - 1];
+    const uint S = last.split, origin = (last.start / S) * S;
+    const uint s0 = origin + split * S, s1 = min(last.ctx_end + 1, s0 + S);
+    bool ok[2];
+    uint row[2], hq[2], vs[2], ve[2];
+    STEEL_PRAGMA_UNROLL
+    for (short i = 0; i < 2; i++) {
+        const uint slot = fm + i * 8, r = slot / G;
+        ok[i] = r < grp.y;
+        row[i] = grp.x + (ok[i] ? r : 0);
+        hq[i] = kvh * G + slot % G;
+        const RowInfo rr = ri[row[i]];
+        vs[i] = ok[i] ? rr.start : 1;
+        ve[i] = ok[i] ? rr.ctx_end : 0;
+    }
+    frag8<half> Q[TD];
+    STEEL_PRAGMA_UNROLL
+    for (short d = 0; d < TD; d++)
+        STEEL_PRAGMA_UNROLL
+        for (short i = 0; i < 2; i++) {
+            float4 v = ok[i] ? *(device const float4*)(q + (ulong)row[i] * a.qs + hq[i] * HD + d * 16 + fn) : float4(0.0f);
+            STEEL_PRAGMA_UNROLL
+            for (short j = 0; j < 4; j++) Q[d][i * 4 + j] = half(v[j]);
+        }
+    float mx[2] = { NAX_NEG, NAX_NEG }, sum[2] = { 0.0f, 0.0f };
+    frag8<float> O[TD];
+    STEEL_PRAGMA_UNROLL
+    for (short d = 0; d < TD; d++) O[d] = frag8<float>(0.0f);
+    const float sl2 = a.scale * M_LOG2E_F;
+    const ulong vofs = (ulong)a.nkv * a.page * HD, head_off = a.layer_off + (ulong)kvh * a.page * HD;
+    const ulong sc_off = a.scale_off + (((ulong)a.layer * 2) * a.nkv + kvh) * a.page * 2, sc_v = (ulong)a.nkv * a.page * 2;
+    const uint lo = max(s0, first.start / TK * TK), end = s1 - 1; // s1 > s0 for every launched split of the last row
+    for (uint t0 = lo; t0 <= end && s1 > s0; t0 += TK) {
+        ulong kat[4];
+        half ksc[4], vsc[4];
+        bool kok[4];
+        STEEL_PRAGMA_UNROLL
+        for (short qq = 0; qq < 4; qq++) {
+            const uint tok = t0 + qq * 8, tl = tok + fm;
+            kok[qq] = tl <= end;
+            const ulong page = tok <= end ? tab[last.tab + tok / a.page] : 0;
+            kat[qq] = page * a.page_elems + head_off + (ulong)(tl % a.page) * HD + fn;
+            ksc[qq] = vsc[qq] = 1.0h;
+            if (Q8 && kok[qq]) {
+                device const char* pb = (device const char*)pool + page * a.page_elems + sc_off + (tl % a.page) * 2;
+                ksc[qq] = *(device const half*)pb;
+                vsc[qq] = *(device const half*)(pb + sc_v);
+            }
+        }
+        frag8<float> S0 = frag8<float>(0.0f), S1 = frag8<float>(0.0f);
+        STEEL_PRAGMA_UNROLL
+        for (short d = 0; d < TD; d++) {
+            frag8<half> K0, K1;
+            STEEL_PRAGMA_UNROLL
+            for (short i = 0; i < 2; i++) {
+                const half4 k0 = kok[i] ? nax_kv4<Q8>(pool, kat[i] + d * 16, ksc[i]) : half4(0.0h);
+                const half4 k1 = kok[2 + i] ? nax_kv4<Q8>(pool, kat[2 + i] + d * 16, ksc[2 + i]) : half4(0.0h);
+                STEEL_PRAGMA_UNROLL
+                for (short j = 0; j < 4; j++) { K0[i * 4 + j] = k0[j]; K1[i * 4 + j] = k1[j]; }
+            }
+            nax_mma<float, half, half, true>(S0, S1, Q[d], K0, K1);
+        }
+        STEEL_PRAGMA_UNROLL
+        for (short i = 0; i < 2; i++)
+            STEEL_PRAGMA_UNROLL
+            for (short j = 0; j < 4; j++) {
+                const uint p0 = t0 + fn + j, p1 = p0 + 16;
+                S0[i * 4 + j] = p0 >= vs[i] && p0 <= ve[i] && p0 >= s0 && p0 < s1 ? S0[i * 4 + j] * sl2 : NAX_NEG;
+                S1[i * 4 + j] = p1 >= vs[i] && p1 <= ve[i] && p1 >= s0 && p1 < s1 ? S1[i * 4 + j] * sl2 : NAX_NEG;
+            }
+        float nm[2] = { mx[0], mx[1] };
+        nax_rows<true>(S0, nm);
+        nax_rows<true>(S1, nm);
+        float fac[2];
+        STEEL_PRAGMA_UNROLL
+        for (short i = 0; i < 2; i++) { fac[i] = fast::exp2(mx[i] - nm[i]); mx[i] = nm[i]; }
+        STEEL_PRAGMA_UNROLL
+        for (short i = 0; i < 2; i++)
+            STEEL_PRAGMA_UNROLL
+            for (short j = 0; j < 4; j++) {
+                const float a0 = S0[i * 4 + j], a1 = S1[i * 4 + j];
+                S0[i * 4 + j] = a0 == NAX_NEG ? 0.0f : fast::exp2(a0 - nm[i]);
+                S1[i * 4 + j] = a1 == NAX_NEG ? 0.0f : fast::exp2(a1 - nm[i]);
+            }
+        float rs[2] = { 0.0f, 0.0f };
+        nax_rows<false>(S0, rs);
+        nax_rows<false>(S1, rs);
+        STEEL_PRAGMA_UNROLL
+        for (short i = 0; i < 2; i++) sum[i] = sum[i] * fac[i] + rs[i];
+        STEEL_PRAGMA_UNROLL
+        for (short d = 0; d < TD; d++)
+            STEEL_PRAGMA_UNROLL
+            for (short e = 0; e < 8; e++) O[d][e] *= fac[e / 4];
+        simdgroup_barrier(mem_flags::mem_none);
+        STEEL_PRAGMA_UNROLL
+        for (short d = 0; d < TD; d += 2) {
+            STEEL_PRAGMA_UNROLL
+            for (short f = 0; f < 2; f++) {
+                frag8<half> V0, V1;
+                STEEL_PRAGMA_UNROLL
+                for (short i = 0; i < 2; i++) {
+                    const short qq = 2 * f + i;
+                    const half4 v0 = kok[qq] ? nax_kv4<Q8>(pool, kat[qq] + vofs + d * 16, vsc[qq]) : half4(0.0h);
+                    const half4 v1 = kok[qq] ? nax_kv4<Q8>(pool, kat[qq] + vofs + (d + 1) * 16, vsc[qq]) : half4(0.0h);
+                    STEEL_PRAGMA_UNROLL
+                    for (short j = 0; j < 4; j++) { V0[i * 4 + j] = v0[j]; V1[i * 4 + j] = v1[j]; }
+                }
+                nax_mma<float, float, half, false>(O[d], O[d + 1], f == 0 ? S0 : S1, V0, V1);
+            }
+        }
+    }
+    STEEL_PRAGMA_UNROLL
+    for (short i = 0; i < 2; i++) {
+        if (!ok[i]) continue;
+        device float* dst = part + (((ulong)ri[row[i]].part * a.nh + hq[i]) * sp.y + split) * (HD + 2);
+        if (fn == 0) { dst[0] = mx[i] * M_LN2_F; dst[1] = sum[i]; }
+        STEEL_PRAGMA_UNROLL
+        for (short d = 0; d < TD; d++)
+            STEEL_PRAGMA_UNROLL
+            for (short j = 0; j < 4; j++) dst[2 + d * 16 + fn + j] = O[d][i * 4 + j];
+    }
+}
+
+template [[host_name("attn_naxd_64")]] [[kernel]] decltype(attn_naxd<64, false>) attn_naxd<64, false>;
+template [[host_name("attn_naxd_128")]] [[kernel]] decltype(attn_naxd<128, false>) attn_naxd<128, false>;
+template [[host_name("attn_naxd8_64")]] [[kernel]] decltype(attn_naxd<64, true>) attn_naxd<64, true>;
+template [[host_name("attn_naxd8_128")]] [[kernel]] decltype(attn_naxd<128, true>) attn_naxd<128, true>;

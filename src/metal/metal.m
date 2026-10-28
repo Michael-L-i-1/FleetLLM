@@ -45,8 +45,11 @@ typedef struct { uint32_t ctx_end, start, tab, split, part; } RowInfo; // part: 
 // *max_sp to the largest split count.
 // Grouped kernel: the matrix-unit flash kernel by default; CINFER_ATTN_SCALAR=1
 // selects the ALU kernel.
-// Rows that are not input (decode, verification) run attn_vec, one row per
-// threadgroup; CINFER_ATTN_VEC=0 groups them into the matrix kernel instead.
+// Rows that are not input (decode, verification) run attn_naxd on NAX GPUs (a
+// decode row and its drafts x the GQA heads share 16-query matmul tiles;
+// CINFER_ATTN_NAXD=0 disables), else attn_vec, one row per threadgroup
+// (CINFER_ATTN_VEC=0 groups them into the matrix kernel instead).
+static bool attn_naxd_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_NAXD") || atoi(getenv("CINFER_ATTN_NAXD")); return v; }
 static bool attn_vec_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_VEC") || atoi(getenv("CINFER_ATTN_VEC")); return v; }
 
 // Input rows (prompt / appended text) run attention on the neural accelerators
@@ -63,8 +66,8 @@ static uint32_t nax_span(void) {
 
 static bool attn_mma_on(void) { static int v = -1; if (v < 0) v = getenv("CINFER_ATTN_SCALAR") == NULL; return v; }
 
-static int attn_groups(const RowInfo *ri, const int *seq, const int *pos, const uint8_t *skip, int n, int G, uint32_t *grp, int *rmax, uint32_t *max_sp) {
-    int R = 32 / G < 8 ? 32 / G : 8, ng = 0;
+static int attn_groups(const RowInfo *ri, const int *seq, const int *pos, const uint8_t *skip, int n, int R, uint32_t *grp, int *rmax, uint32_t *max_sp) {
+    int ng = 0;
     if (R < 1) R = 1;
     *rmax = 1;
     for (int i = 0; i < n; i++) {
@@ -446,7 +449,9 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         uint32_t *ngrp = malloc(8 * n), *pslot = malloc(4 * n), *nslot = malloc(4 * n), *vrows = malloc(4 * n), n_part = 0, n_nrow = 0, nax_sp = 1;
         uint8_t *skip = calloc(n, 1); // rows not in the matrix kernel's groups
         int n_nax = 0, n_vec = 0;
-        bool nax_attn = mt->nax && attn_nax_on() && (hd == 64 || hd == 128), vec_attn = attn_vec_on();
+        int G = c->n_head / c->n_kv;
+        bool nax_attn = mt->nax && attn_nax_on() && (hd == 64 || hd == 128), naxd_attn = nax_attn && attn_naxd_on() && G <= 16;
+        bool vec_attn = !naxd_attn && attn_vec_on();
         for (int i = 0; i < n; i++) {
             if (vec_attn && !rows[i].input) {
                 vrows[n_vec++] = (uint32_t)i;
@@ -460,6 +465,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             }
             if (nax_attn && rows[i].input) skip[i] = 1;
         }
+        // grouped rows: attn_naxd (16 query slots = rows x G heads) or attn_mma (32)
+        int R = naxd_attn ? 16 / G : 32 / G < 8 ? 32 / G : 8;
         if (n_vec) write_buf(B(mt, @"vrows", 4 * n), vrows, 4 * n_vec);
         free(vrows);
         for (int i = 0; i < n;) {
@@ -483,9 +490,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         write_buf(B(mt, @"pslot", 4 * n), pslot, 4 * n);
         if (n_nax && nax_sp > 1) write_buf(B(mt, @"nslot", 4 * n), nslot, 4 * n);
         free(ngrp); free(pslot); free(nslot);
-        int G = c->n_head / c->n_kv;
-        int ng_full = attn_groups(ri_full, rseq, rpos, skip, n, G, grp_full, &rmax_full, &max_sp_full);
-        int ng_swa = attn_groups(ri_swa, rseq, rpos, skip, n, G, grp_swa, &rmax_swa, &max_sp_swa);
+        int ng_full = attn_groups(ri_full, rseq, rpos, skip, n, R, grp_full, &rmax_full, &max_sp_full);
+        int ng_swa = attn_groups(ri_swa, rseq, rpos, skip, n, R, grp_swa, &rmax_swa, &max_sp_swa);
         free(skip);
         write_buf(B(mt, @"grp_full", 8 * n), grp_full, 8 * ng_full);
         write_buf(B(mt, @"grp_swa", 8 * n), grp_swa, 8 * ng_swa);
@@ -582,7 +588,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                     [e dispatchThreadgroups:MTLSizeMake(n_vec, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
                 }
                 if (ngr) {
-                    [e setComputePipelineState:P(mt, [NSString stringWithFormat:mma ? (q8 ? @"attn_mma8_%d" : @"attn_mma_%d") : (q8 ? @"attn_fd8_%d" : @"attn_fd_%d"), hd])];
+                    NSString *kn = naxd_attn ? (q8 ? @"attn_naxd8_%d" : @"attn_naxd_%d") : mma ? (q8 ? @"attn_mma8_%d" : @"attn_mma_%d") : (q8 ? @"attn_fd8_%d" : @"attn_fd_%d");
+                    [e setComputePipelineState:P(mt, [NSString stringWithFormat:kn, hd])];
                     [e setBuffer:qB offset:qO atIndex:0];
                     [e setBuffer:pool offset:0 atIndex:1];
                     [e setBuffer:rib offset:0 atIndex:2];
@@ -591,7 +598,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                     set_bytes(e, &a, sizeof a, 5);
                     set_bytes(e, sp, sizeof sp, 6);
                     [e setBuffer:B(mt, l->swa ? @"grp_swa" : @"grp_full", 8 * n) offset:0 atIndex:7];
-                    [e dispatchThreadgroups:MTLSizeMake(ngr, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(mma ? 128 : 32 * G * rmx, 1, 1)];
+                    [e dispatchThreadgroups:MTLSizeMake(ngr, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(naxd_attn ? 32 : mma ? 128 : 32 * G * rmx, 1, 1)];
                 }
                 if (ngr || n_vec) {
                     [e setComputePipelineState:P(mt, @"attn_reduce")];
@@ -796,7 +803,7 @@ static int metal_draft(backend *be, const model *dm, const model *tm, kv_cache *
         int *bseq = malloc(sizeof(int) * (n_blk ? n_blk : 1)), *bpos = malloc(sizeof(int) * (n_blk ? n_blk : 1)), d_rmax = 1, dG = c->n_head / c->n_kv;
         for (int i = 0; i < n_blk; i++) { bseq[i] = blk[i].seq; bpos[i] = blk[i].pos; }
         uint32_t *dgrp = malloc(8 * (n_blk ? n_blk : 1));
-        int d_ng = n_blk ? attn_groups(ri, bseq, bpos, NULL, n_blk, dG, dgrp, &d_rmax, &max_sp) : 0;
+        int d_ng = n_blk ? attn_groups(ri, bseq, bpos, NULL, n_blk, 32 / dG < 8 ? 32 / dG : 8, dgrp, &d_rmax, &max_sp) : 0;
         if (d_ng) write_buf(B(mt, @"d_grp", 8 * n_blk), dgrp, 8 * d_ng);
         free(bseq); free(bpos); free(dgrp);
         id<MTLBuffer> hb = B(mt, @"d_h", f * (n_blk ? n_blk : 1) * d), ctxn = B(mt, @"d_ctxn", act_bytes(n_ctx ? n_ctx : 1, d)),

@@ -107,12 +107,28 @@ swap-outs, 39 swap-ins, 1.9 s of IO for the whole run). 8 agents are unaffected
 
 | Agents | Live session state | **cinfer** wall | vLLM wall | Speedup | cinfer p95 turn | vLLM p95 turn |
 |---|---|---|---|---|---|---|
-| 8 | ~65k tokens | **86 s** | 158 s | **1.84x** | 17 s | 42 s |
-| 16 | ~130k tokens | **150 s** | 315 s | **2.10x** | 32 s | 77 s |
-| 32 | ~260k tokens | **292 s** | 595 s | **2.04x** | 61 s | 162 s |
+| 8 | ~65k tokens | **68 s** | 158 s | **2.33x** | 13 s | 42 s |
+| 16 | ~130k tokens | **117 s** | 315 s | **2.69x** | 27 s | 77 s |
+| 32 | ~260k tokens | **229 s** | 595 s | **2.60x** | 47 s | 162 s |
 
-cinfer: `--ngram --kv-int8 --swap-gb 24` (32 agents: 145 swap-outs, 120 swap-ins,
-5.7 s of IO, 90% of prompt tokens from cache). Both engines scale about linearly
+cinfer: `--ngram --kv-int8 --swap-gb 16` (24 at 32 agents). Before decode/verify
+attention moved to the neural accelerators (`attn_naxd`, below) the cinfer
+column was 86 / 150 / 292 s.
+
+**Decode and verify rows on the neural accelerators (`attn_naxd`).** Each
+decode row brings its repeated-text drafts, and all of them read the same K/V;
+`attn_vec` read it once per row. `attn_naxd` packs a sequence's decode row,
+its drafts and the GQA heads into the 16 query slots of one MPP matmul tile, so
+verifying a draft costs almost no extra attention. A lone decode row is ~10%
+slower than with `attn_vec` (4 of 16 slots used), but agent steps are mostly
+verify blocks. Row-local splits keep outputs identical (check 8/8, check-spec
+8/8 on 1B and 8B).
+
+**More KV does not help here.** 32 agents with 4.0 GB instead of 2.5 GB of KV
+took 287 s instead of 292 s: past ~8 resident sessions the GPU, not memory, is
+the limit, which is why 4-bit KV was not pursued (simulated in the 8-bit writer:
+asymmetric 4-bit with 16-value groups +0.7% perplexity at ~6 bits/value;
+5-bit-equivalent variants +1.5-2.3%). Both engines scale about linearly
 past the memory limit; cinfer keeps sessions' KV (on SSD when needed) where vLLM
 recomputes it.
 

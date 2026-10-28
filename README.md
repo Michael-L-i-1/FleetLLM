@@ -47,8 +47,9 @@ latency-shaped decode attention kernel, with kernel choice per row so outputs
 stay batch-invariant. The same 16 GPQA questions take 121-130 s with 1 agent
 and 32-42 s with 16 (vLLM: 344 s / 80 s). With **16 agents** (~130k tokens of
 session state, 38k tokens of KV) sessions park on SSD between turns
-(share-aware swap + memory-aware admission): **150 s vs vLLM's 315 s (2.1x)**,
-p95 turn 32 s vs 77 s; at **32 agents 292 s vs 595 s** (p95 61 s vs 162 s). See [docs/results.md](docs/results.md).
+(share-aware swap + memory-aware admission): **117 s vs vLLM's 315 s (2.7x)**,
+p95 turn 27 s vs 77 s; 8 agents **68 s vs 158 s**, 32 agents **229 s vs 595 s**
+(p95 47 s vs 162 s). See [docs/results.md](docs/results.md).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 

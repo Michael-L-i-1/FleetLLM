@@ -49,6 +49,7 @@ typedef struct { model *m, *draft; backend *be; tokenizer *tok; engine *e; } run
 // Load model + backend + engine; the KV pool gets what the memory budget leaves.
 // --draft M enables speculative decoding with a DFlash drafter (--spec-k drafts
 // per verify step, --draft-kv-gb for its KV); its weights count against the budget.
+// --ngram drafts from repeated text instead of / alongside a drafter (no memory).
 static runtime load_runtime(int argc, char **argv) {
     runtime rt;
     double t = now_secs();
@@ -75,6 +76,7 @@ static runtime load_runtime(int argc, char **argv) {
     rt.e = engine_new(rt.m, rt.be, rt.tok, kv);
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
     rt.e->spec_rows = (int)arg_num(argc, argv, "--spec-rows", 32);
+    if (arg_flag(argc, argv, "--ngram")) engine_set_ngram(rt.e, true); // drafts from repeated text (model-free)
     if (rt.draft && !engine_set_drafter(rt.e, rt.draft, dkv, (int)arg_num(argc, argv, "--spec-k", 0))) exit(1);
     fprintf(stderr, "[load] %.1fs %s %s, %d layers, weights %.2f GB (pinned %.2f), KV %.2f GB (%u full + %u swa pages), backend %s\n",
             now_secs() - t, arch_name(rt.m->c.arch), path + (strlen(path) > 60 ? strlen(path) - 60 : 0), rt.m->c.n_layer, streamed / 1e9,

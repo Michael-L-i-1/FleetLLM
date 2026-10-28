@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
         int32_t **o; int *on; double tt;
         run(e, pr, n_tasks, n_tasks < 2 ? 1 : 2, 4, true, false, &o, &on, &tt);
     }
-    if (arg_flag(argc, argv, "--check-spec") && rt.draft) {
+    if (arg_flag(argc, argv, "--check-spec") && (rt.draft || e->ngram)) {
         // every task alone without drafts (spec_rows 0), then all batched with speculation
         int32_t **a, **b; int *an, *bn; double tt;
         int rows = e->spec_rows;
@@ -123,8 +123,12 @@ int main(int argc, char **argv) {
         if (e->st.spec_steps)
             printf(", spec: %.2f tokens/verify, %.0f%% of drafts accepted, drafter %.1f%% of time", 1.0 + (double)e->st.spec_accepted / e->st.spec_steps,
                    100.0 * e->st.spec_accepted / e->st.spec_drafted, 100.0 * e->st.draft_secs / (e->st.draft_secs + e->st.forward_secs));
+        if (e->st.ng_steps)
+            printf(", repeated-text drafts: %ld verifies, %.2f tokens/verify, %.0f%% accepted", e->st.ng_steps, 1.0 + (double)e->st.ng_accepted / e->st.ng_steps,
+                   100.0 * e->st.ng_accepted / e->st.ng_drafted);
         printf(")\n");
         e->st.prefill_rows = e->st.shared_tokens = e->st.spec_steps = e->st.spec_drafted = e->st.spec_accepted = 0;
+        e->st.ng_steps = e->st.ng_drafted = e->st.ng_accepted = 0;
         e->st.draft_secs = e->st.forward_secs = 0;
         fflush(stdout);
     }

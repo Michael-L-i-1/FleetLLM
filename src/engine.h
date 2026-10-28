@@ -13,6 +13,7 @@
 #include "backend.h"
 #include "sampler.h"
 #include "tokenizer.h"
+#include "ngram.h"
 
 typedef struct {
     bool live, cached, generating, done;
@@ -23,6 +24,8 @@ typedef struct {
     int wait_for, wait_len; // waiting for seqs[wait_for] to write wait_len shared tokens (wait_len 0: not waiting)
     seq_pages dpages;        // drafter KV (speculative decoding): context of the first dpages.len tokens
     int32_t drafts[32]; int n_drafts; // proposals to verify in the next step
+    ng_seq ng; int ng_gen;            // repeated-text draft index (see ngram.h)
+    int ng_drafts;                    // drafts this step that came from repeated text
     sample_params p;
     uint64_t rng;
     double t_start, t_first; // creation time, first generated token (seconds)
@@ -31,6 +34,7 @@ typedef struct {
 typedef struct {
     long steps, decode_rows, prefill_rows, shared_tokens, gen_tokens, deduped_tokens;
     long spec_steps, spec_drafted, spec_accepted; // verify steps, drafts checked, drafts accepted
+    long ng_steps, ng_drafted, ng_accepted;       // the subset drafted from repeated text
     long preemptions; // sequences whose KV was freed under memory pressure (recomputed later)
     double draft_secs;
     double forward_secs;
@@ -53,6 +57,10 @@ typedef struct {
     int spec_k;        // max drafts verified per sequence per step
     int spec_rows;     // target decode + draft rows per step: drafts per sequence = spec_rows / decoding - 1
     draft_row *dctx; int n_dctx, cap_dctx;
+    // model-free speculation from repeated text (any model/backend; see ngram.h)
+    bool ngram;
+    ng_global ng;
+    int ng_gen;
     // step scratch
     row_t *rows; int cap_rows;
     int32_t *amax; int cap_amax;
@@ -64,6 +72,9 @@ void engine_free(engine *e);
 // Enable speculative decoding with a DFlash drafter (greedy sequences only);
 // its KV cache gets kv_budget_bytes. Returns false if the backend cannot draft.
 bool engine_set_drafter(engine *e, model *dm, size_t kv_budget_bytes, int spec_k);
+// Enable drafting from repeated text in a sequence's own context and in every
+// other sequence's (exact for greedy and sampled decoding).
+void engine_set_ngram(engine *e, bool on);
 
 // New sequence for prompt; shares KV with the best prefix match (>= min_share tokens).
 int engine_create(engine *e, const int32_t *prompt, int n);

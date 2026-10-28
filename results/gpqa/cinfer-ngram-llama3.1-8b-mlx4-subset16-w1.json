@@ -1,0 +1,24 @@
+{
+  "label": "cinfer-ngram-llama3.1-8b-mlx4-subset16-w1",
+  "model": "llama8b-mlx4",
+  "base_url": "http://127.0.0.1:8090/v1",
+  "harness": "openai/simple-evals gpqa_eval (diamond)",
+  "questions": 16,
+  "workers": 1,
+  "temperature": 0.0,
+  "max_tokens": 2048,
+  "score": 0.3125,
+  "wall_secs": 120.2,
+  "questions_per_min": 7.99,
+  "completion_tokens": 12373,
+  "prompt_tokens": 4584,
+  "gen_tok_per_sec": 102.9,
+  "mean_completion_tokens": 773.3,
+  "mean_request_secs": 7.51,
+  "truncated": 3,
+  "metrics": {
+    "chars": 2653.0625,
+    "chars:std": 2174.845870077636,
+    "score:std": 0.46351240544347894
+  }
+}

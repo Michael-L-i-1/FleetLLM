@@ -44,6 +44,7 @@ void engine_free(engine *e) {
     free(e->logits);
     free(e->amax);
     free(e->dctx);
+    ng_global_free(&e->ng);
     free(e);
 }
 
@@ -62,11 +63,20 @@ bool engine_set_drafter(engine *e, model *dm, size_t kv_budget, int spec_k) {
 }
 
 static int new_seq(engine *e) {
-    for (int i = 0; i < e->n_seqs; i++) if (!e->seqs[i].live) { memset(&e->seqs[i], 0, sizeof(seq_t)); e->seqs[i].live = true; return i; }
-    e->seqs = realloc(e->seqs, sizeof(seq_t) * (e->n_seqs + 1));
-    memset(&e->seqs[e->n_seqs], 0, sizeof(seq_t));
-    e->seqs[e->n_seqs].live = true;
-    return e->n_seqs++;
+    int id = -1;
+    for (int i = 0; i < e->n_seqs && id < 0; i++) if (!e->seqs[i].live) id = i;
+    if (id < 0) { e->seqs = realloc(e->seqs, sizeof(seq_t) * (e->n_seqs + 1)); id = e->n_seqs++; }
+    memset(&e->seqs[id], 0, sizeof(seq_t));
+    e->seqs[id].live = true;
+    e->seqs[id].ng_gen = ++e->ng_gen;
+    return id;
+}
+
+void engine_set_ngram(engine *e, bool on) {
+    e->ngram = on;
+    if (on && !e->ng.t) ng_global_init(&e->ng, 20);
+    if (!e->spec_rows) e->spec_rows = 32;
+    if (!e->spec_k) e->spec_k = 15;
 }
 
 int engine_create_fresh(engine *e, const int32_t *prompt, int n) {
@@ -169,6 +179,7 @@ void engine_release(engine *e, int id) {
         if (e->cached[i] == id) { memmove(&e->cached[i], &e->cached[i + 1], sizeof(int) * (e->n_cached - i - 1)); e->n_cached--; break; }
     kv_free_seq(&e->kv, &s->pages);
     if (e->draft) kv_free_seq(&e->dkv, &s->dpages);
+    ng_seq_free(&s->ng);
     free(s->tokens);
     free(s->pending);
     free(s->gen);
@@ -262,7 +273,7 @@ static void draft_phase(engine *e, const int *ids, int n) {
         seq_t *s = &e->seqs[id];
         s->n_drafts = 0;
         int k = kmax < s->p.max_new - s->n_gen - 1 ? kmax : s->p.max_new - s->n_gen - 1;
-        if (!s->generating || s->done || s->n_pending != 1 || s->wait_len || s->p.temperature > 0 || bad[id] || k <= 0) continue;
+        if (!s->generating || s->done || s->n_pending != 1 || s->wait_len || bad[id] || k <= 0) continue;
         if (s->dpages.len + nctx[id] != s->n_tokens) continue; // drafter context incomplete (e.g. forked mid-step)
         bool ok = true;
         for (int j = 0; j < B && ok; j++) ok = kv_reserve(&e->dkv, &s->dpages, s->n_tokens + j);
@@ -293,6 +304,63 @@ static void draft_phase(engine *e, const int *ids, int n) {
     free(loc); free(glob); free(nctx); free(ctx); free(blk); free(bad);
 }
 
+static ng_view seq_view(void *u, int id) {
+    engine *e = u;
+    if (id < 0 || id >= e->n_seqs || !e->seqs[id].live) return (ng_view){ NULL, 0, 0 };
+    return (ng_view){ e->seqs[id].tokens, e->seqs[id].n_tokens, e->seqs[id].ng_gen };
+}
+
+typedef struct { int id, k, match; } ng_cand;
+
+// Repeated-text drafts for decoding sequences: the step's spare rows (spec_rows
+// minus one row per decoding sequence) go to the longest matches first. Under a
+// drafter, a repeated-text match of >= NG_TRUST tokens replaces its drafts.
+#define NG_TRUST 8
+static void ngram_phase(engine *e, const int *ids, int n) {
+    ng_cand *c = malloc(sizeof(ng_cand) * (n ? n : 1));
+    int nc = 0, nd = 0;
+    int32_t buf[32];
+    for (int i = 0; i < n; i++) {
+        seq_t *s = &e->seqs[ids[i]];
+        bool decoding = s->generating && !s->done && s->n_pending == 1 && !s->wait_len;
+        nd += decoding;
+        if (!decoding) { // keep prompts indexed too: they are draft sources for everyone
+            if (s->n_tokens) ng_update(&s->ng, &e->ng, ids[i], s->ng_gen, s->tokens, s->n_tokens);
+            continue;
+        }
+        // context = written tokens + the pending (sampled, not yet written) token
+        if (s->n_tokens + 1 > s->cap_tokens) { s->cap_tokens = (s->n_tokens + 1) * 2 + 16; s->tokens = realloc(s->tokens, sizeof(int32_t) * s->cap_tokens); }
+        s->tokens[s->n_tokens] = s->pending[0];
+        int nctx = s->n_tokens + 1;
+        ng_update(&s->ng, &e->ng, ids[i], s->ng_gen, s->tokens, nctx);
+        int max = s->p.max_new - s->n_gen - 1;
+        if (max > e->spec_k) max = e->spec_k;
+        if (max > 31) max = 31;
+        int m = 0, k = ng_draft(&s->ng, &e->ng, ids[i], s->tokens, nctx, seq_view, e, buf, max, &m);
+        if (e->draft && s->n_drafts && m < NG_TRUST) continue; // keep the drafter's proposals
+        if (k > 0) {
+            memcpy(s->drafts, buf, sizeof(int32_t) * k);
+            c[nc++] = (ng_cand){ ids[i], k, m };
+            s->n_drafts = 0; // set below within the budget
+        }
+    }
+    int budget = e->spec_rows - nd;
+    for (int i = 1; i < nc; i++) { // longest match first
+        ng_cand v = c[i];
+        int j = i - 1;
+        while (j >= 0 && c[j].match < v.match) { c[j + 1] = c[j]; j--; }
+        c[j + 1] = v;
+    }
+    for (int i = 0; i < nc; i++) {
+        seq_t *s = &e->seqs[c[i].id];
+        int k = c[i].k < budget ? c[i].k : budget;
+        s->n_drafts = k > 0 ? k : 0;
+        s->ng_drafts = s->n_drafts;
+        if (k > 0) budget -= k;
+    }
+    free(c);
+}
+
 static void emit(engine *e, seq_t *s, int32_t tok, double t) {
     append(&s->gen, &s->n_gen, &s->cap_gen, &tok, 1);
     if (s->n_gen == 1) s->t_first = t;
@@ -305,6 +373,9 @@ static void emit(engine *e, seq_t *s, int32_t tok, double t) {
 
 bool engine_step(engine *e, const int *ids, int n) {
     if (e->draft) draft_phase(e, ids, n);
+    else for (int i = 0; i < n; i++) e->seqs[ids[i]].n_drafts = 0;
+    for (int i = 0; i < n; i++) e->seqs[ids[i]].ng_drafts = 0;
+    if (e->ngram) ngram_phase(e, ids, n);
     plan_item *plan = malloc(sizeof(plan_item) * (n ? n : 1));
     int np = 0, budget = e->row_budget, n_decode = 0;
     for (int i = 0; i < n; i++) resolve_wait(e, ids[i], false);
@@ -383,21 +454,31 @@ bool engine_step(engine *e, const int *ids, int n) {
         int take = plan[i].take, base = s->pages.len, r0 = r;
         r += take;
         if (plan[i].spec) {
-            // verify: the target's argmax after the anchor and each accepted draft
-            const int32_t *a = e->amax + li;
+            // verify: the target's choice after the anchor and each accepted draft (argmax for
+            // greedy rows; the exact rejection rule for sampled rows, see sample_verify)
             int k = plan[i].spec, acc = 0;
+            int32_t a[33];
+            bool greedy = s->p.temperature <= 0 && !need_logits;
+            for (int t = 0; t <= k; t++) {
+                bool ok = false;
+                if (greedy) a[t] = e->amax[li + t], ok = t < k && a[t] == s->drafts[t];
+                else if (t < k) a[t] = sample_verify(e->logits + (size_t)(li + t) * e->m->c.vocab, e->m->c.vocab, &s->p, &s->rng, s->drafts[t], &ok);
+                else a[t] = sample(e->logits + (size_t)(li + t) * e->m->c.vocab, e->m->c.vocab, &s->p, &s->rng);
+                if (!ok) break;
+                acc++;
+            }
             li += take;
-            while (acc < k && s->drafts[acc] == a[acc]) acc++;
             e->st.spec_steps++;
             e->st.spec_drafted += k;
             e->st.spec_accepted += acc;
+            if (s->ng_drafts) { e->st.ng_steps++; e->st.ng_drafted += k; e->st.ng_accepted += acc; }
             int keep = 1 + acc; // anchor + accepted drafts stay in the KV
             s->pages.len = base + keep;
             kv_truncate(&e->kv, &s->pages, s->pages.len);
             append(&s->tokens, &s->n_tokens, &s->cap_tokens, s->pending, 1);
             append(&s->tokens, &s->n_tokens, &s->cap_tokens, s->drafts, acc);
             s->n_pending = 0;
-            for (int t = 0; t < keep; t++) add_ctx(e, plan[i].seq, base + t, r0 + t);
+            if (e->draft) for (int t = 0; t < keep; t++) add_ctx(e, plan[i].seq, base + t, r0 + t);
             for (int t = 0; t <= acc && !s->done; t++) emit(e, s, a[t], t1); // accepted drafts equal a[0..acc-1], then the bonus token
             if (!s->done) append(&s->pending, &s->n_pending, &s->cap_pending, &a[acc], 1);
             kv_trim_window(&e->kv, &s->pages);

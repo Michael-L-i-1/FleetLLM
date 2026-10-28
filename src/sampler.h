@@ -17,3 +17,8 @@ typedef struct {
 sample_params sample_defaults(void);
 int32_t sample(const float *logits, int vocab, const sample_params *p, uint64_t *rng);
 int32_t argmax(const float *x, int n);
+// Speculative verification of a deterministic draft token: keeps it with the
+// target's probability, else samples the target distribution without it (the
+// standard rejection rule for a point-mass draft), so the output distribution
+// is exactly that of plain sampling; greedy: keep iff it is the argmax.
+int32_t sample_verify(const float *logits, int vocab, const sample_params *p, uint64_t *rng, int32_t draft, bool *accepted);

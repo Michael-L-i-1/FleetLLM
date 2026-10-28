@@ -50,6 +50,17 @@ q/k/v/gate and ffn gate/up are fused into single matrices at repack time; the
 norm, attention and SiLU kernels write f16 matmul inputs directly; the residual
 add, post-norm and next pre-norm run as one kernel.
 
+Attention, chosen per row (`row_t.input`) so a row's result never depends on
+its batch or on how its prompt was chunked:
+
+| Rows | Kernel |
+|---|---|
+| input (prompt, appended text, recompute), M5 | `attn_nax`: 64 rows x 1 head per threadgroup, QK^T and PV as MPP 16x32x16 matmuls, K/V from the pages into registers; fixed 8192-position spans merged by `attn_reduce` |
+| sampled / drafted (decode, verify) | `attn_vec`: 1 row x its G heads per threadgroup, lane groups on 4 consecutive positions, row-local flash-decoding splits |
+| input, GPUs without NAX | `attn_mma`: up to 8 consecutive rows x G heads share K/V tiles in threadgroup memory, 8x8 simdgroup MMA |
+
+All kernels read 16-bit or 8-bit (per-token, per-head scale) KV pages directly.
+
 ## Speculative decoding
 
 DFlash drafter (`metal_draft`): context rows write the drafter's KV from the

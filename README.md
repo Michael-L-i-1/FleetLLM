@@ -38,11 +38,14 @@ hit the 2048-token cap. GPQA prompts share almost nothing, so this measures raw 
 kernels, not the agent features (sharing, sessions). Greedy cinfer output is token-identical to
 MLX's reference on the same weights (GPQA prompt, 200 tokens).
 
-**Agent-oriented features** (repeated-text speculation shared across agents,
-row-grouped attention for long-context appends, 8-bit KV): the same 16 GPQA
-questions take 121 s with 1 agent and 32 s with 16 (vLLM: 344 s / 80 s); a
-multi-turn agent workload under a 2.5 GB KV cap went 975 s -> 174 s (vLLM 158 s;
-prefill attention on matrix units is the remaining gap). See [docs/results.md](docs/results.md).
+**Multi-turn agent sessions** (8 agents x 6 turns from a shared context,
+tool results appended, ~8k-token final contexts, 2.5 GB KV cap, same 4-bit
+Llama 3.1 8B as vLLM): **92 s vs vLLM's 158 s (1.72x)**, p95 turn 18.6 s vs
+41.9 s. From 975 s that morning: repeated-text speculation shared across agents,
+8-bit KV, attention for input rows on the M5 neural accelerators, and a
+latency-shaped decode attention kernel, with kernel choice per row so outputs
+stay batch-invariant. The same 16 GPQA questions take 121-130 s with 1 agent
+and 32-42 s with 16 (vLLM: 344 s / 80 s). See [docs/results.md](docs/results.md).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 
@@ -94,7 +97,7 @@ scripts/      verification against HF/gguf-py, build helpers
 | Dequantization F16/BF16/Q4_0/Q4_1/Q5_0/Q5_1/Q8_0/Q2_K..Q6_K | bit-exact vs gguf-py |
 | Generic decoder: llama, qwen2, qwen3, muse-glimmer | correct output on all |
 | CPU reference backend | correct, slow by design (Pi NEON kernels are next) |
-| Metal backend | correct; GGUF: fused mat-vec / fused tile GEMM / dequant-once + dense GEMM; MLX 4-bit: tiled NAX GEMM + tiled mat-vec; flash-decoding attention |
+| Metal backend | correct; GGUF: fused mat-vec / fused tile GEMM / dequant-once + dense GEMM; MLX 4-bit: tiled NAX GEMM + tiled mat-vec; attention: NAX (input rows), latency-shaped vector kernel (decode / verify), 8x8-MMA flash kernel (GPUs without NAX) |
 | MLX / HF safetensors loading (config, shards, tokenizer.json, affine weights) | Glimmer, Llama verified on CPU and GPU; tokenizer matches HF 10/10 |
 | In-flight prefix dedup (agents fanned out together share one prefill) | done |
 | Speculative decoding with the DFlash drafter (batched, adaptive draft length) | done; outputs identical to plain greedy |

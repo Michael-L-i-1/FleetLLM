@@ -44,14 +44,42 @@ of KV against 19k (16-bit) / 38k (8-bit) available, so memory pressure is real.
 | + 8-bit KV (`--kv-int8`) | **174 s** | 27 s | 36 s | 0 | 89% |
 | + 512/1024-row prefill chunks | 171 s | 25 s | 37 s | 0 | 89% |
 | 16-bit KV + SSD swap (`--swap-gb 8`) | 470 s | 33 s | 145 s | 0 (swap instead) | |
-| **vLLM** (vllm-metal 0.32, 18.4k-token KV) | **158 s** | 18 s | 42 s | | n/a |
+| + input rows' attention on the neural accelerators (`attn_nax`) | 152 s | 21 s | 32 s | 0 | 89% |
+| + decode attention kernel (`attn_vec`, one row per threadgroup) | 111 s | 15 s | 23 s | 0 | 89% |
+| + 4 positions per lane group, unrolled heads | **92 s** | **12.4 s** | **18.6 s** | 0 | 89% |
+| **vLLM** (vllm-metal 0.32, 18.4k-token KV) | 158 s | 18 s | 42 s | | n/a |
 
-Remaining gap to vLLM: prefill attention runs on the ALUs, not the matrix units;
-a 512-token chunk costs 403 ms at 512 tokens of context and 1366 ms at 4.6k
-(linear in context), so turns wait on other agents' appends. A matrix-unit
-(flash-attention) prefill kernel is the next step. SSD swap works (IO is cheap:
-277 swaps, 13 s) but with 2-3x oversubscription it only replaces recompute
-with churn; it needs session-level admission (park agents in tool waits).
+cinfer now finishes the workload **1.72x faster than vLLM** with a 2.2x lower
+p95 turn latency, on the same model file and a matched KV budget (8-bit KV
+holds 2x the tokens in the same 2.5 GB, so nothing is preempted).
+
+What closed the gap (8B, 8-bit KV; per-step GPU time from `CINFER_PROFILE_EACH=1`):
+
+- **Prefill attention on the M5 neural accelerators.** A 512-row chunk at 4.6k
+  context took 1330 ms, about 1.2 TFLOPS of attention (the 8x8 simdgroup
+  matrix ops were near their ceiling, so better loads and splits changed
+  nothing), against ~26 TFLOPS for the NAX weight GEMM. `attn_nax` runs QK^T
+  and PV as MPP 16x32x16 matmuls, 64 rows x one head per threadgroup, K/V
+  loaded from the pages straight into registers (ported from vllm-metal's
+  `paged_attention_nax` / MLX `steel_attention_nax`). The same chunk now takes
+  488 ms; prefill 539 -> 1178 tok/s at 4.8k tokens and 235 -> 807 tok/s at 16.7k.
+- **Decode attention shaped for latency, not matrix units.** One decode row at
+  10k context spent 41 ms/step in attention, though its KV is only ~0.7 GB;
+  f16 KV (2x the bytes) and a 4-page working set ran equally fast, so the
+  kernel was issue/latency bound. `attn_vec` (one row per threadgroup, lane
+  groups on 4 consecutive positions, loads issued before the math, unrolled
+  heads) brings it to 5.3 ms: decode at 10k context 17 -> 44 tok/s.
+- **Kernel choice per row, not per batch.** Input rows (prompt, appended text)
+  always take `attn_nax`, sampled and drafted rows always take `attn_vec`, and
+  both split context at row-local boundaries, so batched outputs stay identical
+  to sequential (check 8/8) and speculative outputs to plain greedy (8/8).
+  Perplexity unchanged (8B: 19.6854 -> 19.6841; Glimmer, sliding window: 8.2507
+  -> 8.2499). Attention partials get compacted per-kernel slots: a 512-row chunk
+  at 100k context no longer sizes a rows x max-splits buffer (3.4 GB before).
+
+SSD swap works (IO is cheap: 277 swaps, 13 s) but with 2-3x oversubscription
+it only replaces recompute with churn; it needs session-level admission (park
+agents in tool waits).
 
 ## GPQA subset with the agent-oriented features (16 questions, Llama 3.1 8B)
 
@@ -61,6 +89,15 @@ with churn; it needs session-level admission (park agents in tool waits).
 | cinfer baseline | 241 s | 59 s | 12.4k |
 | + repeated-text drafts (`--ngram`, output identical) | 120 s | 36 s | 12.4k |
 | + 8-bit KV + grouped attention | **121 s** | **32 s** | 16.4k (8-bit KV changes some outputs) |
+| + NAX prefill / vec decode attention | 130 s | 36-42 s | 15.5-15.9k |
+
+This subset does not separate the latest kernels: its prompts are ~200 tokens
+(attention is a small share of each step), different kernels change some greedy
+paths (token counts and repeated-text acceptance move with them), and the
+16-worker wall time is set by the slowest truncated question decoding alone
+(three runs of one build: 36 s, 42 s, and 36 s). The deterministic `bench`
+(16 agents, `--ngram`, 512 tokens each) measures the same build at 510 tok/s
+vs 368 with the previous decode kernel.
 
 ## Head to head with vLLM on the same 4-bit file
 

@@ -118,6 +118,9 @@ batching). With the opt-in, lossy `--reuse-spans` (below): **43 / 64 / 111 s**
 before the shared K/V tile in `attn_nax`, 57 / 93 / 182 s before decode spans
 were shared across sequences (`attn_naxs`, below).
 
+**One long-running agent** (1 agent x 14 turns, 0.5 s tools, context growing
+to 14k tokens): cinfer **50 s** vs vLLM 81 s (p50 turn 3.2 s vs 5.2 s).
+
 **Decode attention shared across agents (`attn_naxs`).** Every agent's context
 starts with the same system prompt (here ~3.5k tokens; real harnesses' tool
 definitions are often 5-20k), held once in memory through prefix sharing but

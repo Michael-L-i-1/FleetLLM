@@ -477,15 +477,44 @@ static void draft_phase(engine *e, const int *ids, int n) {
 
 // ---- span reuse (spans.h)
 
-static ng_view resident_view(void *u, int id) {
+static ng_view written_view(void *u, int id) {
     engine *e = u;
-    if (id < 0 || id >= e->n_seqs || !e->seqs[id].live || e->seqs[id].swapped) return (ng_view){ NULL, 0, 0 };
+    if (id < 0 || id >= e->n_seqs || !e->seqs[id].live) return (ng_view){ NULL, 0, 0 };
     return (ng_view){ e->seqs[id].tokens, e->seqs[id].n_tokens, e->seqs[id].ng_gen };
+}
+
+// Page table covering pages [p0, p1] of a swapped sequence with its on-disk pages
+// read back into temporary pages (*flags marks them; free with kv_release_flagged).
+static bool swap_peek(engine *e, const seq_t *s, int p0, int p1, seq_pages *tmp, uint8_t **flags) {
+    kv_cache *kv = &e->kv;
+    size_t fb = kv_page_bytes(&kv->full), wb = kv->window ? kv_page_bytes(&kv->swa) : 0;
+    *tmp = (seq_pages){ .len = s->pages.len, .n_pages = s->pages.n_pages, .cap = s->pages.n_pages };
+    tmp->full = malloc(sizeof(uint32_t) * s->pages.n_pages);
+    tmp->swa = malloc(sizeof(uint32_t) * s->pages.n_pages);
+    *flags = calloc(s->pages.n_pages, 1);
+    for (int i = 0; i < s->pages.n_pages; i++) {
+        bool in = i >= p0 && i <= p1;
+        tmp->full[i] = in ? s->pages.full[i] : KV_NONE;
+        tmp->swa[i] = in ? s->pages.swa[i] : KV_NONE;
+        if (in) (*flags)[i] = s->swap_flags[i];
+    }
+    if (!kv_fill_flagged(kv, tmp, *flags)) { free(tmp->full); free(tmp->swa); free(*flags); return false; }
+    int fd = open(s->swap_path, O_RDONLY);
+    off_t off = 0;
+    bool ok = fd >= 0;
+    for (int i = 0; i <= p1 && ok; i++) { // the file holds the flagged pages in order
+        if (s->swap_flags[i] & 1) { if (i >= p0) ok = pread(fd, kv->full.data + (size_t)tmp->full[i] * fb, fb, off) == (ssize_t)fb; off += fb; }
+        if ((s->swap_flags[i] & 2) && ok) { if (i >= p0) ok = pread(fd, kv->swa.data + (size_t)tmp->swa[i] * wb, wb, off) == (ssize_t)wb; off += wb; }
+    }
+    if (fd >= 0) close(fd);
+    if (!ok) { kv_release_flagged(kv, tmp, *flags); free(tmp->full); free(tmp->swa); free(*flags); return false; }
+    return true;
 }
 
 static uint32_t pages_free(const engine *e) { return e->kv.window && e->kv.swa.n_free < e->kv.full.n_free ? e->kv.swa.n_free : e->kv.full.n_free; }
 
-// Move the planned run's KV from its source (still resident and unchanged) into s.
+// Move the planned run's KV from its source (still live and unchanged; if it is
+// swapped out, its pages for the run are read back temporarily) into s.
 static void span_move(engine *e, int id) {
     seq_t *s = &e->seqs[id];
     s->sp_planned = false;
@@ -493,19 +522,25 @@ static void span_move(engine *e, int id) {
     if (s->sp_src < 0 || s->sp_src >= e->n_seqs) return;
     seq_t *src = &e->seqs[s->sp_src];
     int len = s->sp_len, from = s->sp_src_pos;
-    if (!src->live || src->swapped || src->ng_gen != s->sp_gen || src->pages.len < from + len || s->n_pending <= len ||
+    if (!src->live || src->ng_gen != s->sp_gen || (src->swapped ? src->swap_len : src->pages.len) < from + len || s->n_pending <= len ||
         memcmp(src->tokens + from, s->pending, sizeof(int32_t) * len))
         return;
     if (e->kv.window)
         for (int p = from / KV_PAGE; p <= (from + len - 1) / KV_PAGE; p++)
-            if (src->pages.swa[p] == KV_NONE) return; // out of its window already
-    uint32_t need = (uint32_t)len / KV_PAGE + 2;
-    if (pages_free(e) < need) make_room(e, need);
-    if (pages_free(e) < need) return;
+            if (src->pages.swa[p] == KV_NONE && !(src->swapped && (src->swap_flags[p] & 2))) return; // out of its window already
+    uint32_t need = (uint32_t)len / KV_PAGE + 2, peek = src->swapped ? (uint32_t)((from + len - 1) / KV_PAGE - from / KV_PAGE + 1) : 0;
+    if (pages_free(e) < need + peek) make_room(e, need + peek);
+    if (pages_free(e) < need + peek) return;
     double t0 = now_secs();
+    seq_pages tmp;
+    uint8_t *flags = NULL;
+    if (src->swapped && !swap_peek(e, src, from / KV_PAGE, (from + len - 1) / KV_PAGE, &tmp, &flags)) return;
     int base = s->pages.len;
-    for (int p = base; p < base + len; p++) if (!kv_reserve(&e->kv, &s->pages, p)) return;
-    kv_move(&e->kv, &src->pages, from, &s->pages, base, len, &e->rope);
+    bool ok = true;
+    for (int p = base; p < base + len && ok; p++) ok = kv_reserve(&e->kv, &s->pages, p);
+    if (ok) kv_move(&e->kv, src->swapped ? &tmp : &src->pages, from, &s->pages, base, len, &e->rope);
+    if (flags) { kv_release_flagged(&e->kv, &tmp, flags); free(tmp.full); free(tmp.swa); free(flags); }
+    if (!ok) return;
     s->pages.len += len;
     append(&s->tokens, &s->n_tokens, &s->cap_tokens, s->pending, len);
     memmove(s->pending, s->pending + len, sizeof(int32_t) * (s->n_pending - len));
@@ -526,7 +561,7 @@ static void reuse_phase(engine *e, const int *ids, int n) {
         if (s->wait_len || s->sp_planned || s->sp_searched || s->n_pending < e->reuse_min) continue;
         s->sp_searched = true;
         span_run r;
-        if (!span_find(&e->spans, ids[i], s->pending, s->n_pending, e->reuse_min, resident_view, e, &r)) continue;
+        if (!span_find(&e->spans, ids[i], s->pending, s->n_pending, e->reuse_min, written_view, e, &r)) continue;
         int len = r.len - e->reuse_head - e->reuse_tail;
         if (len < SPAN_BLOCK) continue;
         s->sp_planned = true;

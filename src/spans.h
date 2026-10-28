@@ -28,5 +28,5 @@ int span_add(span_index *x, int seq, int gen, const int32_t *tok, int from, int 
 typedef struct { int off, len, seq, pos; } span_run; // pend[off, off+len) == tokens of seq at [pos, pos+len)
 
 // Longest run of pend[0..n) of at least min_len tokens held by another sequence
-// (view(seq) gives its written tokens, n = 0 if not resident). false if none.
+// (view(seq) gives its written tokens). false if none.
 bool span_find(const span_index *x, int self, const int32_t *pend, int n, int min_len, ng_view (*view)(void *u, int seq), void *u, span_run *out);

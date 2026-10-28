@@ -107,13 +107,20 @@ swap-outs, 39 swap-ins, 1.9 s of IO for the whole run). 8 agents are unaffected
 
 | Agents | Live session state | **cinfer** wall | vLLM wall | Speedup | cinfer p95 turn | vLLM p95 turn |
 |---|---|---|---|---|---|---|
-| 8 | ~65k tokens | **68 s** | 158 s | **2.33x** | 13 s | 42 s |
-| 16 | ~130k tokens | **117 s** | 315 s | **2.69x** | 27 s | 77 s |
-| 32 | ~260k tokens | **229 s** | 595 s | **2.60x** | 47 s | 162 s |
+| 8 | ~65k tokens | **57 s** | 158 s | **2.76x** | 10 s | 42 s |
+| 16 | ~130k tokens | **93 s** | 315 s | **3.40x** | 19 s | 77 s |
+| 32 | ~260k tokens | **182 s** | 595 s | **3.27x** | 36 s | 162 s |
 
-cinfer: `--ngram --kv-int8 --swap-gb 16` (24 at 32 agents). Before decode/verify
-attention moved to the neural accelerators (`attn_naxd`, below) the cinfer
-column was 86 / 150 / 292 s.
+cinfer: `--ngram --kv-int8 --swap-gb 24`. Earlier versions of the cinfer column:
+86 / 150 / 292 s before `attn_naxd`, 68 / 117 / 229 s before the shared K/V tile
+in `attn_nax` (both below).
+
+**One dequantized K/V tile per threadgroup in `attn_nax`.** Its 4 simdgroups
+serve the same head, and each loaded and dequantized every K/V tile itself;
+with 8-bit KV the int8 -> f16 work cost more than the matmuls (a 128-row chunk
+at 10k context: 190 ms with 8-bit KV vs 121 ms with 16-bit). The threadgroup now
+dequantizes each tile once into threadgroup memory: 110 ms (16-bit: 113 ms),
+prefill of a 10k-token prompt 910 -> 1300 tok/s, perplexity unchanged.
 
 **Decode and verify rows on the neural accelerators (`attn_naxd`).** Each
 decode row brings its repeated-text drafts, and all of them read the same K/V;

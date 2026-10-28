@@ -258,10 +258,18 @@ METAL_FUNC void nax_rows(const thread frag8<float>& f, thread float* v) {
     }
 }
 
-// 4 consecutive K or V values of one token: f16, or int8 times the token's scale
+// 4 consecutive K or V values of one token: f16, or int8 times the token's scale.
+// int8 -> f16 with the magic-number trick (byte + 128 in the mantissa of 1024.0h,
+// as for the 4-bit weights): a hardware char -> half convert per value cost more
+// than the matmuls.
 template <bool Q8>
 METAL_FUNC half4 nax_kv4(device const half* pool, ulong at, half s) {
-    if (Q8) return half4(*(device const char4*)((device const char*)pool + at)) * s;
+    if (Q8) {
+        const uint w = *(device const uint*)((device const char*)pool + at) ^ 0x80808080u;
+        const half2 lo = as_type<half2>((w & 0x00FF00FFu) | 0x64006400u), hi = as_type<half2>(((w >> 8) & 0x00FF00FFu) | 0x64006400u);
+        const half2 e = (lo - 1152.0h) * s, o = (hi - 1152.0h) * s; // bytes 0, 2 and 1, 3 (the subtraction is exact)
+        return half4(e.x, o.x, e.y, o.y);
+    }
     return *(device const half4*)(pool + at);
 }
 
@@ -271,8 +279,9 @@ template <int HD, bool Q8>
     device const uint* tab [[buffer(3)]], device float* out [[buffer(4)]], constant AttnArgs& a [[buffer(5)]],
     device const uint2* groups [[buffer(6)]], device const float* g [[buffer(7)]], device float* part [[buffer(8)]],
     device const uint* slot [[buffer(9)]], constant uint2& nsp [[buffer(10)]], uint3 tg [[threadgroup_position_in_grid]],
-    ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]]) {
-    constexpr int TD = HD / 16, TK = 32;
+    ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]], uint tid [[thread_index_in_threadgroup]]) {
+    constexpr int TD = HD / 16, TK = 32, KS = HD + 8;
+    threadgroup half kvt[2 * TK * KS]; // the tile (int8: dequantized) once for all 4 simdgroups
     const uint2 grp = groups[tg.x]; // {first row, rows <= 64}
     const uint h = tg.y, kvh = h / (a.nh / a.nkv);
     const short qid = lane >> 2, fm = (qid & 4) | ((lane >> 1) & 3), fn = ((qid & 2) | (lane & 1)) * 4;
@@ -311,22 +320,24 @@ template <int HD, bool Q8>
     const ulong sc_off = a.scale_off + (((ulong)a.layer * 2) * a.nkv + kvh) * a.page * 2, sc_v = (ulong)a.nkv * a.page * 2;
     const uint s0 = tg.z * nsp.x, lo = max(s0, first.start / TK * TK), end = min(last.ctx_end, s0 + nsp.x - 1);
     for (uint t0 = lo; t0 <= end; t0 += TK) {
-        // 4 eight-token quarters (one page lookup each) at this lane's token row fm
-        ulong kat[4];
-        half ksc[4], vsc[4];
-        bool kok[4];
-        STEEL_PRAGMA_UNROLL
-        for (short qq = 0; qq < 4; qq++) {
-            const uint tok = t0 + qq * 8, tl = tok + fm;
-            kok[qq] = tl <= end;
-            const ulong page = tok <= end ? tab[last.tab + tok / a.page] : 0;
-            kat[qq] = page * a.page_elems + head_off + (ulong)(tl % a.page) * HD + fn;
-            ksc[qq] = vsc[qq] = 1.0h;
-            if (Q8 && kok[qq]) {
-                device const char* pb = (device const char*)pool + page * a.page_elems + sc_off + (tl % a.page) * 2;
-                ksc[qq] = *(device const half*)pb;
-                vsc[qq] = *(device const half*)(pb + sc_v);
+        { // 4 threads per token: the tile's K and V rows (int8: dequantized) into threadgroup memory
+            constexpr int CH = HD / 16; // char4 chunks per thread
+            threadgroup_barrier(mem_flags::mem_threadgroup); // the previous tile's readers are done
+            const uint tk = tid / 4, d0 = (tid % 4) * (HD / 4), p = t0 + tk;
+            threadgroup half4* kr = (threadgroup half4*)(kvt + tk * KS + d0);
+            threadgroup half4* vr = (threadgroup half4*)(kvt + (TK + tk) * KS + d0);
+            if (p <= end) {
+                const ulong page = tab[last.tab + p / a.page];
+                const ulong base = page * a.page_elems + head_off + (ulong)(p % a.page) * HD + d0;
+                device const char* pb = (device const char*)pool + page * a.page_elems + sc_off + (p % a.page) * 2;
+                const half sk = Q8 ? *(device const half*)pb : 1.0h, sv = Q8 ? *(device const half*)(pb + sc_v) : 1.0h;
+                STEEL_PRAGMA_UNROLL
+                for (int c = 0; c < CH; c++) { kr[c] = nax_kv4<Q8>(pool, base + c * 4, sk); vr[c] = nax_kv4<Q8>(pool, base + vofs + c * 4, sv); }
+            } else {
+                STEEL_PRAGMA_UNROLL
+                for (int c = 0; c < CH; c++) kr[c] = vr[c] = half4(0.0h);
             }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
         }
         frag8<float> S0 = frag8<float>(0.0f), S1 = frag8<float>(0.0f);
         STEEL_PRAGMA_UNROLL
@@ -334,8 +345,8 @@ template <int HD, bool Q8>
             frag8<half> K0, K1;
             STEEL_PRAGMA_UNROLL
             for (short i = 0; i < 2; i++) {
-                const half4 k0 = kok[i] ? nax_kv4<Q8>(pool, kat[i] + d * 16, ksc[i]) : half4(0.0h);
-                const half4 k1 = kok[2 + i] ? nax_kv4<Q8>(pool, kat[2 + i] + d * 16, ksc[2 + i]) : half4(0.0h);
+                const half4 k0 = *(threadgroup const half4*)(kvt + (i * 8 + fm) * KS + d * 16 + fn);
+                const half4 k1 = *(threadgroup const half4*)(kvt + ((2 + i) * 8 + fm) * KS + d * 16 + fn);
                 STEEL_PRAGMA_UNROLL
                 for (short j = 0; j < 4; j++) { K0[i * 4 + j] = k0[j]; K1[i * 4 + j] = k1[j]; }
             }
@@ -388,8 +399,8 @@ template <int HD, bool Q8>
                 STEEL_PRAGMA_UNROLL
                 for (short i = 0; i < 2; i++) {
                     const short qq = 2 * f + i;
-                    const half4 v0 = kok[qq] ? nax_kv4<Q8>(pool, kat[qq] + vofs + d * 16, vsc[qq]) : half4(0.0h);
-                    const half4 v1 = kok[qq] ? nax_kv4<Q8>(pool, kat[qq] + vofs + (d + 1) * 16, vsc[qq]) : half4(0.0h);
+                    threadgroup const half* vt = kvt + (TK + qq * 8 + fm) * KS + fn;
+                    const half4 v0 = *(threadgroup const half4*)(vt + d * 16), v1 = *(threadgroup const half4*)(vt + (d + 1) * 16);
                     STEEL_PRAGMA_UNROLL
                     for (short j = 0; j < 4; j++) { V0[i * 4 + j] = v0[j]; V1[i * 4 + j] = v1[j]; }
                 }

@@ -40,16 +40,16 @@ MLX's reference on the same weights (GPQA prompt, 200 tokens).
 
 **Multi-turn agent sessions** (8 agents x 6 turns from a shared context,
 tool results appended, ~8k-token final contexts, 2.5 GB KV cap, same 4-bit
-Llama 3.1 8B as vLLM): **92 s vs vLLM's 158 s (1.72x)**, p95 turn 18.6 s vs
+Llama 3.1 8B as vLLM): **57 s vs vLLM's 158 s (2.76x)**, p95 turn 9.8 s vs
 41.9 s. From 975 s that morning: repeated-text speculation shared across agents,
 8-bit KV, attention for input rows on the M5 neural accelerators, and a
 latency-shaped decode attention kernel, with kernel choice per row so outputs
 stay batch-invariant. The same 16 GPQA questions take 121-130 s with 1 agent
 and 32-42 s with 16 (vLLM: 344 s / 80 s). With **16 agents** (~130k tokens of
 session state, 38k tokens of KV) sessions park on SSD between turns
-(share-aware swap + memory-aware admission): **117 s vs vLLM's 315 s (2.7x)**,
-p95 turn 27 s vs 77 s; 8 agents **68 s vs 158 s**, 32 agents **229 s vs 595 s**
-(p95 47 s vs 162 s). See [docs/results.md](docs/results.md).
+(share-aware swap + memory-aware admission): **93 s vs vLLM's 315 s (3.4x)**,
+p95 turn 19 s vs 77 s; 8 agents **57 s vs 158 s**, 32 agents **182 s vs 595 s**
+(p95 36 s vs 162 s). See [docs/results.md](docs/results.md).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 

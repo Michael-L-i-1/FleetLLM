@@ -45,11 +45,12 @@ typedef struct { uint32_t ctx_end, start, tab, split, part; } RowInfo; // part: 
 // *max_sp to the largest split count.
 // Grouped kernel: the matrix-unit flash kernel by default; CINFER_ATTN_SCALAR=1
 // selects the ALU kernel.
-// Rows that are not input (decode, verification) run attn_naxd on NAX GPUs (a
-// decode row and its drafts x the GQA heads share 16-query matmul tiles;
-// CINFER_ATTN_NAXD=0 disables), else attn_vec, one row per threadgroup
-// (CINFER_ATTN_VEC=0 groups them into the matrix kernel instead).
-static bool attn_naxd_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_NAXD") || atoi(getenv("CINFER_ATTN_NAXD")); return v; }
+// Rows that are not input (decode, verification) run attn_naxs on NAX GPUs (a
+// decode row and its drafts x the GQA heads share 16-query matmul tiles, and
+// sequences share spans of identical pages; CINFER_ATTN_NAXS=0 disables), else
+// attn_vec, one row per threadgroup (CINFER_ATTN_VEC=0 groups them into the
+// matrix kernel instead).
+static bool attn_naxs_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_NAXS") || atoi(getenv("CINFER_ATTN_NAXS")); return v; }
 static bool attn_vec_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_VEC") || atoi(getenv("CINFER_ATTN_VEC")); return v; }
 
 // Input rows (prompt / appended text) run attention on the neural accelerators
@@ -85,6 +86,56 @@ static int attn_groups(const RowInfo *ri, const int *seq, const int *pos, const 
         }
     }
     return ng;
+}
+
+// Decode / verify attention (attn_naxs) runs over fixed spans of DEC_SPAN
+// positions; the row groups of sequences that hold the same pages over a whole
+// span (a shared system prompt, a parent's history) share one item, so that
+// span is read and dequantized once for up to 4 of them. Returns the item count;
+// *max_sp: spans per row in the partials buffer.
+#define DEC_SPAN 512
+typedef struct { uint32_t span, n, g[4]; } SpanItem;
+typedef struct { uint64_t key; uint32_t g, span; } span_ent;
+
+static int span_ent_cmp(const void *a, const void *b) {
+    const span_ent *x = a, *y = b;
+    return x->key < y->key ? -1 : x->key > y->key ? 1 : (int)x->g - (int)y->g;
+}
+
+static int span_items(const RowInfo *ri, const uint32_t *grp, int ng, const uint32_t *tab, SpanItem **out, uint32_t *max_sp) {
+    const uint32_t S = DEC_SPAN, P = DEC_SPAN / KV_PAGE;
+    int ne = 0;
+    for (int g = 0; g < ng; g++) ne += (int)(ri[grp[2 * g] + grp[2 * g + 1] - 1].ctx_end / S - ri[grp[2 * g]].start / S + 1);
+    span_ent *v = malloc(sizeof(span_ent) * (ne ? ne : 1));
+    ne = 0;
+    *max_sp = 1;
+    for (int g = 0; g < ng; g++) {
+        const RowInfo *f = &ri[grp[2 * g]];
+        uint32_t start = f->start, end = ri[grp[2 * g] + grp[2 * g + 1] - 1].ctx_end;
+        if (end / S + 1 > *max_sp) *max_sp = end / S + 1;
+        for (uint32_t s = start / S; s <= end / S; s++) {
+            uint64_t key = (1ull << 63) | ((uint64_t)g << 24) | s; // partial span: its own item
+            if (start <= s * S && end >= (s + 1) * S - 1) {
+                key = 1469598103934665603ull ^ s;
+                for (uint32_t p = 0; p < P; p++) key = (key ^ tab[f->tab + s * P + p]) * 1099511628211ull;
+                key &= ~(1ull << 63);
+            }
+            v[ne++] = (span_ent){ key, (uint32_t)g, s };
+        }
+    }
+    qsort(v, ne, sizeof(span_ent), span_ent_cmp);
+    SpanItem *it = malloc(sizeof(SpanItem) * (ne ? ne : 1));
+    int ni = 0;
+    for (int i = 0; i < ne; i++) {
+        SpanItem *last = ni ? &it[ni - 1] : NULL;
+        bool join = last && last->n < 4 && !(v[i].key >> 63) && v[i].key == v[i - 1].key && v[i].span == last->span &&
+                    !memcmp(tab + ri[grp[2 * last->g[0]]].tab + v[i].span * P, tab + ri[grp[2 * v[i].g]].tab + v[i].span * P, 4 * P);
+        if (join) last->g[last->n++] = v[i].g;
+        else it[ni++] = (SpanItem){ v[i].span, 1, { v[i].g, 0, 0, 0 } };
+    }
+    free(v);
+    *out = it;
+    return ni;
 }
 
 typedef struct { float scale, cap; } CapArgs;
@@ -450,8 +501,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         uint8_t *skip = calloc(n, 1); // rows not in the matrix kernel's groups
         int n_nax = 0, n_vec = 0;
         int G = c->n_head / c->n_kv;
-        bool nax_attn = mt->nax && attn_nax_on() && (hd == 64 || hd == 128), naxd_attn = nax_attn && attn_naxd_on() && G <= 16;
-        bool vec_attn = !naxd_attn && attn_vec_on();
+        bool nax_attn = mt->nax && attn_nax_on() && (hd == 64 || hd == 128), naxs_attn = nax_attn && attn_naxs_on() && G <= 16;
+        bool vec_attn = !naxs_attn && attn_vec_on();
         for (int i = 0; i < n; i++) {
             if (vec_attn && !rows[i].input) {
                 vrows[n_vec++] = (uint32_t)i;
@@ -465,8 +516,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             }
             if (nax_attn && rows[i].input) skip[i] = 1;
         }
-        // grouped rows: attn_naxd (16 query slots = rows x G heads) or attn_mma (32)
-        int R = naxd_attn ? 16 / G : 32 / G < 8 ? 32 / G : 8;
+        // grouped rows: attn_naxs (16 query slots = rows x G heads) or attn_mma (32)
+        int R = naxs_attn ? 16 / G : 32 / G < 8 ? 32 / G : 8;
         if (n_vec) write_buf(B(mt, @"vrows", 4 * n), vrows, 4 * n_vec);
         free(vrows);
         for (int i = 0; i < n;) {
@@ -493,6 +544,18 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         int ng_full = attn_groups(ri_full, rseq, rpos, skip, n, R, grp_full, &rmax_full, &max_sp_full);
         int ng_swa = attn_groups(ri_swa, rseq, rpos, skip, n, R, grp_swa, &rmax_swa, &max_sp_swa);
         free(skip);
+        int ni_full = 0, ni_swa = 0;
+        if (naxs_attn) { // decode / verify partials are per span
+            SpanItem *it;
+            ni_full = span_items(ri_full, grp_full, ng_full, tab, &it, &max_sp_full);
+            if (ni_full) write_buf(B(mt, @"sitems_full", sizeof(SpanItem) * ni_full), it, sizeof(SpanItem) * ni_full);
+            free(it);
+            if (kv->window) {
+                ni_swa = span_items(ri_swa, grp_swa, ng_swa, tab, &it, &max_sp_swa);
+                if (ni_swa) write_buf(B(mt, @"sitems_swa", sizeof(SpanItem) * ni_swa), it, sizeof(SpanItem) * ni_swa);
+                free(it);
+            }
+        }
         write_buf(B(mt, @"grp_full", 8 * n), grp_full, 8 * ng_full);
         write_buf(B(mt, @"grp_swa", 8 * n), grp_swa, 8 * ng_swa);
         free(rseq); free(rpos); free(grp_full); free(grp_swa);
@@ -571,7 +634,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             {
                 AttnArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->attn_scale, pl->page_stride, layer_off, KV_PAGE, l->wg.data != NULL, qs, gs, mt->h16,
                                (uint32_t)l->pool_layer, pl->scale_off };
-                uint32_t sp[2] = { 0, l->swa ? max_sp_swa : max_sp_full }; // .x unused (per-row split sizes)
+                uint32_t sp[2] = { naxs_attn ? DEC_SPAN : 0, l->swa ? max_sp_swa : max_sp_full }; // .x: span size (attn_naxs), else per-row splits
                 bool mma = attn_mma_on();
                 id<MTLBuffer> rib = B(mt, l->swa ? @"ri_swa" : @"ri_full", sizeof(RowInfo) * n);
                 int ngr = l->swa ? ng_swa : ng_full, rmx = l->swa ? rmax_swa : rmax_full;
@@ -587,8 +650,21 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                     [e setBuffer:B(mt, @"vrows", 4 * n) offset:0 atIndex:7];
                     [e dispatchThreadgroups:MTLSizeMake(n_vec, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
                 }
-                if (ngr) {
-                    NSString *kn = naxd_attn ? (q8 ? @"attn_naxd8_%d" : @"attn_naxd_%d") : mma ? (q8 ? @"attn_mma8_%d" : @"attn_mma_%d") : (q8 ? @"attn_fd8_%d" : @"attn_fd_%d");
+                int nit = l->swa ? ni_swa : ni_full;
+                if (naxs_attn && nit) {
+                    [e setComputePipelineState:P(mt, [NSString stringWithFormat:q8 ? @"attn_naxs8_%d" : @"attn_naxs_%d", hd])];
+                    [e setBuffer:qB offset:qO atIndex:0];
+                    [e setBuffer:pool offset:0 atIndex:1];
+                    [e setBuffer:rib offset:0 atIndex:2];
+                    [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
+                    [e setBuffer:part offset:0 atIndex:4];
+                    set_bytes(e, &a, sizeof a, 5);
+                    set_bytes(e, sp, sizeof sp, 6);
+                    [e setBuffer:B(mt, l->swa ? @"grp_swa" : @"grp_full", 8 * n) offset:0 atIndex:7];
+                    [e setBuffer:B(mt, l->swa ? @"sitems_swa" : @"sitems_full", sizeof(SpanItem) * nit) offset:0 atIndex:8];
+                    [e dispatchThreadgroups:MTLSizeMake(nit, c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                } else if (ngr) {
+                    NSString *kn = mma ? (q8 ? @"attn_mma8_%d" : @"attn_mma_%d") : (q8 ? @"attn_fd8_%d" : @"attn_fd_%d");
                     [e setComputePipelineState:P(mt, [NSString stringWithFormat:kn, hd])];
                     [e setBuffer:qB offset:qO atIndex:0];
                     [e setBuffer:pool offset:0 atIndex:1];
@@ -598,7 +674,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                     set_bytes(e, &a, sizeof a, 5);
                     set_bytes(e, sp, sizeof sp, 6);
                     [e setBuffer:B(mt, l->swa ? @"grp_swa" : @"grp_full", 8 * n) offset:0 atIndex:7];
-                    [e dispatchThreadgroups:MTLSizeMake(ngr, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(naxd_attn ? 32 : mma ? 128 : 32 * G * rmx, 1, 1)];
+                    [e dispatchThreadgroups:MTLSizeMake(ngr, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(mma ? 128 : 32 * G * rmx, 1, 1)];
                 }
                 if (ngr || n_vec) {
                     [e setComputePipelineState:P(mt, @"attn_reduce")];
@@ -608,6 +684,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                     set_bytes(e, &a, sizeof a, 3);
                     set_bytes(e, sp, sizeof sp, 4);
                     [e setBuffer:B(mt, @"pslot", 4 * n) offset:0 atIndex:5];
+                    [e setBuffer:rib offset:0 atIndex:6];
                     [e dispatchThreadgroups:MTLSizeMake(n, c->n_head, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
                 }
                 if (n_nax) {
@@ -634,6 +711,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
                         uint32_t rsp[2] = { 0, nax_sp };
                         set_bytes(e, rsp, sizeof rsp, 4);
                         [e setBuffer:B(mt, @"nslot", 4 * n) offset:0 atIndex:5];
+                        [e setBuffer:rib offset:0 atIndex:6];
                         [e dispatchThreadgroups:MTLSizeMake(n, c->n_head, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
                     }
                 }
@@ -908,6 +986,7 @@ static int metal_draft(backend *be, const model *dm, const model *tm, kv_cache *
                 set_bytes(e, &a, sizeof a, 3);
                 set_bytes(e, sp, sizeof sp, 4);
                 [e setBuffer:B(mt, @"d_pslot", 4 * n_blk) offset:0 atIndex:5];
+                [e setBuffer:B(mt, @"d_ri", sizeof(RowInfo) * n_blk) offset:0 atIndex:6];
                 [e dispatchThreadgroups:MTLSizeMake(n_blk, c->n_head, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
             }
             matmul_affine(mt, e, &l->wo, ab, 0, mt->h16, ob, 0, d, n_blk);

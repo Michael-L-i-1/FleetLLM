@@ -906,15 +906,17 @@ ATTN_VEC(128, true, 4, "attn_vec8_128_4") ATTN_VEC(128, true, 8, "attn_vec8_128_
 
 kernel void attn_reduce(device const float* part [[buffer(0)]], device const float* g [[buffer(1)]], device float* out [[buffer(2)]],
                         constant AttnArgs& a [[buffer(3)]], constant uint2& sp [[buffer(4)]], device const uint* slot [[buffer(5)]],
-                        uint2 tg [[threadgroup_position_in_grid]], ushort lane [[thread_index_in_simdgroup]]) {
+                        device const RowInfo* ri [[buffer(6)]], uint2 tg [[threadgroup_position_in_grid]], ushort lane [[thread_index_in_simdgroup]]) {
     const uint row = tg.x, h = tg.y, hd = a.hd, E = hd / 32, ns = sp.y, pi = slot[row];
     if (pi == 0xffffffffu) return; // row not in this partials buffer
+    // sp.x: partials are per fixed span of sp.x positions (attn_naxs): only the row's own
+    const uint s_lo = sp.x ? ri[row].start / sp.x : 0, s_hi = sp.x ? ri[row].ctx_end / sp.x + 1 : ns;
     device const float* src = part + (pi * a.nh + h) * ns * (hd + 2);
     float M = -INFINITY;
-    for (uint s = 0; s < ns; s++) M = max(M, src[s * (hd + 2)]);
+    for (uint s = s_lo; s < s_hi; s++) M = max(M, src[s * (hd + 2)]);
     float L = 0.0f, o[8];
     for (uint i = 0; i < E; i++) o[i] = 0.0f;
-    for (uint s = 0; s < ns; s++) {
+    for (uint s = s_lo; s < s_hi; s++) {
         device const float* ps = src + s * (hd + 2);
         float w = ps[1] > 0.0f ? exp(ps[0] - M) : 0.0f;
         L += ps[1] * w;

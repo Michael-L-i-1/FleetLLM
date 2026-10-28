@@ -326,7 +326,7 @@ template <int HD, bool Q8>
             const uint tk = tid / 4, d0 = (tid % 4) * (HD / 4), p = t0 + tk;
             threadgroup half4* kr = (threadgroup half4*)(kvt + tk * KS + d0);
             threadgroup half4* vr = (threadgroup half4*)(kvt + (TK + tk) * KS + d0);
-            if (p <= end) {
+            if (p <= end && p >= first.start) { // (earlier ones may sit on released sliding-window pages)
                 const ulong page = tab[last.tab + p / a.page];
                 const ulong base = page * a.page_elems + head_off + (ulong)(p % a.page) * HD + d0;
                 device const char* pb = (device const char*)pool + page * a.page_elems + sc_off + (p % a.page) * 2;
@@ -434,39 +434,46 @@ template <int HD, bool Q8>
     }
 }
 
-template [[host_name("attn_nax_64")]] [[kernel]] decltype(attn_nax<64, false>) attn_nax<64, false>;
-template [[host_name("attn_nax_128")]] [[kernel]] decltype(attn_nax<128, false>) attn_nax<128, false>;
-template [[host_name("attn_nax8_64")]] [[kernel]] decltype(attn_nax<64, true>) attn_nax<64, true>;
-template [[host_name("attn_nax8_128")]] [[kernel]] decltype(attn_nax<128, true>) attn_nax<128, true>;
-
-// Decode / verify attention on the neural accelerators. A simdgroup's 16 query
-// slots are (row, head) pairs: up to 16/G consecutive rows of one sequence (a
-// decode row and its drafts) times the G query heads of one KV head, so the
-// rows and heads that read the same K/V share every tile and matmul. Splits
-// follow the rows' own split size and origin (as attn_vec; attn_groups keeps
-// them equal within a group) and land in attn_reduce's partials; a row's
-// arithmetic does not depend on the other rows of its group (fully masked tiles
-// add exactly nothing), so batched and speculative outputs match sequential.
-// Same tile loop as attn_nax.
+// Decode / verify attention over fixed spans of sp.x positions, shared across
+// sequences. A threadgroup takes one span for up to 4 row groups (a decode row,
+// its drafts and the G query heads of one KV head per group, 16 query slots per
+// simdgroup) whose sequences hold the same pages there: a common system prompt
+// and tool definitions are read and dequantized once for every agent instead of
+// once per agent. Partials are per (row, head, span) for attn_reduce; span
+// boundaries depend only on positions and masked tiles add exactly nothing, so a
+// row's result does not depend on what it was grouped with. Tile loop as attn_nax.
+struct SpanItem { uint span, n, g[4]; };
 template <int HD, bool Q8>
-[[kernel, max_total_threads_per_threadgroup(32)]] void attn_naxd(
+[[kernel, max_total_threads_per_threadgroup(128)]] void attn_naxs(
     device const float* q [[buffer(0)]], device const half* pool [[buffer(1)]], device const RowInfo* ri [[buffer(2)]],
     device const uint* tab [[buffer(3)]], device float* part [[buffer(4)]], constant AttnArgs& a [[buffer(5)]],
-    constant uint2& sp [[buffer(6)]], device const uint2* groups [[buffer(7)]], uint3 tg [[threadgroup_position_in_grid]],
-    ushort lane [[thread_index_in_simdgroup]]) {
-    constexpr int TD = HD / 16, TK = 32;
-    const uint2 grp = groups[tg.x]; // {first row, rows <= 16 / G}
-    const uint kvh = tg.y, split = tg.z, G = a.nh / a.nkv;
+    constant uint2& sp [[buffer(6)]], device const uint2* groups [[buffer(7)]], device const SpanItem* items [[buffer(8)]],
+    uint3 tg [[threadgroup_position_in_grid]], ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]],
+    uint tid [[thread_index_in_threadgroup]]) {
+    constexpr int TD = HD / 16, TK = 32, KS = HD + 8;
+    threadgroup half kvt[2 * TK * KS]; // the tile (int8: dequantized) once for all 4 simdgroups
+    const SpanItem it = items[tg.x];
+    const uint kvh = tg.y, G = a.nh / a.nkv;
     const short qid = lane >> 2, fm = (qid & 4) | ((lane >> 1) & 3), fn = ((qid & 2) | (lane & 1)) * 4;
-    const RowInfo first = ri[grp.x], last = ri[grp.x + grp.y - 1];
-    const uint S = last.split, origin = (last.start / S) * S;
-    const uint s0 = origin + split * S, s1 = min(last.ctx_end + 1, s0 + S);
+    const bool act = sg < it.n;
+    const uint2 grp = groups[it.g[act ? sg : 0]]; // {first row, rows <= 16 / G} of one sequence
+    // the item's groups hold the same pages over the span: tiles come from the first
+    // group's page table, up to the furthest position any of them attends to
+    uint end = 0, vis = 0xffffffffu; // furthest position attended, first visible one
+    for (uint k = 0; k < it.n; k++) {
+        const uint2 gk = groups[it.g[k]];
+        end = max(end, ri[gk.x + gk.y - 1].ctx_end);
+        vis = min(vis, ri[gk.x].start);
+    }
+    const uint tb = ri[groups[it.g[0]].x].tab, s0 = max(it.span * sp.x, vis / TK * TK);
+    end = min(end, it.span * sp.x + sp.x - 1);
+    // this lane's two (row, head) query slots and their visible ranges (padding sees nothing)
     bool ok[2];
     uint row[2], hq[2], vs[2], ve[2];
     STEEL_PRAGMA_UNROLL
     for (short i = 0; i < 2; i++) {
         const uint slot = fm + i * 8, r = slot / G;
-        ok[i] = r < grp.y;
+        ok[i] = act && r < grp.y;
         row[i] = grp.x + (ok[i] ? r : 0);
         hq[i] = kvh * G + slot % G;
         const RowInfo rr = ri[row[i]];
@@ -489,23 +496,26 @@ template <int HD, bool Q8>
     const float sl2 = a.scale * M_LOG2E_F;
     const ulong vofs = (ulong)a.nkv * a.page * HD, head_off = a.layer_off + (ulong)kvh * a.page * HD;
     const ulong sc_off = a.scale_off + (((ulong)a.layer * 2) * a.nkv + kvh) * a.page * 2, sc_v = (ulong)a.nkv * a.page * 2;
-    const uint lo = max(s0, first.start / TK * TK), end = s1 - 1; // s1 > s0 for every launched split of the last row
-    for (uint t0 = lo; t0 <= end && s1 > s0; t0 += TK) {
-        ulong kat[4];
-        half ksc[4], vsc[4];
-        bool kok[4];
-        STEEL_PRAGMA_UNROLL
-        for (short qq = 0; qq < 4; qq++) {
-            const uint tok = t0 + qq * 8, tl = tok + fm;
-            kok[qq] = tl <= end;
-            const ulong page = tok <= end ? tab[last.tab + tok / a.page] : 0;
-            kat[qq] = page * a.page_elems + head_off + (ulong)(tl % a.page) * HD + fn;
-            ksc[qq] = vsc[qq] = 1.0h;
-            if (Q8 && kok[qq]) {
-                device const char* pb = (device const char*)pool + page * a.page_elems + sc_off + (tl % a.page) * 2;
-                ksc[qq] = *(device const half*)pb;
-                vsc[qq] = *(device const half*)(pb + sc_v);
+    for (uint t0 = s0; t0 <= end; t0 += TK) {
+        const uint vis_lo = vis; // positions before it may sit on released sliding-window pages
+        { // 4 threads per token: the tile's K and V rows (int8: dequantized) into threadgroup memory
+            constexpr int CH = HD / 16; // char4 chunks per thread
+            threadgroup_barrier(mem_flags::mem_threadgroup); // the previous tile's readers are done
+            const uint tk = tid / 4, d0 = (tid % 4) * (HD / 4), p = t0 + tk;
+            threadgroup half4* kr = (threadgroup half4*)(kvt + tk * KS + d0);
+            threadgroup half4* vr = (threadgroup half4*)(kvt + (TK + tk) * KS + d0);
+            if (p <= end && p >= vis_lo) {
+                const ulong page = tab[tb + p / a.page];
+                const ulong base = page * a.page_elems + head_off + (ulong)(p % a.page) * HD + d0;
+                device const char* pb = (device const char*)pool + page * a.page_elems + sc_off + (p % a.page) * 2;
+                const half sk = Q8 ? *(device const half*)pb : 1.0h, sv = Q8 ? *(device const half*)(pb + sc_v) : 1.0h;
+                STEEL_PRAGMA_UNROLL
+                for (int c = 0; c < CH; c++) { kr[c] = nax_kv4<Q8>(pool, base + c * 4, sk); vr[c] = nax_kv4<Q8>(pool, base + vofs + c * 4, sv); }
+            } else {
+                STEEL_PRAGMA_UNROLL
+                for (int c = 0; c < CH; c++) kr[c] = vr[c] = half4(0.0h);
             }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
         }
         frag8<float> S0 = frag8<float>(0.0f), S1 = frag8<float>(0.0f);
         STEEL_PRAGMA_UNROLL
@@ -513,8 +523,8 @@ template <int HD, bool Q8>
             frag8<half> K0, K1;
             STEEL_PRAGMA_UNROLL
             for (short i = 0; i < 2; i++) {
-                const half4 k0 = kok[i] ? nax_kv4<Q8>(pool, kat[i] + d * 16, ksc[i]) : half4(0.0h);
-                const half4 k1 = kok[2 + i] ? nax_kv4<Q8>(pool, kat[2 + i] + d * 16, ksc[2 + i]) : half4(0.0h);
+                const half4 k0 = *(threadgroup const half4*)(kvt + (i * 8 + fm) * KS + d * 16 + fn);
+                const half4 k1 = *(threadgroup const half4*)(kvt + ((2 + i) * 8 + fm) * KS + d * 16 + fn);
                 STEEL_PRAGMA_UNROLL
                 for (short j = 0; j < 4; j++) { K0[i * 4 + j] = k0[j]; K1[i * 4 + j] = k1[j]; }
             }
@@ -525,8 +535,8 @@ template <int HD, bool Q8>
             STEEL_PRAGMA_UNROLL
             for (short j = 0; j < 4; j++) {
                 const uint p0 = t0 + fn + j, p1 = p0 + 16;
-                S0[i * 4 + j] = p0 >= vs[i] && p0 <= ve[i] && p0 >= s0 && p0 < s1 ? S0[i * 4 + j] * sl2 : NAX_NEG;
-                S1[i * 4 + j] = p1 >= vs[i] && p1 <= ve[i] && p1 >= s0 && p1 < s1 ? S1[i * 4 + j] * sl2 : NAX_NEG;
+                S0[i * 4 + j] = p0 >= vs[i] && p0 <= ve[i] ? S0[i * 4 + j] * sl2 : NAX_NEG;
+                S1[i * 4 + j] = p1 >= vs[i] && p1 <= ve[i] ? S1[i * 4 + j] * sl2 : NAX_NEG;
             }
         float nm[2] = { mx[0], mx[1] };
         nax_rows<true>(S0, nm);
@@ -538,9 +548,9 @@ template <int HD, bool Q8>
         for (short i = 0; i < 2; i++)
             STEEL_PRAGMA_UNROLL
             for (short j = 0; j < 4; j++) {
-                const float a0 = S0[i * 4 + j], a1 = S1[i * 4 + j];
-                S0[i * 4 + j] = a0 == NAX_NEG ? 0.0f : fast::exp2(a0 - nm[i]);
-                S1[i * 4 + j] = a1 == NAX_NEG ? 0.0f : fast::exp2(a1 - nm[i]);
+                const float s0 = S0[i * 4 + j], s1 = S1[i * 4 + j];
+                S0[i * 4 + j] = s0 == NAX_NEG ? 0.0f : fast::exp2(s0 - nm[i]);
+                S1[i * 4 + j] = s1 == NAX_NEG ? 0.0f : fast::exp2(s1 - nm[i]);
             }
         float rs[2] = { 0.0f, 0.0f };
         nax_rows<false>(S0, rs);
@@ -552,16 +562,18 @@ template <int HD, bool Q8>
             STEEL_PRAGMA_UNROLL
             for (short e = 0; e < 8; e++) O[d][e] *= fac[e / 4];
         simdgroup_barrier(mem_flags::mem_none);
+        // O += P V: V fragment rows are tokens (quarters 2f, 2f+1), columns 16 dims
         STEEL_PRAGMA_UNROLL
         for (short d = 0; d < TD; d += 2) {
+            if (TD >= 8 && d == TD / 2) threadgroup_barrier(mem_flags::mem_none); // scheduling point, as in MLX
             STEEL_PRAGMA_UNROLL
             for (short f = 0; f < 2; f++) {
                 frag8<half> V0, V1;
                 STEEL_PRAGMA_UNROLL
                 for (short i = 0; i < 2; i++) {
                     const short qq = 2 * f + i;
-                    const half4 v0 = kok[qq] ? nax_kv4<Q8>(pool, kat[qq] + vofs + d * 16, vsc[qq]) : half4(0.0h);
-                    const half4 v1 = kok[qq] ? nax_kv4<Q8>(pool, kat[qq] + vofs + (d + 1) * 16, vsc[qq]) : half4(0.0h);
+                    threadgroup const half* vt = kvt + (TK + qq * 8 + fm) * KS + fn;
+                    const half4 v0 = *(threadgroup const half4*)(vt + d * 16), v1 = *(threadgroup const half4*)(vt + (d + 1) * 16);
                     STEEL_PRAGMA_UNROLL
                     for (short j = 0; j < 4; j++) { V0[i * 4 + j] = v0[j]; V1[i * 4 + j] = v1[j]; }
                 }
@@ -570,9 +582,9 @@ template <int HD, bool Q8>
         }
     }
     STEEL_PRAGMA_UNROLL
-    for (short i = 0; i < 2; i++) {
+    for (short i = 0; i < 2; i++) { // partial for attn_reduce: natural-log max, sum, unnormalized O
         if (!ok[i]) continue;
-        device float* dst = part + (((ulong)ri[row[i]].part * a.nh + hq[i]) * sp.y + split) * (HD + 2);
+        device float* dst = part + (((ulong)ri[row[i]].part * a.nh + hq[i]) * sp.y + it.span) * (HD + 2);
         if (fn == 0) { dst[0] = mx[i] * M_LN2_F; dst[1] = sum[i]; }
         STEEL_PRAGMA_UNROLL
         for (short d = 0; d < TD; d++)
@@ -581,7 +593,11 @@ template <int HD, bool Q8>
     }
 }
 
-template [[host_name("attn_naxd_64")]] [[kernel]] decltype(attn_naxd<64, false>) attn_naxd<64, false>;
-template [[host_name("attn_naxd_128")]] [[kernel]] decltype(attn_naxd<128, false>) attn_naxd<128, false>;
-template [[host_name("attn_naxd8_64")]] [[kernel]] decltype(attn_naxd<64, true>) attn_naxd<64, true>;
-template [[host_name("attn_naxd8_128")]] [[kernel]] decltype(attn_naxd<128, true>) attn_naxd<128, true>;
+template [[host_name("attn_naxs_64")]] [[kernel]] decltype(attn_naxs<64, false>) attn_naxs<64, false>;
+template [[host_name("attn_naxs_128")]] [[kernel]] decltype(attn_naxs<128, false>) attn_naxs<128, false>;
+template [[host_name("attn_naxs8_64")]] [[kernel]] decltype(attn_naxs<64, true>) attn_naxs<64, true>;
+template [[host_name("attn_naxs8_128")]] [[kernel]] decltype(attn_naxs<128, true>) attn_naxs<128, true>;
+template [[host_name("attn_nax_64")]] [[kernel]] decltype(attn_nax<64, false>) attn_nax<64, false>;
+template [[host_name("attn_nax_128")]] [[kernel]] decltype(attn_nax<128, false>) attn_nax<128, false>;
+template [[host_name("attn_nax8_64")]] [[kernel]] decltype(attn_nax<64, true>) attn_nax<64, true>;
+template [[host_name("attn_nax8_128")]] [[kernel]] decltype(attn_nax<128, true>) attn_nax<128, true>;

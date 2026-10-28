@@ -157,6 +157,20 @@ continuation; Llama 8B, 8-bit KV, 10 file triples):
 | moved, nothing recomputed | 3.679 (+0.8%) |
 | moved, first 64 + last 64 recomputed (default) | 3.664 (+0.36%) |
 
+**Harnesses that edit their context.** Many agent frameworks drop or condense
+old tool outputs; after the edit, every later message is the same text at
+shifted positions, which prefix caching must recompute every turn. With
+`bench/agents.py --keep-tools 2` (only the last two tool results verbatim, older
+ones stubbed), 8 agents x 8 turns:
+
+| Engine | Wall | Median turn | p95 turn |
+|---|---|---|---|
+| vLLM | 161 s | 18.9 s | 25.5 s |
+| cinfer | 100 s | 9.6 s | 16.3 s |
+| cinfer `--reuse-spans` | **68 s** | **6.3 s** | **9.0 s** |
+
+(46.5k tokens moved from the sessions' own previous turns in 59 spans.)
+
 The loss is context mismatch, not numerics: 16-bit KV loses the same, and a
 move from an identical context is exact. With the flag on, a session's output
 depends on what other sessions hold, so batch-invariance no longer applies.

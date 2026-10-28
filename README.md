@@ -52,7 +52,8 @@ p95 turn 19 s vs 77 s; 8 agents **57 s vs 158 s**, 32 agents **182 s vs 595 s**
 (p95 36 s vs 162 s). Opt-in **span reuse** (`--reuse-spans`: KV of text another
 agent already processed, e.g. the same file read by several subagents, is moved
 instead of recomputed; +0.36% perplexity on the reused text) brings 16 / 32
-agents to **73 s / 131 s** (4.3x / 4.5x vLLM). See [docs/results.md](docs/results.md).
+agents to **73 s / 131 s** (4.3x / 4.5x vLLM), and a harness that drops old tool
+outputs (history re-sent at shifted positions) to **68 s vs vLLM's 161 s**. See [docs/results.md](docs/results.md).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 

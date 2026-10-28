@@ -1,0 +1,18 @@
+{
+  "base": "http://127.0.0.1:8090/v1",
+  "model": "llama8b-mlx4",
+  "agents": 8,
+  "turns": 8,
+  "max_tokens": 160,
+  "keep_tools": 2,
+  "wall_secs": 99.6,
+  "mean_agent_secs": 92.8,
+  "turn_p50_secs": 9.55,
+  "turn_p95_secs": 16.33,
+  "gen_tokens": 9853,
+  "gen_tok_per_sec": 98.9,
+  "prompt_tokens": 344017,
+  "cached_prompt_tokens": 260509,
+  "cache_hit": 0.757,
+  "mean_final_context": 6004
+}

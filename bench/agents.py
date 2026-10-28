@@ -8,6 +8,10 @@ growing contexts with short outputs, tool results between model calls):
   * each turn the agent answers (short output), a tool runs (simulated latency),
     and its result (a real file from this repository; agents read overlapping
     files) is appended; the next request resends the whole conversation
+  * --keep-tools N models harnesses that edit their context (drop or condense
+    old tool outputs): only the last N tool results are sent verbatim, older
+    ones become a one-line stub, so everything after the edit point is the same
+    text at shifted positions
   * everything is deterministic (fixed seed, greedy) so engines see identical work
 
 Reports wall time, turn latency, generated tok/s and how many prompt tokens the
@@ -53,6 +57,7 @@ def main():
     ap.add_argument("--shared-chars", type=int, default=12000, help="shared project context in the system prompt")
     ap.add_argument("--tool-chars", type=int, default=2400, help="size of each tool result")
     ap.add_argument("--tool-secs", type=float, default=1.5, help="mean simulated tool latency (exponential, capped at 4x)")
+    ap.add_argument("--keep-tools", type=int, default=0, help="send only the last N tool results verbatim (0: all)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--label", default=None, help="write results/agents/<label>.json")
     a = ap.parse_args()
@@ -79,14 +84,20 @@ def main():
                 {"role": "user", "content": f"Task {i}: audit how {files[order[0]][0]} interacts with the rest of the engine and propose one concrete improvement."}]
         t_start = time.time()
         for t in range(a.turns):
-            text, secs, p, c, cached = chat(a.base, a.model, msgs, a.max_tokens)
+            sent = msgs
+            if a.keep_tools:
+                tools = [k for k, m in enumerate(msgs) if m.get("tool")]
+                old = set(tools[:-a.keep_tools])
+                sent = [{"role": m["role"], "content": m["tool"] + " returned: [output omitted]\nContinue."} if k in old else m for k, m in enumerate(msgs)]
+            sent = [{"role": m["role"], "content": m["content"]} for m in sent]
+            text, secs, p, c, cached = chat(a.base, a.model, sent, a.max_tokens)
             with lock:
                 turns.append({"agent": i, "turn": t, "secs": secs, "prompt": p, "completion": c, "cached": cached})
             msgs.append({"role": "assistant", "content": text})
             if t + 1 < a.turns:
                 time.sleep(delays[t])  # the tool runs
                 name, body = files[order[t + 1]]
-                msgs.append({"role": "user", "content": f"read_file({name}) returned:\n{body[: a.tool_chars]}\nContinue."})
+                msgs.append({"role": "user", "content": f"read_file({name}) returned:\n{body[: a.tool_chars]}\nContinue.", "tool": f"read_file({name})"})
         with lock:
             done.append(time.time() - t_start)
 
@@ -103,7 +114,7 @@ def main():
     prompt = sum(x["prompt"] for x in turns)
     cached = sum(x["cached"] for x in turns)
     out = {
-        "base": a.base, "model": a.model, "agents": a.agents, "turns": a.turns, "max_tokens": a.max_tokens,
+        "base": a.base, "model": a.model, "agents": a.agents, "turns": a.turns, "max_tokens": a.max_tokens, "keep_tools": a.keep_tools,
         "wall_secs": round(wall, 1), "mean_agent_secs": round(statistics.mean(done), 1),
         "turn_p50_secs": round(lat[len(lat) // 2], 2), "turn_p95_secs": round(lat[int(len(lat) * 0.95) - 1], 2),
         "gen_tokens": gen, "gen_tok_per_sec": round(gen / wall, 1),

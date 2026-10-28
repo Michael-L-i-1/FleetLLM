@@ -96,7 +96,7 @@ static runtime load_runtime(int argc, char **argv) {
 }
 
 static int encode_chat(const tokenizer *tok, const char *user, bool direct, int32_t **ids) {
-    chat_msg msg = { "user", user };
+    chat_msg msg = { .role = "user", .content = user };
     char *text = chat_format(tok, &msg, 1, direct);
     int n = tok_encode(tok, text, strlen(text), ids);
     free(text);

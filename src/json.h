@@ -35,4 +35,6 @@ static inline const jnode *json_next(const json *j, const jnode *n) { return n->
 static inline const jnode *json_first(const json *j, const jnode *n) { return n->first >= 0 ? &j->nodes[n->first] : NULL; }
 double json_num(const json *j, const jnode *obj, const char *key, double def);
 bool json_bool(const json *j, const jnode *obj, const char *key, bool def);
+// Compact JSON text of a node (malloc'd).
+char *json_dump(const json *j, const jnode *n);
 const char *json_str(const json *j, const jnode *obj, const char *key); // NULL if absent / not a string

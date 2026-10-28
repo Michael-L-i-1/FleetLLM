@@ -71,6 +71,7 @@ typedef struct req {
     int n_gen;        // generated tokens
     int n_cached;     // prompt tokens whose KV was reused (prefix sharing)
     bool done, cancelled, started;
+    bool tools;       // tools were offered: the reply is parsed for tool calls (and not streamed piecemeal)
     const char *finish;
     double t_submit, t_first, t_done;
     // parser (engine thread only)
@@ -292,6 +293,41 @@ static void content_text(const json *j, const jnode *c, buf *out) {
     }
 }
 
+// The fields of a finished chat reply's message (or delta): content, reasoning
+// and, when tools were offered, the tool calls parsed from it. Returns the
+// finish reason.
+static const char *reply_fields(server *sv, req *r, buf *b) {
+    static long next_call;
+    const char *content = r->text[0].s ? r->text[0].s : "", *finish = r->finish;
+    chat_call calls[8];
+    char *rest = NULL;
+    int nc = r->tools ? chat_parse_calls(sv->fam, content, calls, 8, &rest) : 0;
+    if (nc) {
+        const char *p = rest;
+        while (*p == ' ' || *p == '\n') p++;
+        if (*p) { bstr(b, "\"content\":"); bjson(b, rest, strlen(rest)); }
+        else bstr(b, "\"content\":null");
+        bstr(b, ",\"tool_calls\":[");
+        for (int i = 0; i < nc; i++) {
+            bfmt(b, "%s{\"index\":%d,\"id\":\"call_%ld\",\"type\":\"function\",\"function\":{\"name\":", i ? "," : "", i, __sync_add_and_fetch(&next_call, 1));
+            bjson(b, calls[i].name, strlen(calls[i].name));
+            bstr(b, ",\"arguments\":");
+            bjson(b, calls[i].arguments, strlen(calls[i].arguments));
+            bstr(b, "}}");
+            free((char *)calls[i].name);
+            free((char *)calls[i].arguments);
+        }
+        bstr(b, "]");
+        finish = "tool_calls";
+    } else {
+        bstr(b, "\"content\":");
+        bjson(b, content, r->text[0].n);
+    }
+    free(rest);
+    if (r->text[1].n) { bstr(b, ",\"reasoning_content\":"); bjson(b, r->text[1].s, r->text[1].n); }
+    return finish;
+}
+
 static void free_req(req *r) {
     free(r->prompt);
     for (int i = 0; i < 2; i++) { free(r->text[i].s); free(r->raw[i].s); }
@@ -316,20 +352,45 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         if (!msgs || msgs->type != J_ARR || !msgs->n) { respond_error(c->fd, 400, "messages must be a non-empty array"); json_free(j); free_req(r); return; }
         chat_msg *cm = calloc(msgs->n, sizeof(chat_msg));
         buf *bodies = calloc(msgs->n, sizeof(buf));
-        int k = 0;
+        int k = 0, n_calls = 0;
+        for (const jnode *m = json_first(j, msgs); m; m = json_next(j, m)) {
+            const jnode *tc = json_get(j, m, "tool_calls");
+            n_calls += tc && tc->type == J_ARR ? tc->n : 0;
+        }
+        chat_call *calls = calloc(n_calls ? n_calls : 1, sizeof(chat_call));
+        n_calls = 0;
         for (const jnode *m = json_first(j, msgs); m; m = json_next(j, m), k++) {
             content_text(j, json_get(j, m, "content"), &bodies[k]);
             const char *role = json_str(j, m, "role");
             cm[k].role = role ? role : "user";
             cm[k].content = bodies[k].s ? bodies[k].s : "";
+            const jnode *tc = json_get(j, m, "tool_calls"); // [{id, type, function: {name, arguments}}]
+            cm[k].calls = calls + n_calls;
+            for (const jnode *c = tc && tc->type == J_ARR ? json_first(j, tc) : NULL; c; c = json_next(j, c)) {
+                const jnode *fn = json_get(j, c, "function");
+                if (!json_str(j, fn, "name")) continue;
+                calls[n_calls++] = (chat_call){ json_str(j, fn, "name"), json_str(j, fn, "arguments") };
+                cm[k].n_calls++;
+            }
         }
+        // tool definitions, each as JSON text (tool_choice "none": not offered)
+        const jnode *tl = json_get(j, root, "tools");
+        const char *choice = json_str(j, root, "tool_choice");
+        int n_tools = tl && tl->type == J_ARR && !(choice && !strcmp(choice, "none")) ? tl->n : 0;
+        char **tools = calloc(n_tools ? n_tools : 1, sizeof(char *));
+        n_tools = 0;
+        for (const jnode *t = tl && tl->type == J_ARR && !(choice && !strcmp(choice, "none")) ? json_first(j, tl) : NULL; t; t = json_next(j, t)) tools[n_tools++] = json_dump(j, t);
+        r->tools = n_tools > 0;
         time_t now = time(NULL);
         char date[16];
         strftime(date, sizeof date, "%Y-%m-%d", localtime(&now));
         const char *effort = json_str(j, root, "reasoning_effort");
-        chat_opts o = { false, effort ? effort : sv->o->reasoning, date };
+        chat_opts o = { false, effort ? effort : sv->o->reasoning, date, (const char **)tools, n_tools };
         text = chat_format_opts(sv->tok, cm, k, &o);
         for (int i = 0; i < k; i++) free(bodies[i].s);
+        for (int i = 0; i < n_tools; i++) free(tools[i]);
+        free(tools);
+        free(calls);
         free(bodies);
         free(cm);
     } else {
@@ -374,7 +435,34 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
     long created = (long)time(NULL);
     const char *obj = chat ? "chat.completion" : "text_completion";
     bool ok = true;
-    if (stream) {
+    if (stream && r->tools) { // a tool call is only known once the reply is complete: send it whole
+        const char *h = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nTransfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\n";
+        ok = send_all(c->fd, h, strlen(h));
+        pthread_mutex_lock(&r->mu);
+        while (!r->done) pthread_cond_wait(&r->cv, &r->mu);
+        pthread_mutex_unlock(&r->mu);
+        buf ev = { 0 };
+        bfmt(&ev, "{\"id\":\"%s\",\"object\":\"chat.completion.chunk\",\"created\":%ld,\"model\":", id, created);
+        bjson(&ev, sv->o->model_id, strlen(sv->o->model_id));
+        bstr(&ev, ",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",");
+        const char *finish = reply_fields(sv, r, &ev);
+        bstr(&ev, "},\"finish_reason\":null}]}");
+        sse(c->fd, &ok, &ev);
+        bfmt(&ev, "{\"id\":\"%s\",\"object\":\"chat.completion.chunk\",\"created\":%ld,\"model\":", id, created);
+        bjson(&ev, sv->o->model_id, strlen(sv->o->model_id));
+        bfmt(&ev, ",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"%s\"}]}", finish);
+        sse(c->fd, &ok, &ev);
+        if (usage) {
+            bfmt(&ev, "{\"id\":\"%s\",\"object\":\"chat.completion.chunk\",\"created\":%ld,\"model\":", id, created);
+            bjson(&ev, sv->o->model_id, strlen(sv->o->model_id));
+            bfmt(&ev, ",\"choices\":[],\"usage\":{\"prompt_tokens\":%d,\"completion_tokens\":%d,\"total_tokens\":%d,\"prompt_tokens_details\":{\"cached_tokens\":%d}}}", r->n_prompt, r->n_gen,
+                 r->n_prompt + r->n_gen, r->n_cached);
+            sse(c->fd, &ok, &ev);
+        }
+        const char *done = "data: [DONE]\n\n";
+        if (ok) ok = chunk(c->fd, done, strlen(done)) && send_all(c->fd, "0\r\n\r\n", 5);
+        free(ev.s);
+    } else if (stream) {
         const char *h = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nTransfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\n";
         ok = send_all(c->fd, h, strlen(h));
         size_t sent[2] = { 0, 0 };
@@ -434,10 +522,9 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         bfmt(&b, "{\"id\":\"%s\",\"object\":\"%s\",\"created\":%ld,\"model\":", id, obj, created);
         bjson(&b, sv->o->model_id, strlen(sv->o->model_id));
         if (chat) {
-            bstr(&b, ",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":");
-            bjson(&b, r->text[0].s ? r->text[0].s : "", r->text[0].n);
-            if (r->text[1].n) { bstr(&b, ",\"reasoning_content\":"); bjson(&b, r->text[1].s, r->text[1].n); }
-            bfmt(&b, "},\"finish_reason\":\"%s\"}]", r->finish);
+            bstr(&b, ",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",");
+            const char *finish = reply_fields(sv, r, &b);
+            bfmt(&b, "},\"finish_reason\":\"%s\"}]", finish);
         } else {
             bstr(&b, ",\"choices\":[{\"index\":0,\"text\":");
             bjson(&b, r->text[0].s ? r->text[0].s : "", r->text[0].n);

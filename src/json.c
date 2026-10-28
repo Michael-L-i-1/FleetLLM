@@ -207,3 +207,54 @@ const char *json_str(const json *j, const jnode *obj, const char *key) {
     const jnode *n = json_get(j, obj, key);
     return n && n->type == J_STR ? n->s : NULL;
 }
+
+typedef struct { char *s; size_t n, cap; } jbuf;
+
+static void jput(jbuf *b, const char *p, size_t n) {
+    if (b->n + n + 1 > b->cap) { b->cap = (b->n + n + 1) * 2; b->s = realloc(b->s, b->cap); }
+    memcpy(b->s + b->n, p, n);
+    b->n += n;
+    b->s[b->n] = 0;
+}
+
+static void jstr(jbuf *b, const char *s, size_t n) {
+    jput(b, "\"", 1);
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = (unsigned char)s[i];
+        char e[8];
+        if (c == '"' || c == '\\') { e[0] = '\\'; e[1] = (char)c; jput(b, e, 2); }
+        else if (c == '\n') jput(b, "\\n", 2);
+        else if (c == '\t') jput(b, "\\t", 2);
+        else if (c == '\r') jput(b, "\\r", 2);
+        else if (c < 0x20) { snprintf(e, sizeof e, "\\u%04x", c); jput(b, e, 6); }
+        else jput(b, (const char *)&c, 1);
+    }
+    jput(b, "\"", 1);
+}
+
+static void jdump(jbuf *b, const json *j, const jnode *n) {
+    char t[40];
+    switch (n->type) {
+    case J_NULL: jput(b, "null", 4); break;
+    case J_BOOL: n->num ? jput(b, "true", 4) : jput(b, "false", 5); break;
+    case J_NUM: jput(b, t, (size_t)snprintf(t, sizeof t, n->num == (long long)n->num ? "%.0f" : "%.17g", n->num)); break;
+    case J_STR: jstr(b, n->s, (size_t)n->n); break;
+    case J_ARR:
+    case J_OBJ:
+        jput(b, n->type == J_ARR ? "[" : "{", 1);
+        for (const jnode *c = json_first(j, n); c; c = json_next(j, c)) {
+            if (c != json_first(j, n)) jput(b, ", ", 2);
+            if (n->type == J_OBJ) { jstr(b, c->key, (size_t)c->key_len); jput(b, ": ", 2); }
+            jdump(b, j, c);
+        }
+        jput(b, n->type == J_ARR ? "]" : "}", 1);
+        break;
+    }
+}
+
+char *json_dump(const json *j, const jnode *n) {
+    jbuf b = { 0 };
+    jput(&b, "", 0);
+    if (n) jdump(&b, j, n);
+    return b.s;
+}

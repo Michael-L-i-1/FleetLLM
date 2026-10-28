@@ -1,0 +1,24 @@
+{
+  "label": "vllm-llama3.1-8b-mlx4-w16",
+  "model": "llama8b-mlx4",
+  "base_url": "http://127.0.0.1:8077/v1",
+  "harness": "openai/simple-evals gpqa_eval (diamond)",
+  "questions": 198,
+  "workers": 16,
+  "temperature": 0.0,
+  "max_tokens": 2048,
+  "score": 0.21717171717171718,
+  "wall_secs": 873.3,
+  "questions_per_min": 13.6,
+  "completion_tokens": 178068,
+  "prompt_tokens": 57357,
+  "gen_tok_per_sec": 203.9,
+  "mean_completion_tokens": 899.3,
+  "mean_request_secs": 66.82,
+  "truncated": 59,
+  "metrics": {
+    "chars": 2999.8636363636365,
+    "chars:std": 2520.19627193632,
+    "score:std": 0.41232046084617835
+  }
+}

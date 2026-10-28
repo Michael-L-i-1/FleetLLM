@@ -18,21 +18,25 @@ safetensors (Llama, Qwen2/3, Muse Glimmer).
 
 ## Highlights
 
-**GPQA Diamond, Llama 3.1 8B (MLX 4-bit), OpenAI simple-evals, 16 agents at once**
+**GPQA Diamond, Llama 3.1 8B (MLX 4-bit), OpenAI simple-evals, vs vLLM on the same file**
 (4.2 GB weights + 2.5 GB KV cap; full table in [docs/results.md](docs/results.md)):
 
-| Run | Agents at once | Temp | Score | Wall time | Generated tok/s | Questions/min | Hit 2048-token cap |
+| Run | Agents at once | **cinfer** wall | vLLM wall | Speedup | cinfer tok/s | vLLM tok/s | Score cinfer / vLLM |
 |---|---|---|---|---|---|---|---|
-| all 198 questions | 16 | 0 (greedy) | 25.3% | 613 s | 282 | 19.4 | 55 |
-| all 198 questions | 16 | 0.5 | 27.3% | 546 s | 277 | 21.8 | 37 |
-| same 16 questions | **1** | 0 | 31.2% | 238 s | 52 | 4.0 | |
-| same 16 questions | **16** | 0 | 31.2% | 59 s | 211 | 16.2 | |
+| all 198, greedy | 16 | **616 s** | 873 s | **1.42x** | 281 | 204 | 25.3% / 21.7% |
+| all 198, T=0.5 | 16 | **547 s** | 878 s | **1.61x** | 276 | 171 | 27.3% / 24.2% |
+| same 16 questions | 1 | **241 s** | 344 s | **1.43x** | 51 | 40 | 31.2% / 25.0% |
+| same 16 questions | 16 | **59 s** | 80 s | **1.37x** | 213 | 150 | 31.2% / 31.2% |
 
-16 agents finish the same work **4x faster** than one at a time (5.4x sustained over the
-full run). Meta reports 30.4% for Llama 3.1 8B Instruct on GPQA (0-shot CoT, bf16); with
-198 questions the standard error is about 3 points, and most of the gap is truncation from
-repetition loops at greedy / low temperature. Greedy output is token-identical to MLX's
-reference implementation on the same weights (checked on a GPQA prompt, 200 tokens).
+Same model file (`mlx-community/Meta-Llama-3.1-8B-Instruct-4bit`), same harness and settings,
+matched KV (cinfer `--kv-gb 2.5` = 19,072 tokens; vllm-metal 0.32 `--gpu-memory-utilization
+0.193` = 18,416 tokens, since it ignores `--kv-cache-memory-bytes`), prefix caching on in both,
+AC power, run back to back (`evals/gpqa_suite.sh`). 16 agents finish the same work 4.1x faster
+than one at a time on cinfer (4.3x on vLLM). Score differences are noise (about +/-3 points at
+n=198) plus greedy paths diverging; both engines lose ~30% of questions to repetition loops that
+hit the 2048-token cap. GPQA prompts share almost nothing, so this measures raw batching and
+kernels, not the agent features (sharing, sessions). Greedy cinfer output is token-identical to
+MLX's reference on the same weights (GPQA prompt, 200 tokens).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 

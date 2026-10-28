@@ -103,6 +103,19 @@ requests may still take; the rest wait with their KV resident or on SSD (47
 swap-outs, 39 swap-ins, 1.9 s of IO for the whole run). 8 agents are unaffected
 (86 s).
 
+### Scaling the agent count (same workload, same 2.5 GB KV cap)
+
+| Agents | Live session state | **cinfer** wall | vLLM wall | Speedup | cinfer p95 turn | vLLM p95 turn |
+|---|---|---|---|---|---|---|
+| 8 | ~65k tokens | **86 s** | 158 s | **1.84x** | 17 s | 42 s |
+| 16 | ~130k tokens | **150 s** | 315 s | **2.10x** | 32 s | 77 s |
+| 32 | ~260k tokens | **292 s** | 595 s | **2.04x** | 61 s | 162 s |
+
+cinfer: `--ngram --kv-int8 --swap-gb 24` (32 agents: 145 swap-outs, 120 swap-ins,
+5.7 s of IO, 90% of prompt tokens from cache). Both engines scale about linearly
+past the memory limit; cinfer keeps sessions' KV (on SSD when needed) where vLLM
+recomputes it.
+
 ## GPQA subset with the agent-oriented features (16 questions, Llama 3.1 8B)
 
 | Version | 1 agent | 16 agents | Tokens generated |

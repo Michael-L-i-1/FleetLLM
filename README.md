@@ -45,7 +45,10 @@ Llama 3.1 8B as vLLM): **92 s vs vLLM's 158 s (1.72x)**, p95 turn 18.6 s vs
 8-bit KV, attention for input rows on the M5 neural accelerators, and a
 latency-shaped decode attention kernel, with kernel choice per row so outputs
 stay batch-invariant. The same 16 GPQA questions take 121-130 s with 1 agent
-and 32-42 s with 16 (vLLM: 344 s / 80 s). See [docs/results.md](docs/results.md).
+and 32-42 s with 16 (vLLM: 344 s / 80 s). With **16 agents** (~130k tokens of
+session state, 38k tokens of KV) sessions park on SSD between turns
+(share-aware swap + memory-aware admission): **150 s vs vLLM's 315 s (2.1x)**,
+p95 turn 32 s vs 77 s. See [docs/results.md](docs/results.md).
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 

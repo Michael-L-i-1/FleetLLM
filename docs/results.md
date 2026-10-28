@@ -77,9 +77,31 @@ What closed the gap (8B, 8-bit KV; per-step GPU time from `CINFER_PROFILE_EACH=1
   -> 8.2499). Attention partials get compacted per-kernel slots: a 512-row chunk
   at 100k context no longer sizes a rows x max-splits buffer (3.4 GB before).
 
-SSD swap works (IO is cheap: 277 swaps, 13 s) but with 2-3x oversubscription
-it only replaces recompute with churn; it needs session-level admission (park
-agents in tool waits).
+### 16 agents: more live state than memory
+
+Same workload with 16 agents: ~130k tokens of conversation state against 38k
+tokens of 8-bit KV (2.5 GB), so sessions must leave memory between turns.
+
+| Engine / version | Wall | Median turn | p95 turn | Prompt tokens from cache |
+|---|---|---|---|---|
+| **vLLM** (vllm-metal 0.32) | 315 s | 45 s | 77 s | n/a |
+| cinfer, evicted sessions recomputed | 214 s | 26 s | 58 s | 80% |
+| cinfer + SSD swap (`--swap-gb 16`), before the fixes below | 348 s | 32 s | 116 s | 58% |
+| + share-aware swap | 312 s | 30 s | 94 s | 63% |
+| + memory-aware admission (default with `--swap-gb`) | **150 s** | **21 s** | **32 s** | 90% |
+
+Two fixes made swapping pay off. Recomputing an evicted 8k-token context costs
+~8 s of GPU time against ~0.1 s to read its 8-bit KV back, but (1) swap wrote
+and later re-allocated *every* page of a session, including the system prompt
+shared by all 16 agents, so it freed little and duplicated the shared prefix on
+the way back in; it now writes only pages the session holds exclusively and keeps
+shared ones resident. (2) All 16 requests were admitted at once into memory for
+~5, so the engine swapped running sessions mid-turn and fell back to recompute
+when a swap-in did not fit. With `--swap-gb` the server now admits a request only
+when its unshared prompt, output budget and swap-in fit beside what running
+requests may still take; the rest wait with their KV resident or on SSD (47
+swap-outs, 39 swap-ins, 1.9 s of IO for the whole run). 8 agents are unaffected
+(86 s).
 
 ## GPQA subset with the agent-oriented features (16 questions, Llama 3.1 8B)
 

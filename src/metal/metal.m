@@ -578,7 +578,8 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             static int cnt[1025];
             int k = n > 1024 ? 1024 : n;
             acc[k] += cb.GPUEndTime - cb.GPUStartTime;
-            if (++cnt[k] % 16 == 0) fprintf(stderr, "[profile] n=%d gpu %.2f ms/step\n", n, acc[k] / cnt[k] * 1e3);
+            if (++cnt[k] % 16 == 0 || getenv("CINFER_PROFILE_EACH"))
+                fprintf(stderr, "[profile] n=%d ctx<=%d gpu %.2f ms/step\n", n, rows[n - 1].ctx_end + 1, getenv("CINFER_PROFILE_EACH") ? (cb.GPUEndTime - cb.GPUStartTime) * 1e3 : acc[k] / cnt[k] * 1e3);
         }
         free(toks); free(posv); free(tab); free(off_full); free(off_swa); free(ri_full); free(ri_swa);
         free(slot_full); free(slot_swa); free(sel);

@@ -218,8 +218,9 @@ static void *engine_loop(void *arg) {
         sv->n_active = k;
         double t = now_secs();
         if (t - t_log > 10) {
-            fprintf(stderr, "[serve] %d active | %.1f tok/s generated | %ld served | %ld preemptions | %ld shared prompt tokens\n", sv->n_active,
-                    (sv->gen_tokens - gen_log) / (t - t_log), sv->served, e->st.preemptions, e->st.shared_tokens);
+            fprintf(stderr, "[serve] %d active | %.1f tok/s generated | %ld served | %ld preemptions | %ld shared prompt tokens | swap %ld out %ld in (%.2fs, %.2f GB held)\n",
+                    sv->n_active, (sv->gen_tokens - gen_log) / (t - t_log), sv->served, e->st.preemptions, e->st.shared_tokens, e->st.swap_outs, e->st.swap_ins,
+                    e->st.swap_secs, e->swap_used / 1e9);
             t_log = t;
             gen_log = sv->gen_tokens;
         }

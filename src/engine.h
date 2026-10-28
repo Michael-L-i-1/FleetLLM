@@ -26,6 +26,12 @@ typedef struct {
     int32_t drafts[32]; int n_drafts; // proposals to verify in the next step
     ng_seq ng; int ng_gen;            // repeated-text draft index (see ngram.h)
     int ng_drafts;                    // drafts this step that came from repeated text
+    // swapped out: KV in a file (pages empty), restored instead of recomputed
+    bool swapped;
+    char *swap_path;
+    int swap_pages, swap_len;
+    uint8_t *swap_has_swa;
+    size_t swap_size;
     sample_params p;
     uint64_t rng;
     double t_start, t_first; // creation time, first generated token (seconds)
@@ -36,6 +42,7 @@ typedef struct {
     long spec_steps, spec_drafted, spec_accepted; // verify steps, drafts checked, drafts accepted
     long ng_steps, ng_drafted, ng_accepted;       // the subset drafted from repeated text
     long preemptions; // sequences whose KV was freed under memory pressure (recomputed later)
+    long swap_outs, swap_ins; double swap_secs; // KV written to / read back from the swap directory
     double draft_secs;
     double forward_secs;
 } engine_stats;
@@ -61,6 +68,10 @@ typedef struct {
     bool ngram;
     ng_global ng;
     int ng_gen;
+    // KV swap: under memory pressure, evicted (cached) and preempted sequences
+    // are written to swap_dir and read back when needed instead of recomputed
+    const char *swap_dir;
+    size_t swap_limit, swap_used;
     // step scratch
     row_t *rows; int cap_rows;
     int32_t *amax; int cap_amax;

@@ -81,6 +81,11 @@ static runtime load_runtime(int argc, char **argv) {
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
     rt.e->spec_rows = (int)arg_num(argc, argv, "--spec-rows", 32);
     if (arg_flag(argc, argv, "--ngram")) engine_set_ngram(rt.e, true); // drafts from repeated text (model-free)
+    double swap_gb = arg_num(argc, argv, "--swap-gb", 0); // KV swap space on disk (0: off; evicted KV is recomputed)
+    if (swap_gb > 0) {
+        rt.e->swap_dir = arg_str(argc, argv, "--swap-dir", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
+        rt.e->swap_limit = (size_t)(swap_gb * 1e9);
+    }
     if (rt.draft && !engine_set_drafter(rt.e, rt.draft, dkv, (int)arg_num(argc, argv, "--spec-k", 0))) exit(1);
     fprintf(stderr, "[load] %.1fs %s %s, %d layers, weights %.2f GB (pinned %.2f), KV %.2f GB (%u full + %u swa pages), backend %s\n",
             now_secs() - t, arch_name(rt.m->c.arch), path + (strlen(path) > 60 ? strlen(path) - 60 : 0), rt.m->c.n_layer, streamed / 1e9,

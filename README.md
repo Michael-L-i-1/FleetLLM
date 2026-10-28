@@ -38,6 +38,12 @@ hit the 2048-token cap. GPQA prompts share almost nothing, so this measures raw 
 kernels, not the agent features (sharing, sessions). Greedy cinfer output is token-identical to
 MLX's reference on the same weights (GPQA prompt, 200 tokens).
 
+**Agent-oriented features** (repeated-text speculation shared across agents,
+row-grouped attention for long-context appends, 8-bit KV): the same 16 GPQA
+questions take 121 s with 1 agent and 32 s with 16 (vLLM: 344 s / 80 s); a
+multi-turn agent workload under a 2.5 GB KV cap went 975 s -> 174 s (vLLM 158 s;
+prefill attention on matrix units is the remaining gap). See [docs/results.md](docs/results.md).
+
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 
 | Agents | vLLM | cinfer | cinfer + sharing | cinfer + DFlash spec + sharing |
@@ -53,6 +59,12 @@ make                                   # Metal on macOS; make NO_METAL=1 for CPU
 ./build/serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 --port 8090   # OpenAI API on :8090/v1
 sh evals/setup.sh && evals/.venv/bin/python evals/gpqa.py --model llama8b-mlx4 --workers 16
 ```
+
+Agent-oriented flags (any model): `--ngram` (drafts from repeated text in every
+agent's context, exact at any temperature), `--kv-int8` (2x tokens per GB),
+`--swap-gb N --swap-dir D` (evicted KV goes to SSD instead of being recomputed;
+experimental). `python3 bench/agents.py` runs multi-turn agent sessions against
+any OpenAI-compatible server.
 
 More: `./build/generate` (one prompt), `./build/bench` (concurrent-agent
 throughput, `--share`, `--draft`, `--check`, `--check-spec`), `./build/ppl`

@@ -29,6 +29,39 @@ MLX's reference on the same weights (GPQA prompt, 200 tokens).
 
 Reproduce: see [evals/README.md](../evals/README.md).
 
+## Agent sessions (bench/agents.py, Llama 3.1 8B, 2.5 GB KV budget)
+
+8 agents fanned out from one shared context (system prompt + ~3k tokens of
+project files), 6 turns each: answer (<= 160 tokens), simulated tool call
+(1.5 s mean), tool result (a real file, ~600 tokens) appended; each request
+resends the whole conversation (final context ~8.2k tokens). Needs ~40k tokens
+of KV against 19k (16-bit) / 38k (8-bit) available, so memory pressure is real.
+
+| Engine / version | Wall | Median turn | p95 turn | Preemptions | Prompt tokens from cache |
+|---|---|---|---|---|---|
+| cinfer, morning (row-at-a-time attention) | 975 s | 91 s | 373 s | many | 77% |
+| + row-grouped attention | 446 s | 30 s | 167 s | 16 | 79% |
+| + 8-bit KV (`--kv-int8`) | **174 s** | 27 s | 36 s | 0 | 89% |
+| + 512/1024-row prefill chunks | 171 s | 25 s | 37 s | 0 | 89% |
+| 16-bit KV + SSD swap (`--swap-gb 8`) | 470 s | 33 s | 145 s | 0 (swap instead) | |
+| **vLLM** (vllm-metal 0.32, 18.4k-token KV) | **158 s** | 18 s | 42 s | | n/a |
+
+Remaining gap to vLLM: prefill attention runs on the ALUs, not the matrix units;
+a 512-token chunk costs 403 ms at 512 tokens of context and 1366 ms at 4.6k
+(linear in context), so turns wait on other agents' appends. A matrix-unit
+(flash-attention) prefill kernel is the next step. SSD swap works (IO is cheap:
+277 swaps, 13 s) but with 2-3x oversubscription it only replaces recompute
+with churn; it needs session-level admission (park agents in tool waits).
+
+## GPQA subset with the agent-oriented features (16 questions, Llama 3.1 8B)
+
+| Version | 1 agent | 16 agents | Tokens generated |
+|---|---|---|---|
+| vLLM | 344 s | 80 s | |
+| cinfer baseline | 241 s | 59 s | 12.4k |
+| + repeated-text drafts (`--ngram`, output identical) | 120 s | 36 s | 12.4k |
+| + 8-bit KV + grouped attention | **121 s** | **32 s** | 16.4k (8-bit KV changes some outputs) |
+
 ## Head to head with vLLM on the same 4-bit file
 
 `mlx-community/Muse-Glimmer-30B-4bit` (the checkpoint vllm-metal serves), M5 Pro

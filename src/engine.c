@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 double now_secs(void) {
     struct timespec ts;
@@ -18,6 +20,9 @@ static void append(int32_t **v, int *n, int *cap, const int32_t *x, int k) {
     memcpy(*v + *n, x, sizeof(int32_t) * k);
     *n += k;
 }
+
+static bool swap_in(engine *e, int id);
+static void swap_discard(engine *e, seq_t *s);
 
 static void *be_alloc(void *user, size_t bytes, void **handle) {
     backend *b = user;
@@ -119,7 +124,8 @@ int engine_create(engine *e, const int32_t *prompt, int n) {
         if (l == s->n_tokens && !s->wait_len) while (w < s->n_tokens + s->n_pending && w < n && s->pending[w - s->n_tokens] == prompt[w]) w++;
         if (l > n - 1) l = n - 1; // keep one token to produce logits from
         if (w > n - 1) w = n - 1;
-        if (l >= e->min_share && l > best_len && kv_can_fork_at(&e->kv, &s->pages, l)) { best = i; best_len = l; }
+        bool forkable = s->swapped ? l <= s->swap_len : kv_can_fork_at(&e->kv, &s->pages, l);
+        if (l >= e->min_share && l > best_len && forkable) { best = i; best_len = l; }
         if (w > lead_len) { lead = i; lead_len = w; }
     }
     if (lead >= 0 && lead_len >= best_len + e->min_share) { // worth waiting for a leader still prefilling
@@ -128,9 +134,15 @@ int engine_create(engine *e, const int32_t *prompt, int n) {
         e->seqs[id].wait_len = lead_len;
         return id;
     }
+    if (best >= 0 && e->seqs[best].swapped && (!swap_in(e, best) || !kv_can_fork_at(&e->kv, &e->seqs[best].pages, best_len))) best = -1;
     if (best < 0) return engine_create_fresh(e, prompt, n);
     touch(e, best);
-    return engine_fork_at(e, best, best_len, prompt + best_len, n - best_len);
+    int id = engine_fork_at(e, best, best_len, prompt + best_len, n - best_len);
+    // A session's next turn: the new sequence holds (shares) all of a retired one,
+    // so the retired copy is superseded; dropping it keeps memory and swap for
+    // live state (other agents can still match the prefix in the new sequence).
+    if (e->seqs[best].cached && best_len + 64 >= e->seqs[best].n_tokens) engine_release(e, best);
+    return id;
 }
 
 // A waiting sequence forks its leader once the shared prefix is written; it
@@ -140,7 +152,7 @@ static void resolve_wait(engine *e, int id, bool force) {
     if (!s->wait_len) return;
     seq_t *l = &e->seqs[s->wait_for];
     int len = s->wait_len;
-    bool same = l->live && l->n_tokens >= len && !memcmp(l->tokens, s->pending, sizeof(int32_t) * len);
+    bool same = l->live && !l->swapped && l->n_tokens >= len && !memcmp(l->tokens, s->pending, sizeof(int32_t) * len);
     if (same && kv_can_fork_at(&e->kv, &l->pages, len)) {
         s->pages = kv_fork_at(&e->kv, &l->pages, len);
         if (e->draft) s->dpages = kv_fork_at(&e->dkv, &l->dpages, len < l->dpages.len ? len : l->dpages.len);
@@ -150,7 +162,7 @@ static void resolve_wait(engine *e, int id, bool force) {
         e->st.shared_tokens += len;
         e->st.deduped_tokens += len;
         s->wait_len = 0;
-    } else if (force || !l->live || l->n_tokens >= len || l->wait_len) {
+    } else if (force || !l->live || l->swapped || l->n_tokens >= len || l->wait_len) {
         s->wait_len = 0;
     }
 }
@@ -179,6 +191,7 @@ void engine_release(engine *e, int id) {
         if (e->cached[i] == id) { memmove(&e->cached[i], &e->cached[i + 1], sizeof(int) * (e->n_cached - i - 1)); e->n_cached--; break; }
     kv_free_seq(&e->kv, &s->pages);
     if (e->draft) kv_free_seq(&e->dkv, &s->dpages);
+    swap_discard(e, s);
     ng_seq_free(&s->ng);
     free(s->tokens);
     free(s->pending);
@@ -195,9 +208,98 @@ void engine_retire(engine *e, int id) {
     e->cached[e->n_cached++] = id;
 }
 
-// Evict retired sequences until both pools can take `pages` more pages.
+// ---- KV swap (agents' KV is state, not a cache: restoring beats recomputing)
+
+static bool swap_out(engine *e, int id) {
+    seq_t *s = &e->seqs[id];
+    if (!e->swap_dir || s->swapped || !s->pages.n_pages) return false;
+    const kv_cache *kv = &e->kv;
+    size_t fb = kv_page_bytes(&kv->full), wb = kv->window ? kv_page_bytes(&kv->swa) : 0, size = 0;
+    uint8_t *has = malloc(s->pages.n_pages);
+    for (int i = 0; i < s->pages.n_pages; i++) {
+        has[i] = kv->window && s->pages.swa[i] != KV_NONE;
+        size += fb + (has[i] ? wb : 0);
+    }
+    if (e->swap_used + size > e->swap_limit) { free(has); return false; }
+    char path[512];
+    snprintf(path, sizeof path, "%s/cinfer-swap-%d-%d-%d.kv", e->swap_dir, (int)getpid(), id, s->ng_gen);
+    double t0 = now_secs();
+    int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0600);
+    if (fd < 0) { free(has); return false; }
+    off_t off = 0;
+    bool ok = true;
+    for (int i = 0; i < s->pages.n_pages && ok; i++) {
+        ok = pwrite(fd, kv->full.data + (size_t)s->pages.full[i] * fb, fb, off) == (ssize_t)fb;
+        off += fb;
+        if (has[i] && ok) { ok = pwrite(fd, kv->swa.data + (size_t)s->pages.swa[i] * wb, wb, off) == (ssize_t)wb; off += wb; }
+    }
+    close(fd);
+    if (!ok) { unlink(path); free(has); return false; }
+    s->swap_path = strdup(path);
+    s->swap_pages = s->pages.n_pages;
+    s->swap_len = s->pages.len;
+    s->swap_has_swa = has;
+    s->swap_size = size;
+    s->swapped = true;
+    s->n_drafts = 0;
+    kv_free_seq(&e->kv, &s->pages);
+    if (e->draft) kv_free_seq(&e->dkv, &s->dpages); // drafter context is dropped (no drafts for this sequence)
+    e->swap_used += size;
+    e->st.swap_outs++;
+    e->st.swap_secs += now_secs() - t0;
+    return true;
+}
+
+static void swap_discard(engine *e, seq_t *s) {
+    if (!s->swapped) return;
+    unlink(s->swap_path);
+    free(s->swap_path);
+    free(s->swap_has_swa);
+    e->swap_used -= s->swap_size;
+    s->swap_path = NULL;
+    s->swap_has_swa = NULL;
+    s->swapped = false;
+}
+
+static void make_room(engine *e, uint32_t pages);
+
+static bool swap_in(engine *e, int id) {
+    seq_t *s = &e->seqs[id];
+    if (!s->swapped) return true;
+    uint32_t nw = 0;
+    for (int i = 0; i < s->swap_pages; i++) nw += s->swap_has_swa[i];
+    make_room(e, (uint32_t)s->swap_pages > nw ? (uint32_t)s->swap_pages : nw);
+    seq_pages pg;
+    if (!kv_alloc_pages(&e->kv, &pg, s->swap_pages, s->swap_has_swa, s->swap_len)) return false;
+    const kv_cache *kv = &e->kv;
+    size_t fb = kv_page_bytes(&kv->full), wb = kv->window ? kv_page_bytes(&kv->swa) : 0;
+    double t0 = now_secs();
+    int fd = open(s->swap_path, O_RDONLY);
+    off_t off = 0;
+    bool ok = fd >= 0;
+    for (int i = 0; i < s->swap_pages && ok; i++) {
+        ok = pread(fd, kv->full.data + (size_t)pg.full[i] * fb, fb, off) == (ssize_t)fb;
+        off += fb;
+        if (s->swap_has_swa[i] && ok) { ok = pread(fd, kv->swa.data + (size_t)pg.swa[i] * wb, wb, off) == (ssize_t)wb; off += wb; }
+    }
+    if (fd >= 0) close(fd);
+    if (!ok) { kv_free_seq(&e->kv, &pg); return false; }
+    swap_discard(e, s);
+    s->pages = pg;
+    e->st.swap_ins++;
+    e->st.swap_secs += now_secs() - t0;
+    return true;
+}
+
+// Make both pools able to take `pages` more pages: retired sequences go to swap
+// (or are released if swap is off or full), oldest first.
 static void make_room(engine *e, uint32_t pages) {
-    while (e->n_cached && (e->kv.full.n_free < pages || (e->kv.window && e->kv.swa.n_free < pages))) engine_release(e, e->cached[0]);
+    for (int i = 0; i < e->n_cached && (e->kv.full.n_free < pages || (e->kv.window && e->kv.swa.n_free < pages));) {
+        int id = e->cached[i];
+        if (e->seqs[id].swapped) { i++; continue; }
+        if (swap_out(e, id)) { i++; continue; }
+        engine_release(e, id); // removes it from cached[]
+    }
 }
 
 typedef struct { int seq, take, spec; } plan_item; // spec: draft rows after the decode row
@@ -273,7 +375,7 @@ static void draft_phase(engine *e, const int *ids, int n) {
         seq_t *s = &e->seqs[id];
         s->n_drafts = 0;
         int k = kmax < s->p.max_new - s->n_gen - 1 ? kmax : s->p.max_new - s->n_gen - 1;
-        if (!s->generating || s->done || s->n_pending != 1 || s->wait_len || bad[id] || k <= 0) continue;
+        if (!s->generating || s->done || s->n_pending != 1 || s->wait_len || s->swapped || bad[id] || k <= 0) continue;
         if (s->dpages.len + nctx[id] != s->n_tokens) continue; // drafter context incomplete (e.g. forked mid-step)
         bool ok = true;
         for (int j = 0; j < B && ok; j++) ok = kv_reserve(&e->dkv, &s->dpages, s->n_tokens + j);
@@ -322,7 +424,7 @@ static void ngram_phase(engine *e, const int *ids, int n) {
     int32_t buf[32];
     for (int i = 0; i < n; i++) {
         seq_t *s = &e->seqs[ids[i]];
-        bool decoding = s->generating && !s->done && s->n_pending == 1 && !s->wait_len;
+        bool decoding = s->generating && !s->done && s->n_pending == 1 && !s->wait_len && !s->swapped;
         nd += decoding;
         if (!decoding) { // keep prompts indexed too: they are draft sources for everyone
             if (s->n_tokens) ng_update(&s->ng, &e->ng, ids[i], s->ng_gen, s->tokens, s->n_tokens);
@@ -379,12 +481,17 @@ bool engine_step(engine *e, const int *ids, int n) {
     plan_item *plan = malloc(sizeof(plan_item) * (n ? n : 1));
     int np = 0, budget = e->row_budget, n_decode = 0;
     for (int i = 0; i < n; i++) resolve_wait(e, ids[i], false);
+    // paused (swapped-out) sequences come back, oldest first, while their pages fit
+    for (int i = 0; i < n; i++) {
+        seq_t *s = &e->seqs[ids[i]];
+        if (s->swapped && !s->cached && !swap_in(e, ids[i])) break;
+    }
     for (int pass = 0; pass < 2 && !np; pass++) {
         if (pass) for (int i = 0; i < n; i++) resolve_wait(e, ids[i], true); // leaders not in this step: stop waiting
         budget = e->row_budget;
         for (int i = 0; i < n && budget > 0; i++) { // decode rows (plus their drafts) first; drafts do not eat the prefill budget
             seq_t *s = &e->seqs[ids[i]];
-            if (s->n_pending == 1 && !s->wait_len) {
+            if (s->n_pending == 1 && !s->wait_len && !s->swapped) {
                 int k = s->generating && !s->done ? s->n_drafts : 0;
                 plan[np++] = (plan_item){ ids[i], 1 + k, k };
                 budget--;
@@ -393,7 +500,7 @@ bool engine_step(engine *e, const int *ids, int n) {
         }
         for (int i = 0; i < n && budget > 0; i++) {
             seq_t *s = &e->seqs[ids[i]];
-            if (s->n_pending > 1 && !s->wait_len) { int take = s->n_pending < budget ? s->n_pending : budget; plan[np++] = (plan_item){ ids[i], take, 0 }; budget -= take; }
+            if (s->n_pending > 1 && !s->wait_len && !s->swapped) { int take = s->n_pending < budget ? s->n_pending : budget; plan[np++] = (plan_item){ ids[i], take, 0 }; budget -= take; }
         }
     }
     if (!np) { free(plan); return false; }
@@ -408,11 +515,13 @@ bool engine_step(engine *e, const int *ids, int n) {
         int victim = -1;
         for (int i = 0; i < e->n_seqs; i++) {
             seq_t *s = &e->seqs[i];
-            if (!s->live || s->cached || !s->pages.n_pages || i == plan[0].seq) continue;
+            bool planned = false;
+            for (int j = 0; j < np; j++) planned |= plan[j].seq == i;
+            if (!s->live || s->cached || s->swapped || !s->pages.n_pages || planned) continue;
             if (victim < 0 || s->t_start > e->seqs[victim].t_start) victim = i;
         }
         if (victim < 0) { fprintf(stderr, "engine: KV cache too small for one sequence (raise --budget-gb)\n"); exit(1); }
-        preempt(e, victim);
+        if (!swap_out(e, victim)) preempt(e, victim);
     }
     for (int i = 0; i < np; i++) n_rows += plan[i].take;
     if (n_rows > e->cap_rows) { e->cap_rows = n_rows * 2; e->rows = realloc(e->rows, sizeof(row_t) * e->cap_rows); }

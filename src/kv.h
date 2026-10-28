@@ -50,6 +50,10 @@ bool kv_reserve(kv_cache *kv, seq_pages *s, int pos);
 bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len);
 seq_pages kv_fork_at(kv_cache *kv, const seq_pages *s, int len);
 void kv_free_seq(kv_cache *kv, seq_pages *s);
+// Fresh page table of n pages (a sliding-window page for page i where has_swa[i]);
+// returns false, allocating nothing, if a pool is short. Used to swap KV back in.
+bool kv_alloc_pages(kv_cache *kv, seq_pages *s, int n, const uint8_t *has_swa, int len);
+static inline size_t kv_page_bytes(const kv_pool *p) { return p->page_stride * p->elem; }
 // Shrink s to len tokens (rejected speculative positions), releasing whole pages past it.
 void kv_truncate(kv_cache *kv, seq_pages *s, int len);
 // Release sliding-window pages no future query can see.

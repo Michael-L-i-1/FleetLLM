@@ -777,7 +777,7 @@ template [[host_name("attn_fd8_128")]] kernel attn_fd_t attn_fd<128, true>;
 // heads), split like attn_fd (the row's own split size and origin), so a row's
 // result depends only on the row. A simdgroup's lanes form 32/LP groups of LP
 // lanes, each group on VU consecutive positions per step (DPL dims per lane:
-// 4-16 byte loads of K and of V, all issued before the math);
+// 4-16 byte loads of K and of V, issued before the math);
 // scores reduce across the LP lanes, every lane group keeps its own online
 // softmax state, and the states merge in a fixed order through threadgroup
 // memory into attn_reduce's partials. Decode attention is bandwidth work: K/V
@@ -785,27 +785,26 @@ template [[host_name("attn_fd8_128")]] kernel attn_fd_t attn_fd<128, true>;
 // structure after MLX's sdpa_vector, MIT, Copyright © 2024 Apple Inc.)
 
 #define VEC_REG 16 // per-lane q and o registers per head group (sets dims per lane)
-#define VU 4      // positions per lane group per step
-template <int N> struct kv_bytes;
-template <> struct kv_bytes<4> { typedef uint T; };
-template <> struct kv_bytes<8> { typedef uint2 T; };
-template <> struct kv_bytes<16> { typedef uint4 T; };
-struct uint8x32 { uint4 a, b; };
-template <> struct kv_bytes<32> { typedef uint8x32 T; };
-
-// DPL values starting at p (int8 codes or f16) as floats
+#define VU 1      // positions per lane group per step
+// DPL (4, 8 or 16) values starting at `at` (int8 codes or f16) as floats; one
+// vector load, unpacked with as_type (no pointer casts: they spill to the stack)
 template <int DPL, bool Q8>
 inline void kv_load(device const half* pool, ulong at, thread float* out) {
     if (Q8) {
-        typedef typename kv_bytes<DPL>::T T;
-        const T w = *(device const T*)((device const char*)pool + at);
-        const thread char* c = (const thread char*)&w;
-        for (int i = 0; i < DPL; i++) out[i] = float(c[i]);
+        device const char* p = (device const char*)pool + at;
+        if (DPL == 4) {
+            const float4 f = float4(*(device const char4*)p);
+            for (int i = 0; i < 4; i++) out[i] = f[i];
+        } else if (DPL == 8) {
+            const uint2 w = *(device const uint2*)p;
+            for (int j = 0; j < 2; j++) { const float4 f = float4(as_type<char4>(w[j])); for (int i = 0; i < 4; i++) out[4 * j + i] = f[i]; }
+        } else {
+            const uint4 w = *(device const uint4*)p;
+            for (int j = 0; j < 4; j++) { const float4 f = float4(as_type<char4>(w[j])); for (int i = 0; i < 4; i++) out[4 * j + i] = f[i]; }
+        }
     } else {
-        typedef typename kv_bytes<DPL * 2>::T T;
-        const T w = *(device const T*)(pool + at);
-        const thread half* c = (const thread half*)&w;
-        for (int i = 0; i < DPL; i++) out[i] = float(c[i]);
+        device const half4* p = (device const half4*)(pool + at);
+        for (int j = 0; j < DPL / 4; j++) { const float4 f = float4(p[j]); for (int i = 0; i < 4; i++) out[4 * j + i] = f[i]; }
     }
 }
 

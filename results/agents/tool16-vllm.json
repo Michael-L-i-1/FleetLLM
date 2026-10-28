@@ -1,0 +1,29 @@
+{
+  "base": "http://127.0.0.1:8077/v1",
+  "model": "llama8b-mlx4",
+  "agents": 16,
+  "max_steps": 10,
+  "wall_secs": 26.0,
+  "model_calls": 95,
+  "tool_calls": 86,
+  "finished": 10,
+  "calls_per_min": 218.9,
+  "call_p50_secs": 2.49,
+  "gen_tokens": 2510,
+  "gen_tok_per_sec": 96.4,
+  "prompt_tokens": 93408,
+  "prompt_tok_per_sec": 3586.6,
+  "cached_prompt_tokens": 0,
+  "answers": {
+    "0": "The function that takes a page from the free list is \"take\" in src/engine.c.",
+    "1": "The engine's default row budget is 128.",
+    "3": "This is the result of calling the \"grep\" function with the pattern \"span_find in src/spans.c\". The output of the grep function is \"no matches\", indicating that the pattern was not found in the repository's source and docs.",
+    "5": "The function `kv_move` does not move the key `V` because it is not a part of the `kv` cache. The `kv_move` function only moves the key `K` and the rope `r` to the new positions.",
+    "6": "The chat template families supported by src/chat.c are LLAMA3, CHAT_CHATML, and CHAT_PLAIN.",
+    "9": "This means that the grep function did not find any matches for the given pattern in the repository's source and docs.",
+    "10": "The tool that measures perplexity is \"read_file\" in the file \"bench/lib/perplexity.py\" and the default context length is 80.",
+    "11": "The function `engine_retire` is called with a sequence as an argument in the files `src/server.c` and `tools/bench.c`.",
+    "12": "The number of tokens in a KV page is 2.",
+    "15": "The function `tok_chat_template` is defined in `src/tokenizer.h` and implemented in `src/tokenizer.c`. It returns the chat template of a tokenizer, or an empty string if no template is set."
+  }
+}

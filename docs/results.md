@@ -123,6 +123,18 @@ were shared across sequences (`attn_naxs`, below).
 `--reuse-spans` (61k tokens moved); prefill-bound at the GEMM ceiling (256-row
 chunk 463 ms; prefill 439 tok/s vs 235 tok/s with the attention kernels off).
 
+**Tool-using agents that drive themselves** (`bench/tool_agents.py`: each agent
+answers a question about this repository with real `list_dir` / `read_file` /
+`grep` tools through the OpenAI tool-calling API, up to 10 steps; Llama 8B,
+greedy). The model chooses its own path, so work differs slightly by engine:
+
+| Agents | Engine | Wall | Model calls | Calls / min | Answered |
+|---|---|---|---|---|---|
+| 16 | cinfer | **13.9 s** | 94 | **406** | 12 |
+| 16 | vLLM (`--tool-call-parser llama3_json`) | 26.0 s | 95 | 219 | 10 (1 request rejected) |
+| 32 | cinfer | **17.0 s** | 188 | **663** | 24 |
+| 32 | vLLM | 26.3 s | 192 | 438 | 20 (2 requests rejected) |
+
 **One long-running agent** (1 agent x 14 turns, 0.5 s tools, context growing
 to 14k tokens): cinfer **50 s** vs vLLM 81 s (p50 turn 3.2 s vs 5.2 s).
 

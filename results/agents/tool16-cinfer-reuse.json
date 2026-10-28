@@ -1,0 +1,31 @@
+{
+  "base": "http://127.0.0.1:8090/v1",
+  "model": "llama8b-mlx4",
+  "agents": 16,
+  "max_steps": 10,
+  "wall_secs": 14.3,
+  "model_calls": 94,
+  "tool_calls": 82,
+  "finished": 12,
+  "calls_per_min": 394.8,
+  "call_p50_secs": 1.23,
+  "gen_tokens": 2454,
+  "gen_tok_per_sec": 171.8,
+  "prompt_tokens": 80623,
+  "prompt_tok_per_sec": 5643.3,
+  "cached_prompt_tokens": 66065,
+  "answers": {
+    "0": "The function that takes a page from the free list is `take_page_from_free_list` in `src/kv.c`.",
+    "1": "The engine's default row budget is 128.",
+    "2": "The command-line flag that enables 8-bit KV is `--kv-int8`. It is handled in the `tools/common.h` file.",
+    "3": "The function span_find in src/spans.c returns 0 when no run is long enough.",
+    "4": "The server decides whether to admit a queued request based on the \"accept\" function in src/server.c, which checks if the request is accepted by the target. If the request is accepted, the server will admit it; otherwise, it will not.",
+    "5": "The function `kv_move` does not swap the keys and values, it only moves the KV of K, re-rotating it to the new positions.",
+    "6": "The chat template families supported by src/chat.c are:\n\n- Llama 3.1+\n- Glimmer",
+    "7": "NG_N in src/ngram.h controls the match length, which sets how far to trust the continuation of a sequence.",
+    "9": "That means the grep tool did not find any matches.",
+    "10": "The tool that measures perplexity is `grep` and its default context length is not specified in the given functions. However, based on the output of the `grep` function, it seems that the default context length is around 6 bits/value.",
+    "12": "The number of tokens in a KV page is 2 * kv_heads * KV_PAGE * (head_dim * elem + (elem == 1 ? 2 : 0)).",
+    "15": "The function `tok_chat_template` returns the value of `t->chat_template` if it is not null, otherwise it returns an empty string."
+  }
+}

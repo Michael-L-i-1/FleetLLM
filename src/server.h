@@ -21,6 +21,8 @@ typedef struct {
     int default_max_tokens;
     const char *reasoning; // default reasoning strength (Glimmer)
     int max_active;        // requests decoded at once; the rest wait in a queue
+    bool admit;            // admit only what fits in KV memory (default with --swap-gb: the
+                           // rest wait with their KV resident or swapped, not recomputed)
 } server_opts;
 
 // Serve forever (returns only on a socket error).

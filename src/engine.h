@@ -29,8 +29,8 @@ typedef struct {
     // swapped out: KV in a file (pages empty), restored instead of recomputed
     bool swapped;
     char *swap_path;
-    int swap_pages, swap_len;
-    uint8_t *swap_has_swa;
+    int swap_len;
+    uint8_t *swap_flags; // per page: which pools' pages are in the file (see kv_release_flagged)
     size_t swap_size;
     sample_params p;
     uint64_t rng;
@@ -95,6 +95,14 @@ int engine_create_fresh(engine *e, const int32_t *prompt, int n);
 int engine_fork_at(engine *e, int parent, int len, const int32_t *suffix, int n);
 void engine_start(engine *e, int id, sample_params p);
 void engine_release(engine *e, int id); // free KV now
+// Memory-aware admission (an agent's KV is state, not cache: run what fits, keep
+// the rest queued with their KV resident or swapped, instead of thrashing):
+// pages a new request needs beyond what it shares (unmatched prompt + output
+// budget + bringing a swapped match back), pages running sequences may still
+// take, and pages free now or held only by retired sequences.
+uint32_t engine_need_pages(engine *e, const int32_t *prompt, int n, int max_new);
+uint32_t engine_committed_pages(engine *e, const int *ids, int n);
+uint32_t engine_avail_pages(engine *e);
 void engine_retire(engine *e, int id);  // keep KV for prefix reuse until memory is needed
 
 // One batched forward over the given sequences; returns false if nothing ran.

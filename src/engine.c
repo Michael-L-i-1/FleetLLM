@@ -113,6 +113,61 @@ static void touch(engine *e, int id) {
         }
 }
 
+// Pages of s that only s holds (what swapping it out or releasing it frees).
+static uint32_t exclusive_pages(const engine *e, const seq_t *s) {
+    uint32_t n = 0;
+    for (int i = 0; i < s->pages.n_pages; i++)
+        n += kv_exclusive(&e->kv.full, s->pages.full[i]) || (e->kv.window && kv_exclusive(&e->kv.swa, s->pages.swa[i]));
+    return n;
+}
+
+// The live sequence whose KV a new prompt can fork the longest prefix of.
+static int best_match(const engine *e, const int32_t *prompt, int n, int *len) {
+    int best = -1;
+    *len = 0;
+    for (int i = 0; i < e->n_seqs; i++) {
+        const seq_t *s = &e->seqs[i];
+        if (!s->live) continue;
+        int l = 0;
+        while (l < s->n_tokens && l < n && s->tokens[l] == prompt[l]) l++;
+        if (l > n - 1) l = n - 1;
+        bool forkable = s->swapped ? l <= s->swap_len : kv_can_fork_at(&e->kv, &s->pages, l);
+        if (l >= e->min_share && l > *len && forkable) { best = i; *len = l; }
+    }
+    return best;
+}
+
+uint32_t engine_need_pages(engine *e, const int32_t *prompt, int n, int max_new) {
+    int len, best = best_match(e, prompt, n, &len);
+    uint32_t need = (uint32_t)(n - len + max_new) / KV_PAGE + 2;
+    if (best >= 0) {
+        const seq_t *s = &e->seqs[best];
+        if (s->swapped) for (int i = 0; i < s->pages.n_pages; i++) need += s->swap_flags[i] & 1;
+        else if (s->cached) need += exclusive_pages(e, s); // stays resident once shared
+    }
+    return need;
+}
+
+uint32_t engine_committed_pages(engine *e, const int *ids, int n) {
+    uint32_t c = 0;
+    for (int i = 0; i < n; i++) {
+        const seq_t *s = &e->seqs[ids[i]];
+        int more = s->n_pending + (s->generating && !s->done ? s->p.max_new - s->n_gen : 0);
+        c += (uint32_t)more / KV_PAGE + 1;
+        if (s->swapped) for (int k = 0; k < s->pages.n_pages; k++) c += s->swap_flags[k] & 1;
+    }
+    return c;
+}
+
+uint32_t engine_avail_pages(engine *e) {
+    uint32_t a = e->kv.full.n_free;
+    for (int i = 0; i < e->n_cached; i++) {
+        const seq_t *s = &e->seqs[e->cached[i]];
+        if (!s->swapped) a += exclusive_pages(e, s);
+    }
+    return a;
+}
+
 int engine_create(engine *e, const int32_t *prompt, int n) {
     int best = -1, best_len = 0, lead = -1, lead_len = 0;
     for (int i = 0; i < e->n_seqs; i++) {
@@ -210,17 +265,21 @@ void engine_retire(engine *e, int id) {
 
 // ---- KV swap (agents' KV is state, not a cache: restoring beats recomputing)
 
+// Only pages no other sequence holds go to the file; shared pages (a common
+// system prompt, a parent's history) stay resident, referenced, so swapping
+// frees exactly the sequence's own memory and swapping back in restores the
+// sharing instead of duplicating it.
 static bool swap_out(engine *e, int id) {
     seq_t *s = &e->seqs[id];
     if (!e->swap_dir || s->swapped || !s->pages.n_pages) return false;
-    const kv_cache *kv = &e->kv;
+    kv_cache *kv = &e->kv;
     size_t fb = kv_page_bytes(&kv->full), wb = kv->window ? kv_page_bytes(&kv->swa) : 0, size = 0;
     uint8_t *has = malloc(s->pages.n_pages);
     for (int i = 0; i < s->pages.n_pages; i++) {
-        has[i] = kv->window && s->pages.swa[i] != KV_NONE;
-        size += fb + (has[i] ? wb : 0);
+        has[i] = kv_exclusive(&kv->full, s->pages.full[i]) | (kv->window && kv_exclusive(&kv->swa, s->pages.swa[i])) << 1;
+        size += (has[i] & 1 ? fb : 0) + (has[i] & 2 ? wb : 0);
     }
-    if (e->swap_used + size > e->swap_limit) { free(has); return false; }
+    if (!size || e->swap_used + size > e->swap_limit) { free(has); return false; }
     char path[512];
     snprintf(path, sizeof path, "%s/cinfer-swap-%d-%d-%d.kv", e->swap_dir, (int)getpid(), id, s->ng_gen);
     double t0 = now_secs();
@@ -229,20 +288,18 @@ static bool swap_out(engine *e, int id) {
     off_t off = 0;
     bool ok = true;
     for (int i = 0; i < s->pages.n_pages && ok; i++) {
-        ok = pwrite(fd, kv->full.data + (size_t)s->pages.full[i] * fb, fb, off) == (ssize_t)fb;
-        off += fb;
-        if (has[i] && ok) { ok = pwrite(fd, kv->swa.data + (size_t)s->pages.swa[i] * wb, wb, off) == (ssize_t)wb; off += wb; }
+        if (has[i] & 1) { ok = pwrite(fd, kv->full.data + (size_t)s->pages.full[i] * fb, fb, off) == (ssize_t)fb; off += fb; }
+        if ((has[i] & 2) && ok) { ok = pwrite(fd, kv->swa.data + (size_t)s->pages.swa[i] * wb, wb, off) == (ssize_t)wb; off += wb; }
     }
     close(fd);
     if (!ok) { unlink(path); free(has); return false; }
     s->swap_path = strdup(path);
-    s->swap_pages = s->pages.n_pages;
     s->swap_len = s->pages.len;
-    s->swap_has_swa = has;
+    s->swap_flags = has;
     s->swap_size = size;
     s->swapped = true;
     s->n_drafts = 0;
-    kv_free_seq(&e->kv, &s->pages);
+    kv_release_flagged(kv, &s->pages, has); // shared pages stay referenced
     if (e->draft) kv_free_seq(&e->dkv, &s->dpages); // drafter context is dropped (no drafts for this sequence)
     e->swap_used += size;
     e->st.swap_outs++;
@@ -254,10 +311,10 @@ static void swap_discard(engine *e, seq_t *s) {
     if (!s->swapped) return;
     unlink(s->swap_path);
     free(s->swap_path);
-    free(s->swap_has_swa);
+    free(s->swap_flags);
     e->swap_used -= s->swap_size;
     s->swap_path = NULL;
-    s->swap_has_swa = NULL;
+    s->swap_flags = NULL;
     s->swapped = false;
 }
 
@@ -266,37 +323,35 @@ static void make_room(engine *e, uint32_t pages);
 static bool swap_in(engine *e, int id) {
     seq_t *s = &e->seqs[id];
     if (!s->swapped) return true;
-    uint32_t nw = 0;
-    for (int i = 0; i < s->swap_pages; i++) nw += s->swap_has_swa[i];
-    make_room(e, (uint32_t)s->swap_pages > nw ? (uint32_t)s->swap_pages : nw);
-    seq_pages pg;
-    if (!kv_alloc_pages(&e->kv, &pg, s->swap_pages, s->swap_has_swa, s->swap_len)) return false;
-    const kv_cache *kv = &e->kv;
+    uint32_t nf = 0, nw = 0;
+    for (int i = 0; i < s->pages.n_pages; i++) { nf += s->swap_flags[i] & 1; nw += (s->swap_flags[i] >> 1) & 1; }
+    make_room(e, nf > nw ? nf : nw);
+    kv_cache *kv = &e->kv;
+    if (!kv_fill_flagged(kv, &s->pages, s->swap_flags)) return false;
     size_t fb = kv_page_bytes(&kv->full), wb = kv->window ? kv_page_bytes(&kv->swa) : 0;
     double t0 = now_secs();
     int fd = open(s->swap_path, O_RDONLY);
     off_t off = 0;
     bool ok = fd >= 0;
-    for (int i = 0; i < s->swap_pages && ok; i++) {
-        ok = pread(fd, kv->full.data + (size_t)pg.full[i] * fb, fb, off) == (ssize_t)fb;
-        off += fb;
-        if (s->swap_has_swa[i] && ok) { ok = pread(fd, kv->swa.data + (size_t)pg.swa[i] * wb, wb, off) == (ssize_t)wb; off += wb; }
+    for (int i = 0; i < s->pages.n_pages && ok; i++) {
+        if (s->swap_flags[i] & 1) { ok = pread(fd, kv->full.data + (size_t)s->pages.full[i] * fb, fb, off) == (ssize_t)fb; off += fb; }
+        if ((s->swap_flags[i] & 2) && ok) { ok = pread(fd, kv->swa.data + (size_t)s->pages.swa[i] * wb, wb, off) == (ssize_t)wb; off += wb; }
     }
     if (fd >= 0) close(fd);
-    if (!ok) { kv_free_seq(&e->kv, &pg); return false; }
+    if (!ok) { kv_release_flagged(kv, &s->pages, s->swap_flags); return false; }
     swap_discard(e, s);
-    s->pages = pg;
     e->st.swap_ins++;
     e->st.swap_secs += now_secs() - t0;
     return true;
 }
 
 // Make both pools able to take `pages` more pages: retired sequences go to swap
-// (or are released if swap is off or full), oldest first.
+// (or are released if swap is off or full), oldest first. Ones holding only
+// shared pages free nothing and are kept.
 static void make_room(engine *e, uint32_t pages) {
     for (int i = 0; i < e->n_cached && (e->kv.full.n_free < pages || (e->kv.window && e->kv.swa.n_free < pages));) {
         int id = e->cached[i];
-        if (e->seqs[id].swapped) { i++; continue; }
+        if (e->seqs[id].swapped || !exclusive_pages(e, &e->seqs[id])) { i++; continue; }
         if (swap_out(e, id)) { i++; continue; }
         engine_release(e, id); // removes it from cached[]
     }

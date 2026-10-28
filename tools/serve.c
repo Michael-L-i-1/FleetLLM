@@ -13,5 +13,6 @@ int main(int argc, char **argv) {
     o.default_max_tokens = (int)arg_num(argc, argv, "--max-tokens", 4096);
     o.reasoning = arg_str(argc, argv, "--reasoning", NULL);
     o.max_active = (int)arg_num(argc, argv, "--max-active", 64);
+    o.admit = arg_flag(argc, argv, "--admit") || (arg_num(argc, argv, "--swap-gb", 0) > 0 && !arg_flag(argc, argv, "--no-admit"));
     return server_run(rt.e, &o);
 }

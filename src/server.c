@@ -172,6 +172,11 @@ static void *engine_loop(void *arg) {
         // admit queued requests (prefix sharing: a new agent forks the longest matching KV)
         while (sv->queue && (sv->o->max_active <= 0 || sv->n_active < sv->o->max_active)) {
             req *r = sv->queue;
+            if (sv->n_active && sv->o->admit) { // admit only what fits beside the running requests
+                if (sv->n_active > cap_ids) { cap_ids = sv->n_active * 2; ids = realloc(ids, sizeof(int) * cap_ids); }
+                for (int i = 0; i < sv->n_active; i++) ids[i] = sv->active[i]->seq;
+                if (engine_need_pages(e, r->prompt, r->n_prompt, r->p.max_new) + engine_committed_pages(e, ids, sv->n_active) > engine_avail_pages(e)) break;
+            }
             sv->queue = r->next;
             if (sv->n_active == sv->cap_active) { sv->cap_active = sv->cap_active ? sv->cap_active * 2 : 64; sv->active = realloc(sv->active, sizeof(req *) * sv->cap_active); }
             r->seq = engine_create(e, r->prompt, r->n_prompt);

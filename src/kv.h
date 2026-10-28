@@ -50,9 +50,13 @@ bool kv_reserve(kv_cache *kv, seq_pages *s, int pos);
 bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len);
 seq_pages kv_fork_at(kv_cache *kv, const seq_pages *s, int len);
 void kv_free_seq(kv_cache *kv, seq_pages *s);
-// Fresh page table of n pages (a sliding-window page for page i where has_swa[i]);
-// returns false, allocating nothing, if a pool is short. Used to swap KV back in.
-bool kv_alloc_pages(kv_cache *kv, seq_pages *s, int n, const uint8_t *has_swa, int len);
+// Swap support: pages another sequence also holds stay resident; exclusive ones
+// can be released to holes (KV_NONE) and refilled later. flags[i] bit 0: page i
+// of the full pool, bit 1: of the sliding-window pool.
+static inline bool kv_exclusive(const kv_pool *p, uint32_t page) { return page != KV_NONE && p->refcnt[page] == 1; }
+void kv_release_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags);
+// Allocate fresh pages for the flagged holes; false, allocating nothing, if a pool is short.
+bool kv_fill_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags);
 static inline size_t kv_page_bytes(const kv_pool *p) { return p->page_stride * p->elem; }
 // Shrink s to len tokens (rejected speculative positions), releasing whole pages past it.
 void kv_truncate(kv_cache *kv, seq_pages *s, int len);

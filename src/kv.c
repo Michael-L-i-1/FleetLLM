@@ -140,20 +140,20 @@ void kv_truncate(kv_cache *kv, seq_pages *s, int len) {
     if (len < s->len) s->len = len;
 }
 
-bool kv_alloc_pages(kv_cache *kv, seq_pages *s, int n, const uint8_t *has_swa, int len) {
-    uint32_t nw = 0;
-    for (int i = 0; i < n; i++) nw += kv->window && has_swa[i];
-    if (kv->full.n_free < (uint32_t)n || kv->swa.n_free < nw) return false;
-    memset(s, 0, sizeof *s);
-    s->cap = n > 16 ? n : 16;
-    s->full = malloc(sizeof(uint32_t) * s->cap);
-    s->swa = malloc(sizeof(uint32_t) * s->cap);
-    for (int i = 0; i < n; i++) {
-        palloc(&kv->full, &s->full[i]);
-        s->swa[i] = KV_NONE;
-        if (kv->window && has_swa[i]) palloc(&kv->swa, &s->swa[i]);
+void kv_release_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags) {
+    for (int i = 0; i < s->n_pages; i++) {
+        if (flags[i] & 1) { prelease(&kv->full, s->full[i]); s->full[i] = KV_NONE; }
+        if (flags[i] & 2) { prelease(&kv->swa, s->swa[i]); s->swa[i] = KV_NONE; }
     }
-    s->n_pages = n;
-    s->len = len;
+}
+
+bool kv_fill_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags) {
+    uint32_t nf = 0, nw = 0;
+    for (int i = 0; i < s->n_pages; i++) { nf += flags[i] & 1; nw += (flags[i] >> 1) & 1; }
+    if (kv->full.n_free < nf || (nw && kv->swa.n_free < nw)) return false;
+    for (int i = 0; i < s->n_pages; i++) {
+        if (flags[i] & 1) palloc(&kv->full, &s->full[i]);
+        if (flags[i] & 2) palloc(&kv->swa, &s->swa[i]);
+    }
     return true;
 }

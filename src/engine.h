@@ -14,6 +14,7 @@
 #include "sampler.h"
 #include "tokenizer.h"
 #include "ngram.h"
+#include "spans.h"
 
 typedef struct {
     bool live, cached, generating, done;
@@ -24,7 +25,11 @@ typedef struct {
     int wait_for, wait_len; // waiting for seqs[wait_for] to write wait_len shared tokens (wait_len 0: not waiting)
     seq_pages dpages;        // drafter KV (speculative decoding): context of the first dpages.len tokens
     int32_t drafts[32]; int n_drafts; // proposals to verify in the next step
-    ng_seq ng; int ng_gen;            // repeated-text draft index (see ngram.h)
+    ng_seq ng; int ng_gen;            // repeated-text draft index (see ngram.h); ng_gen: this slot's generation
+    // span reuse (see spans.h): blocks indexed so far; a planned KV move of sp_len
+    // tokens from sp_src at sp_src_pos, done when the written length reaches sp_at
+    int sp_indexed, sp_at, sp_src, sp_src_pos, sp_len, sp_gen;
+    bool sp_searched, sp_planned;
     int ng_drafts;                    // drafts this step that came from repeated text
     // swapped out: KV in a file (pages empty), restored instead of recomputed
     bool swapped;
@@ -43,6 +48,7 @@ typedef struct {
     long ng_steps, ng_drafted, ng_accepted;       // the subset drafted from repeated text
     long preemptions; // sequences whose KV was freed under memory pressure (recomputed later)
     long swap_outs, swap_ins; double swap_secs; // KV written to / read back from the swap directory
+    long reuse_moves, reuse_tokens; double reuse_secs; // KV moved instead of prefilled (spans.h)
     double draft_secs;
     double forward_secs;
 } engine_stats;
@@ -68,6 +74,11 @@ typedef struct {
     bool ngram;
     ng_global ng;
     int ng_gen;
+    // span reuse: runs of >= reuse_min pending tokens another sequence already
+    // holds get their KV moved over, all but the first reuse_head / last reuse_tail
+    int reuse_min, reuse_head, reuse_tail;
+    span_index spans;
+    kv_rope rope;
     // KV swap: under memory pressure, evicted (cached) and preempted sequences
     // are written to swap_dir and read back when needed instead of recomputed
     const char *swap_dir;
@@ -86,6 +97,8 @@ bool engine_set_drafter(engine *e, model *dm, size_t kv_budget_bytes, int spec_k
 // Enable drafting from repeated text in a sequence's own context and in every
 // other sequence's (exact for greedy and sampled decoding).
 void engine_set_ngram(engine *e, bool on);
+// Enable span reuse (lossy, see spans.h): min_len 0 disables.
+void engine_set_reuse(engine *e, int min_len, int head, int tail);
 
 // New sequence for prompt; shares KV with the best prefix match (>= min_share tokens).
 int engine_create(engine *e, const int32_t *prompt, int n);

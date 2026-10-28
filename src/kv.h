@@ -58,6 +58,18 @@ void kv_release_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags);
 // Allocate fresh pages for the flagged holes; false, allocating nothing, if a pool is short.
 bool kv_fill_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags);
 static inline size_t kv_page_bytes(const kv_pool *p) { return p->page_stride * p->elem; }
+// Moving KV to another position: K carries RoPE, so it is rotated by the
+// position change; V is copied. rope[l]: pool layer l uses rotary embedding.
+typedef struct {
+    const float *inv_freq; // head_dim / 2 entries
+    bool neox;
+    const uint8_t *full_rope, *swa_rope;
+} kv_rope;
+// Copy the KV of positions [src_pos, src_pos + n) of src to [dst_pos, dst_pos + n)
+// of dst (slots already reserved; sliding-window pages are copied where both
+// sides have them). Host-side on the pool storage, for every element type.
+void kv_move(kv_cache *kv, const seq_pages *src, int src_pos, const seq_pages *dst, int dst_pos, int n, const kv_rope *r);
+
 // Shrink s to len tokens (rejected speculative positions), releasing whole pages past it.
 void kv_truncate(kv_cache *kv, seq_pages *s, int len);
 // Release sliding-window pages no future query can see.

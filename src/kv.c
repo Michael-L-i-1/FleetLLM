@@ -1,4 +1,6 @@
 #include "kv.h"
+#include "quant.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -156,4 +158,79 @@ bool kv_fill_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags) {
         if (flags[i] & 2) palloc(&kv->swa, &s->swa[i]);
     }
     return true;
+}
+
+// One token's K or V vector of one (layer, head): load as floats / store back
+// (8-bit: per-token-per-head f16 scale, requantized on store).
+static void vec_load(const kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, float *x) {
+    size_t at = kv_tile(p, page, layer, kv, head) + (size_t)slot * p->head_dim;
+    if (p->elem == 4) memcpy(x, (const float *)p->data + at, sizeof(float) * p->head_dim);
+    else if (p->elem == 2)
+        for (int i = 0; i < p->head_dim; i++) x[i] = fp16_to_f32(((const uint16_t *)p->data)[at + i]);
+    else {
+        const uint8_t *pg = p->data + (size_t)page * p->page_stride;
+        uint16_t sh;
+        memcpy(&sh, pg + p->scale_off + (((size_t)layer * 2 + kv) * p->kv_heads + head) * KV_PAGE * 2 + (size_t)slot * 2, 2);
+        float sc = fp16_to_f32(sh);
+        for (int i = 0; i < p->head_dim; i++) x[i] = (float)(int8_t)p->data[at + i] * sc;
+    }
+}
+
+static void vec_store(kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, const float *x) {
+    size_t at = kv_tile(p, page, layer, kv, head) + (size_t)slot * p->head_dim;
+    if (p->elem == 4) memcpy((float *)p->data + at, x, sizeof(float) * p->head_dim);
+    else if (p->elem == 2)
+        for (int i = 0; i < p->head_dim; i++) ((uint16_t *)p->data)[at + i] = f32_to_fp16(x[i]);
+    else { // as kv_write8: scale = absmax / 127, stored as f16
+        float mx = 0;
+        for (int i = 0; i < p->head_dim; i++) mx = fmaxf(mx, fabsf(x[i]));
+        uint16_t sh = f32_to_fp16(mx > 0 ? mx / 127.0f : 1.0f);
+        float sc = fp16_to_f32(sh);
+        for (int i = 0; i < p->head_dim; i++) {
+            float q = rintf(x[i] / sc);
+            p->data[at + i] = (uint8_t)(int8_t)(q > 127 ? 127 : q < -127 ? -127 : q);
+        }
+        memcpy(p->data + (size_t)page * p->page_stride + p->scale_off + (((size_t)layer * 2 + kv) * p->kv_heads + head) * KV_PAGE * 2 + (size_t)slot * 2, &sh, 2);
+    }
+}
+
+// Exact copy of one token's K or V vector (values and, for 8-bit, its scale).
+static void vec_copy(kv_pool *p, uint32_t ps, int sslot, uint32_t pd, int dslot, int layer, int kv, int head) {
+    size_t eb = (size_t)p->elem, hd = (size_t)p->head_dim;
+    memcpy(p->data + (kv_tile(p, pd, layer, kv, head) + (size_t)dslot * hd) * eb, p->data + (kv_tile(p, ps, layer, kv, head) + (size_t)sslot * hd) * eb, hd * eb);
+    if (p->elem == 1) {
+        size_t so = p->scale_off + (((size_t)layer * 2 + kv) * p->kv_heads + head) * KV_PAGE * 2;
+        memcpy(p->data + (size_t)pd * p->page_stride + so + (size_t)dslot * 2, p->data + (size_t)ps * p->page_stride + so + (size_t)sslot * 2, 2);
+    }
+}
+
+static void pool_move(kv_pool *p, const uint32_t *sp, int src_pos, const uint32_t *dp, int dst_pos, int n, const uint8_t *rope, const kv_rope *r) {
+    int hd = p->head_dim, half = hd / 2;
+    float *x = malloc(sizeof(float) * hd), *y = malloc(sizeof(float) * hd), *c = malloc(sizeof(float) * half), *s = malloc(sizeof(float) * half);
+    double d = (double)dst_pos - src_pos;
+    for (int i = 0; i < half; i++) { c[i] = (float)cos(d * r->inv_freq[i]); s[i] = (float)sin(d * r->inv_freq[i]); }
+    for (int t = 0; t < n; t++) {
+        int a = src_pos + t, b = dst_pos + t;
+        uint32_t ps = sp[a / KV_PAGE], pd = dp[b / KV_PAGE];
+        if (ps == KV_NONE || pd == KV_NONE) continue;
+        for (int l = 0; l < p->n_layers; l++)
+            for (int h = 0; h < p->kv_heads; h++) {
+                if (rope[l] && d != 0) { // K: rotate by the position change
+                    vec_load(p, ps, l, 0, h, a % KV_PAGE, x);
+                    for (int i = 0; i < half; i++) {
+                        int i0 = r->neox ? i : 2 * i, i1 = r->neox ? i + half : 2 * i + 1;
+                        y[i0] = x[i0] * c[i] - x[i1] * s[i];
+                        y[i1] = x[i0] * s[i] + x[i1] * c[i];
+                    }
+                    vec_store(p, pd, l, 0, h, b % KV_PAGE, y);
+                } else vec_copy(p, ps, a % KV_PAGE, pd, b % KV_PAGE, l, 0, h);
+                vec_copy(p, ps, a % KV_PAGE, pd, b % KV_PAGE, l, 1, h); // V: unchanged
+            }
+    }
+    free(x); free(y); free(c); free(s);
+}
+
+void kv_move(kv_cache *kv, const seq_pages *src, int src_pos, const seq_pages *dst, int dst_pos, int n, const kv_rope *r) {
+    if (kv->full.n_layers) pool_move(&kv->full, src->full, src_pos, dst->full, dst_pos, n, r->full_rope, r);
+    if (kv->window && kv->swa.n_layers) pool_move(&kv->swa, src->swa, src_pos, dst->swa, dst_pos, n, r->swa_rope, r);
 }

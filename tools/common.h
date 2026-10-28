@@ -81,6 +81,8 @@ static runtime load_runtime(int argc, char **argv) {
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
     rt.e->spec_rows = (int)arg_num(argc, argv, "--spec-rows", 32);
     if (arg_flag(argc, argv, "--ngram")) engine_set_ngram(rt.e, true); // drafts from repeated text (model-free)
+    if (arg_flag(argc, argv, "--reuse-spans")) // move KV of text other sequences already hold (lossy, see spans.h)
+        engine_set_reuse(rt.e, (int)arg_num(argc, argv, "--reuse-min", 256), (int)arg_num(argc, argv, "--reuse-head", 64), (int)arg_num(argc, argv, "--reuse-tail", 64));
     double swap_gb = arg_num(argc, argv, "--swap-gb", 0); // KV swap space on disk (0: off; evicted KV is recomputed)
     if (swap_gb > 0) {
         rt.e->swap_dir = arg_str(argc, argv, "--swap-dir", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");

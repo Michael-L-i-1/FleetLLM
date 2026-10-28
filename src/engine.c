@@ -50,6 +50,9 @@ void engine_free(engine *e) {
     free(e->amax);
     free(e->dctx);
     ng_global_free(&e->ng);
+    span_free(&e->spans);
+    free((void *)e->rope.full_rope);
+    free((void *)e->rope.swa_rope);
     free(e);
 }
 
@@ -75,6 +78,17 @@ static int new_seq(engine *e) {
     e->seqs[id].live = true;
     e->seqs[id].ng_gen = ++e->ng_gen;
     return id;
+}
+
+void engine_set_reuse(engine *e, int min_len, int head, int tail) {
+    e->reuse_min = min_len;
+    e->reuse_head = head;
+    e->reuse_tail = tail < 1 ? 1 : tail; // the input's last token is computed (its logits)
+    if (!min_len || e->spans.t) return;
+    span_init(&e->spans, 20);
+    uint8_t *fr = calloc(256, 1), *sr = calloc(256, 1);
+    for (int l = 0; l < e->m->c.n_layer; l++) (e->m->layers[l].swa ? sr : fr)[e->m->layers[l].pool_layer] = e->m->layers[l].rope;
+    e->rope = (kv_rope){ e->m->inv_freq, e->m->c.rope_neox, fr, sr };
 }
 
 void engine_set_ngram(engine *e, bool on) {
@@ -461,6 +475,82 @@ static void draft_phase(engine *e, const int *ids, int n) {
     free(loc); free(glob); free(nctx); free(ctx); free(blk); free(bad);
 }
 
+// ---- span reuse (spans.h)
+
+static ng_view resident_view(void *u, int id) {
+    engine *e = u;
+    if (id < 0 || id >= e->n_seqs || !e->seqs[id].live || e->seqs[id].swapped) return (ng_view){ NULL, 0, 0 };
+    return (ng_view){ e->seqs[id].tokens, e->seqs[id].n_tokens, e->seqs[id].ng_gen };
+}
+
+static uint32_t pages_free(const engine *e) { return e->kv.window && e->kv.swa.n_free < e->kv.full.n_free ? e->kv.swa.n_free : e->kv.full.n_free; }
+
+// Move the planned run's KV from its source (still resident and unchanged) into s.
+static void span_move(engine *e, int id) {
+    seq_t *s = &e->seqs[id];
+    s->sp_planned = false;
+    s->sp_searched = false; // the input after the run may hold another one
+    if (s->sp_src < 0 || s->sp_src >= e->n_seqs) return;
+    seq_t *src = &e->seqs[s->sp_src];
+    int len = s->sp_len, from = s->sp_src_pos;
+    if (!src->live || src->swapped || src->ng_gen != s->sp_gen || src->pages.len < from + len || s->n_pending <= len ||
+        memcmp(src->tokens + from, s->pending, sizeof(int32_t) * len))
+        return;
+    if (e->kv.window)
+        for (int p = from / KV_PAGE; p <= (from + len - 1) / KV_PAGE; p++)
+            if (src->pages.swa[p] == KV_NONE) return; // out of its window already
+    uint32_t need = (uint32_t)len / KV_PAGE + 2;
+    if (pages_free(e) < need) make_room(e, need);
+    if (pages_free(e) < need) return;
+    double t0 = now_secs();
+    int base = s->pages.len;
+    for (int p = base; p < base + len; p++) if (!kv_reserve(&e->kv, &s->pages, p)) return;
+    kv_move(&e->kv, &src->pages, from, &s->pages, base, len, &e->rope);
+    s->pages.len += len;
+    append(&s->tokens, &s->n_tokens, &s->cap_tokens, s->pending, len);
+    memmove(s->pending, s->pending + len, sizeof(int32_t) * (s->n_pending - len));
+    s->n_pending -= len;
+    kv_trim_window(&e->kv, &s->pages);
+    e->st.reuse_moves++;
+    e->st.reuse_tokens += len;
+    e->st.reuse_secs += now_secs() - t0;
+}
+
+// Index written tokens; find runs in pending input that others already hold;
+// do planned moves whose start the input has reached.
+static void reuse_phase(engine *e, const int *ids, int n) {
+    for (int i = 0; i < n; i++) {
+        seq_t *s = &e->seqs[ids[i]];
+        if (!s->live || s->swapped) continue;
+        s->sp_indexed = span_add(&e->spans, ids[i], s->ng_gen, s->tokens, s->sp_indexed, s->n_tokens);
+        if (s->wait_len || s->sp_planned || s->sp_searched || s->n_pending < e->reuse_min) continue;
+        s->sp_searched = true;
+        span_run r;
+        if (!span_find(&e->spans, ids[i], s->pending, s->n_pending, e->reuse_min, resident_view, e, &r)) continue;
+        int len = r.len - e->reuse_head - e->reuse_tail;
+        if (len < SPAN_BLOCK) continue;
+        s->sp_planned = true;
+        s->sp_at = s->n_tokens + r.off + e->reuse_head;
+        s->sp_src = r.seq;
+        s->sp_src_pos = r.pos + e->reuse_head;
+        s->sp_len = len;
+        s->sp_gen = e->seqs[r.seq].ng_gen;
+    }
+    for (int i = 0; i < n; i++) {
+        seq_t *s = &e->seqs[ids[i]];
+        if (s->sp_planned && s->n_tokens >= s->sp_at) {
+            if (s->n_tokens == s->sp_at) span_move(e, ids[i]);
+            else s->sp_planned = false;
+        }
+    }
+}
+
+// Prefill rows a sequence may take now: a planned move's start is a chunk boundary.
+static int input_cap(const seq_t *s, int want) {
+    if (s->sp_planned && s->sp_at > s->n_tokens && s->sp_at - s->n_tokens < want) return s->sp_at - s->n_tokens;
+    return want;
+}
+
 static ng_view seq_view(void *u, int id) {
     engine *e = u;
     if (id < 0 || id >= e->n_seqs || !e->seqs[id].live) return (ng_view){ NULL, 0, 0 };
@@ -533,6 +623,7 @@ bool engine_step(engine *e, const int *ids, int n) {
     else for (int i = 0; i < n; i++) e->seqs[ids[i]].n_drafts = 0;
     for (int i = 0; i < n; i++) e->seqs[ids[i]].ng_drafts = 0;
     if (e->ngram) ngram_phase(e, ids, n);
+    if (e->reuse_min && !e->draft) reuse_phase(e, ids, n); // (the drafter has no context for moved KV)
     plan_item *plan = malloc(sizeof(plan_item) * (n ? n : 1));
     int np = 0, budget = e->row_budget, n_decode = 0;
     for (int i = 0; i < n; i++) resolve_wait(e, ids[i], false);
@@ -555,7 +646,7 @@ bool engine_step(engine *e, const int *ids, int n) {
         }
         for (int i = 0; i < n && budget > 0; i++) {
             seq_t *s = &e->seqs[ids[i]];
-            if (s->n_pending > 1 && !s->wait_len && !s->swapped) { int take = s->n_pending < budget ? s->n_pending : budget; plan[np++] = (plan_item){ ids[i], take, 0 }; budget -= take; }
+            if (s->n_pending > 1 && !s->wait_len && !s->swapped) { int take = input_cap(s, s->n_pending < budget ? s->n_pending : budget); plan[np++] = (plan_item){ ids[i], take, 0 }; budget -= take; }
         }
     }
     if (!np) { free(plan); return false; }
@@ -567,7 +658,7 @@ bool engine_step(engine *e, const int *ids, int n) {
     for (int i = 0, extra = planned > 16 ? (planned + 31) / 32 * 32 - planned : 0; i < np && extra > 0; i++) {
         seq_t *s = &e->seqs[plan[i].seq];
         if (plan[i].spec || s->n_pending <= 1) continue;
-        int more = s->n_pending - plan[i].take < extra ? s->n_pending - plan[i].take : extra;
+        int more = input_cap(s, plan[i].take + (s->n_pending - plan[i].take < extra ? s->n_pending - plan[i].take : extra)) - plan[i].take;
         plan[i].take += more;
         extra -= more;
     }

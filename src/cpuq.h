@@ -25,12 +25,13 @@ enum { CQ4, CQ4S, CQ4K, CQ6K, CQ8 };
 
 // Blocks are stored by groups of 4 rows (rows padded to a multiple of 4), the
 // 4 rows of a block adjacent, so one load gets a block's 4 scales:
-// [row / 4][block][row % 4].
+// [row / 4][block][row % 4]; their code bytes are interleaved 4 at a time
+// across the 4 rows (see code_at in cpuq.c).
 typedef struct {
     int kind, rows, cols; // cols % CQ_BLOCK == 0 (% 256 for CQ4K, CQ6K)
     uint8_t *codes;       // 4-bit kinds: 16 bytes per block (byte j = code[j] | code[j + 16] << 4)
                           // CQ6K: those 16 bytes of low 4 bits, then 8 bytes of high 2 bits
-                          //       (byte j: bits of codes j, j + 8, j + 16, j + 24 from the bottom)
+                          //       (layout: put_codes6 in cpuq.c)
                           // CQ8: 32 int8
     uint16_t *scale, *bias; // CQ4, CQ4S, CQ8: f16 scale per block; CQ4: f16 bias per block
     uint8_t *sub;         // CQ4K: [sc x 4 rows, mn x 4 rows] per block group;

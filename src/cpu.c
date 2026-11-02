@@ -96,15 +96,32 @@ static void mm_input(cpu_state *s, const float *x, int n, int cols) {
     s->act_ok = false;
 }
 
+// FLEET_PROFILE=1: time per forward part, printed at exit
+enum { P_MATMUL, P_OUTPUT, P_ATTN, P_FORWARD, P_N };
+static double prof[P_N];
+static long prof_steps;
+static bool prof_on;
+double now_secs(void);
+
+static void prof_print(void) {
+    if (!prof_steps) return;
+    double f = prof[P_FORWARD] * 1e3 / prof_steps;
+    fprintf(stderr, "[cpu profile] %ld forwards, %.2f ms each: matmul %.2f, output layer %.2f, attention %.2f, other %.2f\n", prof_steps, f,
+            prof[P_MATMUL] * 1e3 / prof_steps, prof[P_OUTPUT] * 1e3 / prof_steps, prof[P_ATTN] * 1e3 / prof_steps,
+            f - (prof[P_MATMUL] + prof[P_OUTPUT] + prof[P_ATTN]) * 1e3 / prof_steps);
+}
+
 static void matmul(cpu_state *s, const qmat *w, float *y, int ldy) {
+    double t0 = prof_on ? now_secs() : 0;
     if (w->gpu) {
         if (!s->act_ok) { cq_quantize(&s->act, s->in, s->in_n, s->in_cols); s->act_ok = true; }
         cq_job j = { w->gpu, &s->act, y, ldy };
-        parallel_for(w->rows, 16, cq_rows, &j);
-        return;
+        parallel_for(w->rows, 64, cq_rows, &j); // contiguous 64-row runs stream better than finer chunks
+    } else {
+        mm_job j = { w, s->in, y, s->in_n, ldy };
+        parallel_for(w->rows, 16, mm_rows, &j);
     }
-    mm_job j = { w, s->in, y, s->in_n, ldy };
-    parallel_for(w->rows, 16, mm_rows, &j);
+    if (prof_on) prof[P_MATMUL] += now_secs() - t0;
 }
 
 static void rms(float *x, int d, const float *w, float eps) {
@@ -402,6 +419,7 @@ static void residual(float *x, float *o, int n, int d, const float *post, float 
 static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages *const *pages, const row_t *rows, int n, float *logits) {
     cpu_state *s = b->impl;
     const model_cfg *c = &m->c;
+    double tf = prof_on ? now_secs() : 0;
     if (c->hd > 512 || c->n_head / c->n_kv > 64) { fprintf(stderr, "cpu: head_dim %d / group %d not supported\n", c->hd, c->n_head / c->n_kv); return 1; }
     ensure(s, c, n);
     int d = c->d, hd = c->hd, half = hd / 2, qd = c->n_head * hd, kvd = c->n_kv * hd;
@@ -446,7 +464,9 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
                 kv_vec_store(pool, page, l->pool_layer, 1, h, rows[r].pos % KV_PAGE, s->v + (size_t)r * kvd + (size_t)h * hd);
             }
         }
+        double ta = prof_on ? now_secs() : 0;
         attention(s, m, l, kv, pages, rows, n);
+        if (prof_on) prof[P_ATTN] += now_secs() - ta;
         if (l->wg.data)
             for (size_t i = 0; i < (size_t)n * qd; i++) s->att[i] *= 1.f / (1.f + expf(-s->g[i]));
         mm_input(s, s->att, n, qd);
@@ -472,11 +492,14 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
     }
     if (ns) {
         mm_input(s, s->hsel, ns, d);
+        double to = prof_on ? now_secs() : 0, tm = prof[P_MATMUL];
         matmul(s, &m->output, logits, c->vocab);
+        if (prof_on) { prof[P_OUTPUT] += now_secs() - to; prof[P_MATMUL] = tm; }
         size_t nv = (size_t)ns * c->vocab;
         if (c->softcap > 0) for (size_t i = 0; i < nv; i++) logits[i] = c->softcap * tanhf(logits[i] * c->logit_scale / c->softcap);
         else if (c->logit_scale != 1.f) for (size_t i = 0; i < nv; i++) logits[i] *= c->logit_scale;
     }
+    if (prof_on) { prof[P_FORWARD] += now_secs() - tf; prof_steps++; }
     return 0;
 }
 
@@ -538,6 +561,7 @@ backend *cpu_backend_new(model *m) {
     b->destroy = cpu_destroy;
     b->impl = calloc(1, sizeof(cpu_state));
     tp_init(0);
+    if (getenv("FLEET_PROFILE")) { prof_on = true; atexit(prof_print); }
     if (m) cpu_repack(m);
     else fprintf(stderr, "[cpu] reference path (f32 dequant), %d threads\n", tp_threads());
     return b;

@@ -574,7 +574,7 @@ static void *conn_loop(void *arg) {
             buf b = { 0 };
             bstr(&b, "{\"object\":\"list\",\"data\":[{\"id\":");
             bjson(&b, c->sv->o->model_id, strlen(c->sv->o->model_id));
-            bstr(&b, ",\"object\":\"model\",\"owned_by\":\"cinfer\"}]}");
+            bstr(&b, ",\"object\":\"model\",\"owned_by\":\"FleetLLM\"}]}");
             respond(c->fd, 200, "application/json", b.s, b.n);
             free(b.s);
         } else if (!strcmp(method, "POST") && !strcmp(path, "/v1/chat/completions")) handle_completion(c, body, clen, true);

@@ -1,4 +1,4 @@
-"""Same workload as build/bench, against an OpenAI-compatible server (e.g. vLLM).
+"""Same workload as `fleet bench`, against an OpenAI-compatible server (e.g. vLLM).
 
 N concurrent agents, agent i gets task i % 8 from bench/tasks.txt, all sent at
 t=0, greedy, exactly --gen output tokens (ignore_eos). Reports the best of

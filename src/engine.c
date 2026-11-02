@@ -295,7 +295,7 @@ static bool swap_out(engine *e, int id) {
     }
     if (!size || e->swap_used + size > e->swap_limit) { free(has); return false; }
     char path[512];
-    snprintf(path, sizeof path, "%s/cinfer-swap-%d-%d-%d.kv", e->swap_dir, (int)getpid(), id, s->ng_gen);
+    snprintf(path, sizeof path, "%s/fleet-swap-%d-%d-%d.kv", e->swap_dir, (int)getpid(), id, s->ng_gen);
     double t0 = now_secs();
     int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0600);
     if (fd < 0) { free(has); return false; }
@@ -423,10 +423,10 @@ static void draft_phase(engine *e, const int *ids, int n) {
     int kmax = nd ? e->spec_rows / nd - 1 : 0;
     if (kmax > e->spec_k) kmax = e->spec_k;
     // The drafter denoises only the positions that will be verified: a block of
-    // the anchor + kmax masks (DFlash trains with block_size; CINFER_FULL_BLOCK=1
+    // the anchor + kmax masks (DFlash trains with block_size; FLEET_FULL_BLOCK=1
     // keeps the full block).
     static int full = -1;
-    if (full < 0) full = getenv("CINFER_FULL_BLOCK") != NULL;
+    if (full < 0) full = getenv("FLEET_FULL_BLOCK") != NULL;
     if (!full && kmax >= 1) B = kmax + 1;
     bool *bad = calloc(e->n_seqs ? e->n_seqs : 1, 1);
     for (int i = 0; i < e->n_dctx; i++) {

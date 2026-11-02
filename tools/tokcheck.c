@@ -1,6 +1,6 @@
 // Print token ids for each sample of a file (samples separated by a line "=====").
 // scripts/tokcheck.py compares the output with the HF reference tokenizer.
-//   tokcheck model.gguf|hf_model_dir samples.txt
+//   fleet tokcheck model.gguf|hf_model_dir samples.txt
 #include "gguf.h"
 #include <sys/stat.h>
 #include "tokenizer.h"
@@ -9,7 +9,7 @@
 #include <string.h>
 
 int main(int argc, char **argv) {
-    if (argc < 3) { fprintf(stderr, "usage: tokcheck model.gguf samples.txt\n"); return 1; }
+    if (argc < 3) { fprintf(stderr, "usage: fleet tokcheck model.gguf samples.txt\n"); return 1; }
     struct stat sb;
     tokenizer *t;
     if (stat(argv[1], &sb) == 0 && S_ISDIR(sb.st_mode)) t = tok_load_hf(argv[1]);

@@ -1,4 +1,4 @@
-"""Check build/dequant_dump against gguf-py's reference dequantization, for one
+"""Check `fleet dequant-dump` against gguf-py's reference dequantization, for one
 tensor of every quant type present in a model.
 
     python scripts/dequantcheck.py MODEL.gguf [rows]
@@ -23,7 +23,7 @@ for name, t in sorted(seen.items()):
     cols = int(t.shape[0])
     want = dequantize(t.data, t.tensor_type).reshape(-1, cols)[:rows].astype(np.float32)
     with tempfile.NamedTemporaryFile(suffix=".bin") as f:
-        subprocess.run(["build/dequant_dump", path, t.name, str(rows), f.name], check=True, capture_output=True)
+        subprocess.run(["build/fleet-dequant-dump", path, t.name, str(rows), f.name], check=True, capture_output=True)
         got = np.fromfile(f.name, dtype=np.float32).reshape(rows, cols)
     err = np.abs(got - want).max() / max(np.abs(want).max(), 1e-12)
     ok = err < 1e-6

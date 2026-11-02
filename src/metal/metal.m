@@ -43,29 +43,29 @@ typedef struct { uint32_t ctx_end, start, tab, split, part; } RowInfo; // part: 
 // Rows with skip[i] set belong to other kernels. Writes {first row, count}
 // pairs; returns the group count, the largest group through *rmax, and raises
 // *max_sp to the largest split count.
-// Grouped kernel: the matrix-unit flash kernel by default; CINFER_ATTN_SCALAR=1
+// Grouped kernel: the matrix-unit flash kernel by default; FLEET_ATTN_SCALAR=1
 // selects the ALU kernel.
 // Rows that are not input (decode, verification) run attn_naxs on NAX GPUs (a
 // decode row and its drafts x the GQA heads share 16-query matmul tiles, and
-// sequences share spans of identical pages; CINFER_ATTN_NAXS=0 disables), else
-// attn_vec, one row per threadgroup (CINFER_ATTN_VEC=0 groups them into the
+// sequences share spans of identical pages; FLEET_ATTN_NAXS=0 disables), else
+// attn_vec, one row per threadgroup (FLEET_ATTN_VEC=0 groups them into the
 // matrix kernel instead).
-static bool attn_naxs_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_NAXS") || atoi(getenv("CINFER_ATTN_NAXS")); return v; }
-static bool attn_vec_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_VEC") || atoi(getenv("CINFER_ATTN_VEC")); return v; }
+static bool attn_naxs_on(void) { static int v = -1; if (v < 0) v = !getenv("FLEET_ATTN_NAXS") || atoi(getenv("FLEET_ATTN_NAXS")); return v; }
+static bool attn_vec_on(void) { static int v = -1; if (v < 0) v = !getenv("FLEET_ATTN_VEC") || atoi(getenv("FLEET_ATTN_VEC")); return v; }
 
 // Input rows (prompt / appended text) run attention on the neural accelerators
-// (attn_nax), decode and verify rows the split kernels; CINFER_ATTN_NAX=0 keeps
+// (attn_nax), decode and verify rows the split kernels; FLEET_ATTN_NAX=0 keeps
 // every row on the split kernels. attn_nax splits contexts into fixed spans of
-// NAX_SPAN positions (CINFER_NAX_SPAN), merged by attn_reduce.
+// NAX_SPAN positions (FLEET_NAX_SPAN), merged by attn_reduce.
 #define NAX_SPAN 4096
-static bool attn_nax_on(void) { static int v = -1; if (v < 0) v = !getenv("CINFER_ATTN_NAX") || atoi(getenv("CINFER_ATTN_NAX")); return v; }
+static bool attn_nax_on(void) { static int v = -1; if (v < 0) v = !getenv("FLEET_ATTN_NAX") || atoi(getenv("FLEET_ATTN_NAX")); return v; }
 static uint32_t nax_span(void) {
     static int v = -1;
-    if (v < 0) { v = getenv("CINFER_NAX_SPAN") ? atoi(getenv("CINFER_NAX_SPAN")) / 32 * 32 : NAX_SPAN; if (v < 32) v = 32; }
+    if (v < 0) { v = getenv("FLEET_NAX_SPAN") ? atoi(getenv("FLEET_NAX_SPAN")) / 32 * 32 : NAX_SPAN; if (v < 32) v = 32; }
     return (uint32_t)v;
 }
 
-static bool attn_mma_on(void) { static int v = -1; if (v < 0) v = getenv("CINFER_ATTN_SCALAR") == NULL; return v; }
+static bool attn_mma_on(void) { static int v = -1; if (v < 0) v = getenv("FLEET_ATTN_SCALAR") == NULL; return v; }
 
 static int attn_groups(const RowInfo *ri, const int *seq, const int *pos, const uint8_t *skip, int n, int R, uint32_t *grp, int *rmax, uint32_t *max_sp) {
     int ng = 0;
@@ -204,11 +204,11 @@ static const char *qname(uint32_t type) {
 
 static void set_bytes(id<MTLComputeCommandEncoder> e, const void *p, size_t n, int idx) { [e setBytes:p length:n atIndex:idx]; }
 
-// Largest batch that uses the fused mat-vec; CINFER_MV_MAX overrides it (e.g. a
+// Largest batch that uses the fused mat-vec; FLEET_MV_MAX overrides it (e.g. a
 // huge value makes every batch size compute rows identically, for exactness checks).
 static int env_int(const char *name, int def) { const char *s = getenv(name); return s ? atoi(s) : def; }
-static int mv_max(void) { static int v = -1; if (v < 0) v = env_int("CINFER_MV_MAX", MV_MAX_ROWS); return v; }
-static int fused_max(void) { static int v = -1; if (v < 0) v = env_int("CINFER_FUSED_MAX", FUSED_MAX_ROWS); return v; }
+static int mv_max(void) { static int v = -1; if (v < 0) v = env_int("FLEET_MV_MAX", MV_MAX_ROWS); return v; }
+static int fused_max(void) { static int v = -1; if (v < 0) v = env_int("FLEET_FUSED_MAX", FUSED_MAX_ROWS); return v; }
 
 typedef struct { uint32_t K, M, N, ldy, x_stride; } AmvArgs;
 typedef struct { int32_t K, N, M, ldy, split, part_stride; } AtArgs;
@@ -263,9 +263,9 @@ static int tiled_split(const qmat *w, int units_per_tile, int target, int min_kt
 }
 #define TMV_MAX 4 // tokens handled by the tiled mat-vec (3-4 via its f16-dot variant); more go to the NAX GEMM
 static int tmv_nt(int n) { return n <= 2 ? n : 4; }
-// CINFER_TMV_MAX overrides TMV_MAX (0: the NAX GEMM for every batch size, so a
+// FLEET_TMV_MAX overrides TMV_MAX (0: the NAX GEMM for every batch size, so a
 // row's result is bit-identical whatever the batch size; used by bench --check)
-static int tmv_max(void) { static int v = -1; if (v < 0) v = env_int("CINFER_TMV_MAX", TMV_MAX); return v; }
+static int tmv_max(void) { static int v = -1; if (v < 0) v = env_int("FLEET_TMV_MAX", TMV_MAX); return v; }
 
 // untiled affine mat-vec over tokens [t0, t0+n), n <= 8
 static void matmul_affine_mv(CIMetal *mt, id<MTLComputeCommandEncoder> e, const qmat *w, id<MTLBuffer> x, id<MTLBuffer> y, int ldy, int t0, int n) {
@@ -770,14 +770,14 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         [cb commit];
         [cb waitUntilCompleted];
         static int prof = -1;
-        if (prof < 0) prof = getenv("CINFER_PROFILE") != NULL;
+        if (prof < 0) prof = getenv("FLEET_PROFILE") != NULL;
         if (prof) { // per-step GPU time, averaged per batch size
             static double acc[1025];
             static int cnt[1025];
             int k = n > 1024 ? 1024 : n;
             acc[k] += cb.GPUEndTime - cb.GPUStartTime;
-            if (++cnt[k] % 16 == 0 || getenv("CINFER_PROFILE_EACH"))
-                fprintf(stderr, "[profile] n=%d ctx<=%d gpu %.2f ms/step\n", n, rows[n - 1].ctx_end + 1, getenv("CINFER_PROFILE_EACH") ? (cb.GPUEndTime - cb.GPUStartTime) * 1e3 : acc[k] / cnt[k] * 1e3);
+            if (++cnt[k] % 16 == 0 || getenv("FLEET_PROFILE_EACH"))
+                fprintf(stderr, "[profile] n=%d ctx<=%d gpu %.2f ms/step\n", n, rows[n - 1].ctx_end + 1, getenv("FLEET_PROFILE_EACH") ? (cb.GPUEndTime - cb.GPUStartTime) * 1e3 : acc[k] / cnt[k] * 1e3);
         }
         free(toks); free(posv); free(tab); free(off_full); free(off_swa); free(ri_full); free(ri_swa);
         free(slot_full); free(slot_swa); free(sel);
@@ -1083,7 +1083,7 @@ backend *metal_backend_new(model *m) {
         // affine kernels are templates: instantiate the (scale type, group, bits) combos in use
         NSMutableString *inst = [NSMutableString new], *inst_nax = [NSMutableString new];
         NSMutableSet *seen = [NSMutableSet new];
-        mt->nax = [mt->dev supportsFamily:MTLGPUFamilyMetal4] && [mt->dev supportsFamily:MTLGPUFamilyApple10] && !getenv("CINFER_NO_NAX");
+        mt->nax = [mt->dev supportsFamily:MTLGPUFamilyMetal4] && [mt->dev supportsFamily:MTLGPUFamilyApple10] && !getenv("FLEET_NO_NAX");
         const qmat *mats[8 * 1024];
         int nm = 0;
         mats[nm++] = &m->output;
@@ -1133,7 +1133,7 @@ backend *metal_backend_new(model *m) {
         tp_init(0);
         mt->f_qkvg = calloc(m->c.n_layer, sizeof(qmat));
         mt->f_gu = calloc(m->c.n_layer, sizeof(qmat));
-        if (mt->nax && !getenv("CINFER_NO_FUSE"))
+        if (mt->nax && !getenv("FLEET_NO_FUSE"))
             for (int i = 0; i < m->c.n_layer; i++) {
                 layer *l = &m->layers[i];
                 qmat *qkvg[] = { &l->wq, &l->wk, &l->wv, &l->wg }, *gu[] = { &l->w_gate, &l->w_up };

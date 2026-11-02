@@ -14,7 +14,7 @@ records the usage the server reports.
 
 ```bash
 sh evals/setup.sh                       # venv + simple-evals pinned to a fixed commit (third_party/, gitignored)
-./build/serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 --port 8090 &
+./build/fleet serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 --port 8090 &
 evals/.venv/bin/python evals/gpqa.py --model llama8b-mlx4 --workers 16 --label my-run
 evals/.venv/bin/python evals/gpqa.py --model llama8b-mlx4 --workers 1 --num-examples 16 --label single   # one agent at a time
 ```

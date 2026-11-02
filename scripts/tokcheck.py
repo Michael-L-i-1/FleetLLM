@@ -1,4 +1,4 @@
-"""Compare build/tokcheck (C tokenizer) against the HF reference tokenizer.
+"""Compare `fleet tokcheck` (C tokenizer) against the HF reference tokenizer.
 
     python scripts/tokcheck.py MODEL.gguf|HF_DIR TOKENIZER.json [samples.txt]
 """
@@ -22,9 +22,9 @@ SAMPLES = [
 ]
 
 gguf_path, tok_json = sys.argv[1], sys.argv[2]
-path = sys.argv[3] if len(sys.argv) > 3 else "/tmp/cinfer_tok_samples.txt"
+path = sys.argv[3] if len(sys.argv) > 3 else "/tmp/fleet_tok_samples.txt"
 open(path, "w").write("\n=====\n".join(SAMPLES))
-out = subprocess.run([os.environ.get("TOKCHECK", "build/tokcheck"), gguf_path, path], capture_output=True, text=True, check=True)
+out = subprocess.run([os.environ.get("TOKCHECK", "build/fleet-tokcheck"), gguf_path, path], capture_output=True, text=True, check=True)
 if out.stderr:
     print(out.stderr, end="")
 ref = Tokenizer.from_file(tok_json)

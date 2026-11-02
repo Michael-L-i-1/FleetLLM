@@ -1,6 +1,6 @@
 // OpenAI-compatible server (see src/server.h).
-//   serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 [--port 8090] [--max-active 64]
-//         [--draft glimmer-draft] [--reasoning high] [--max-tokens 4096] [--name ID]
+//   fleet serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 [--port 8090] [--max-active 64]
+//               [--draft glimmer-draft] [--reasoning high] [--max-tokens 4096] [--name ID]
 #include "common.h"
 #include "server.h"
 

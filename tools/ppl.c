@@ -1,6 +1,6 @@
 // Perplexity of a text file under teacher forcing, to measure lossy options
 // (f16 dot products, KV quantization, ...) against the default path.
-//   ppl --model glimmer-mlx4 --file eval.txt [--ctx 512] [--max-tokens 8192] [--chunk 64]
+//   fleet ppl --model glimmer-mlx4 --file eval.txt [--ctx 512] [--max-tokens 8192] [--chunk 64]
 // The text is split into independent windows of --ctx tokens (each starting
 // with BOS); every token after the first in a window is scored.
 #include "common.h"
@@ -22,7 +22,7 @@ static char *read_file(const char *path) {
 int main(int argc, char **argv) {
     runtime rt = load_runtime(argc, argv);
     const char *path = arg_str(argc, argv, "--file", NULL);
-    if (!path) { fprintf(stderr, "usage: ppl --model M --file text.txt [--ctx 512] [--max-tokens N]\n"); return 1; }
+    if (!path) { fprintf(stderr, "usage: fleet ppl --model M --file text.txt [--ctx 512] [--max-tokens N]\n"); return 1; }
     char *text = read_file(path);
     int32_t *ids;
     int n = tok_encode(rt.tok, text, strlen(text), &ids);

@@ -1,8 +1,8 @@
 // Concurrent agents with different tasks (bench/tasks.txt), all submitted at
 // t=0, fixed output length, greedy. Same workload as the earlier vLLM runs.
-//   bench --model glimmer --levels 1,2,4,8,16 --gen 128 [--reps 2]
-//   bench --model llama1b --check     greedy batched outputs == sequential outputs
-//   bench --model glimmer-mlx4 --draft glimmer-draft --check-spec   speculative outputs == plain greedy outputs
+//   fleet bench --model glimmer --levels 1,2,4,8,16 --gen 128 [--reps 2]
+//   fleet bench --model llama1b --check     greedy batched outputs == sequential outputs
+//   fleet bench --model glimmer-mlx4 --draft glimmer-draft --check-spec   speculative outputs == plain greedy outputs
 //   --share: automatic prefix sharing on (new agents fork the KV of live, cached
 //            or still-prefilling sequences with the same prefix; finished agents
 //            stay cached), comparable to a server with prefix caching enabled
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
     }
     int reps = (int)arg_num(argc, argv, "--reps", 2);
     const char *levels = arg_str(argc, argv, "--levels", "1,2,4,8");
-    printf("engine=cinfer backend=%s model=%s gen=%d share=%d spec=%d\n", rt.be->name, arch_name(rt.m->c.arch), gen, share, rt.draft ? rt.e->spec_k : 0);
+    printf("engine=FleetLLM backend=%s model=%s gen=%d share=%d spec=%d\n", rt.be->name, arch_name(rt.m->c.arch), gen, share, rt.draft ? rt.e->spec_k : 0);
     printf("%4s %8s %9s %10s %10s\n", "N", "wall s", "TTFT ms", "agg tok/s", "per-agent");
     char lv[256];
     snprintf(lv, sizeof lv, "%s", levels);

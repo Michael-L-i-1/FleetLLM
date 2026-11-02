@@ -1,4 +1,6 @@
-# cinfer
+# FleetLLM
+
+High-throughput inference for fleets of agents on one machine.
 
 A C inference engine for running **many concurrent agents** (subagents, long
 tool loops, eval harnesses) through one copy of a model on **limited
@@ -21,7 +23,7 @@ safetensors (Llama, Qwen2/3, Muse Glimmer).
 **GPQA Diamond, Llama 3.1 8B (MLX 4-bit), OpenAI simple-evals, vs vLLM on the same file**
 (4.2 GB weights + 2.5 GB KV cap; full table in [docs/results.md](docs/results.md)):
 
-| Run | Agents at once | **cinfer** wall | vLLM wall | Speedup | cinfer tok/s | vLLM tok/s | Score cinfer / vLLM |
+| Run | Agents at once | **FleetLLM** wall | vLLM wall | Speedup | FleetLLM tok/s | vLLM tok/s | Score FleetLLM / vLLM |
 |---|---|---|---|---|---|---|---|
 | all 198, greedy | 16 | **616 s** | 873 s | **1.42x** | 281 | 204 | 25.3% / 21.7% |
 | all 198, T=0.5 | 16 | **547 s** | 878 s | **1.61x** | 276 | 171 | 27.3% / 24.2% |
@@ -29,13 +31,13 @@ safetensors (Llama, Qwen2/3, Muse Glimmer).
 | same 16 questions | 16 | **59 s** | 80 s | **1.37x** | 213 | 150 | 31.2% / 31.2% |
 
 Same model file (`mlx-community/Meta-Llama-3.1-8B-Instruct-4bit`), same harness and settings,
-matched KV (cinfer `--kv-gb 2.5` = 19,072 tokens; vllm-metal 0.32 `--gpu-memory-utilization
+matched KV (FleetLLM `--kv-gb 2.5` = 19,072 tokens; vllm-metal 0.32 `--gpu-memory-utilization
 0.193` = 18,416 tokens, since it ignores `--kv-cache-memory-bytes`), prefix caching on in both,
 AC power, run back to back (`evals/gpqa_suite.sh`). 16 agents finish the same work 4.1x faster
-than one at a time on cinfer (4.3x on vLLM). Score differences are noise (about +/-3 points at
+than one at a time on FleetLLM (4.3x on vLLM). Score differences are noise (about +/-3 points at
 n=198) plus greedy paths diverging; both engines lose ~30% of questions to repetition loops that
 hit the 2048-token cap. GPQA prompts share almost nothing, so this measures raw batching and
-kernels, not the agent features (sharing, sessions). Greedy cinfer output is token-identical to
+kernels, not the agent features (sharing, sessions). Greedy FleetLLM output is token-identical to
 MLX's reference on the same weights (GPQA prompt, 200 tokens).
 
 **Multi-turn agent sessions** (8 agents x 6 turns from a shared context,
@@ -59,7 +61,7 @@ minute vs vLLM's 219** at 16 agents (663 vs 438 at 32). See [docs/results.md](do
 
 **Muse Glimmer 30B (same 4-bit file as vLLM), aggregate tok/s:**
 
-| Agents | vLLM | cinfer | cinfer + sharing | cinfer + DFlash spec + sharing |
+| Agents | vLLM | FleetLLM | FleetLLM + sharing | FleetLLM + DFlash spec + sharing |
 |---|---|---|---|---|
 | 1 | 17.3 | 17.2 | 18.2 | 90.8 |
 | 8 | 57.6 | 98.4 | 118.0 | 158.7 |
@@ -69,7 +71,8 @@ minute vs vLLM's 219** at 16 agents (663 vs 438 at 32). See [docs/results.md](do
 
 ```bash
 make                                   # Metal on macOS; make NO_METAL=1 for CPU-only (Pi)
-./build/serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 --port 8090   # OpenAI API on :8090/v1
+./build/fleet                          # list subcommands
+./build/fleet serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 --port 8090   # OpenAI API on :8090/v1
 sh evals/setup.sh && evals/.venv/bin/python evals/gpqa.py --model llama8b-mlx4 --workers 16
 ```
 
@@ -79,18 +82,19 @@ agent's context, exact at any temperature), `--kv-int8` (2x tokens per GB),
 experimental). `python3 bench/agents.py` runs multi-turn agent sessions against
 any OpenAI-compatible server.
 
-More: `./build/generate` (one prompt), `./build/bench` (concurrent-agent
-throughput, `--share`, `--draft`, `--check`, `--check-spec`), `./build/ppl`
-(perplexity, for lossy options). `--model` takes a GGUF file, a safetensors
-directory, or an alias (`llama8b-mlx4`, `llama1b-mlx4`, `glimmer`,
-`glimmer-mlx4`, `glimmer-draft`, `qwen3`) resolved in the Hugging Face cache.
+More: `./build/fleet generate` (one prompt), `./build/fleet bench` (concurrent-agent
+throughput, `--share`, `--draft`, `--check`, `--check-spec`), `./build/fleet ppl`
+(perplexity, for lossy options); `./build/fleet` lists them all. `--model` takes a
+GGUF file, a safetensors directory, or an alias (`llama8b-mlx4`, `llama1b-mlx4`,
+`glimmer`, `glimmer-mlx4`, `glimmer-draft`, `qwen3`) resolved in the Hugging Face cache.
 
 ## Repository
 
 ```
 src/          engine: model loading, tokenizer, chat templates, paged KV, scheduler, server
 src/metal/    Metal backend and kernels (+ vendored MLX headers)
-tools/        CLIs: serve, generate, bench, ppl, tokcheck, dequant_dump
+tools/        `fleet` subcommands: serve, generate, bench, ppl, reuse-eval, tokcheck, dequant-dump
+              (built as build/fleet-<name>; tools/fleet/ is the `fleet` dispatcher)
 bench/        concurrent-agent throughput workload + OpenAI-API client (for vLLM etc.)
 evals/        GPQA Diamond via OpenAI simple-evals (setup.sh, gpqa.py)
 results/      raw outputs: throughput/, gpqa/
@@ -116,7 +120,7 @@ scripts/      verification against HF/gguf-py, build helpers
 
 ## Roadmap
 
-1. ~~Server + real harness~~ (done: OpenAI-compatible `serve`, GPQA Diamond via simple-evals).
+1. ~~Server + real harness~~ (done: OpenAI-compatible `fleet serve`, GPQA Diamond via simple-evals).
    Next for this phase: multi-turn agent sessions (long contexts, tool waits, unique prompts)
    as a benchmark, and the same harness against vLLM / Ollama for comparison.
 2. **One tiled weight format for every quant type + startup auto-tuning** (crossovers,

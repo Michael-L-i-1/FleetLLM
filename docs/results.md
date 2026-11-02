@@ -5,12 +5,12 @@ reproduce each table is given under it.
 
 ## GPQA Diamond through a real harness (Llama 3.1 8B)
 
-`mlx-community/Meta-Llama-3.1-8B-Instruct-4bit` served by `./build/serve --budget-gb 8
+`mlx-community/Meta-Llama-3.1-8B-Instruct-4bit` served by `./build/fleet serve --budget-gb 8
 --kv-gb 2.5` (4.22 GB weights + a 2.5 GB KV cap; 3-7 sequences were preempted and
 recomputed when the cap was hit), OpenAI simple-evals GPQA Diamond (commit 652c89d),
 `--max-tokens 2048`, on battery. Per-question transcripts in `results/gpqa/*.html`.
 
-| Run | Agents at once | **cinfer** wall | vLLM wall | Speedup | cinfer tok/s | vLLM tok/s | Score cinfer / vLLM |
+| Run | Agents at once | **FleetLLM** wall | vLLM wall | Speedup | FleetLLM tok/s | vLLM tok/s | Score FleetLLM / vLLM |
 |---|---|---|---|---|---|---|---|
 | all 198, greedy | 16 | **616 s** | 873 s | **1.42x** | 281 | 204 | 25.3% / 21.7% |
 | all 198, T=0.5 | 16 | **547 s** | 878 s | **1.61x** | 276 | 171 | 27.3% / 24.2% |
@@ -18,13 +18,13 @@ recomputed when the cap was hit), OpenAI simple-evals GPQA Diamond (commit 652c8
 | same 16 questions | 16 | **59 s** | 80 s | **1.37x** | 213 | 150 | 31.2% / 31.2% |
 
 Same model file (`mlx-community/Meta-Llama-3.1-8B-Instruct-4bit`), same harness and settings,
-matched KV (cinfer `--kv-gb 2.5` = 19,072 tokens; vllm-metal 0.32 `--gpu-memory-utilization
+matched KV (FleetLLM `--kv-gb 2.5` = 19,072 tokens; vllm-metal 0.32 `--gpu-memory-utilization
 0.193` = 18,416 tokens, since it ignores `--kv-cache-memory-bytes`), prefix caching on in both,
 AC power, run back to back (`evals/gpqa_suite.sh`). 16 agents finish the same work 4.1x faster
-than one at a time on cinfer (4.3x on vLLM). Score differences are noise (about +/-3 points at
+than one at a time on FleetLLM (4.3x on vLLM). Score differences are noise (about +/-3 points at
 n=198) plus greedy paths diverging; both engines lose ~30% of questions to repetition loops that
 hit the 2048-token cap. GPQA prompts share almost nothing, so this measures raw batching and
-kernels, not the agent features (sharing, sessions). Greedy cinfer output is token-identical to
+kernels, not the agent features (sharing, sessions). Greedy FleetLLM output is token-identical to
 MLX's reference on the same weights (GPQA prompt, 200 tokens).
 
 Reproduce: see [evals/README.md](../evals/README.md).
@@ -39,7 +39,7 @@ of KV against 19k (16-bit) / 38k (8-bit) available, so memory pressure is real.
 
 | Engine / version | Wall | Median turn | p95 turn | Preemptions | Prompt tokens from cache |
 |---|---|---|---|---|---|
-| cinfer, morning (row-at-a-time attention) | 975 s | 91 s | 373 s | many | 77% |
+| FleetLLM, morning (row-at-a-time attention) | 975 s | 91 s | 373 s | many | 77% |
 | + row-grouped attention | 446 s | 30 s | 167 s | 16 | 79% |
 | + 8-bit KV (`--kv-int8`) | **174 s** | 27 s | 36 s | 0 | 89% |
 | + 512/1024-row prefill chunks | 171 s | 25 s | 37 s | 0 | 89% |
@@ -49,11 +49,11 @@ of KV against 19k (16-bit) / 38k (8-bit) available, so memory pressure is real.
 | + 4 positions per lane group, unrolled heads | **92 s** | **12.4 s** | **18.6 s** | 0 | 89% |
 | **vLLM** (vllm-metal 0.32, 18.4k-token KV) | 158 s | 18 s | 42 s | | n/a |
 
-cinfer now finishes the workload **1.72x faster than vLLM** with a 2.2x lower
+FleetLLM now finishes the workload **1.72x faster than vLLM** with a 2.2x lower
 p95 turn latency, on the same model file and a matched KV budget (8-bit KV
 holds 2x the tokens in the same 2.5 GB, so nothing is preempted).
 
-What closed the gap (8B, 8-bit KV; per-step GPU time from `CINFER_PROFILE_EACH=1`):
+What closed the gap (8B, 8-bit KV; per-step GPU time from `FLEET_PROFILE_EACH=1`):
 
 - **Prefill attention on the M5 neural accelerators.** A 512-row chunk at 4.6k
   context took 1330 ms, about 1.2 TFLOPS of attention (the 8x8 simdgroup
@@ -85,8 +85,8 @@ tokens of 8-bit KV (2.5 GB), so sessions must leave memory between turns.
 | Engine / version | Wall | Median turn | p95 turn | Prompt tokens from cache |
 |---|---|---|---|---|
 | **vLLM** (vllm-metal 0.32) | 315 s | 45 s | 77 s | n/a |
-| cinfer, evicted sessions recomputed | 214 s | 26 s | 58 s | 80% |
-| cinfer + SSD swap (`--swap-gb 16`), before the fixes below | 348 s | 32 s | 116 s | 58% |
+| FleetLLM, evicted sessions recomputed | 214 s | 26 s | 58 s | 80% |
+| FleetLLM + SSD swap (`--swap-gb 16`), before the fixes below | 348 s | 32 s | 116 s | 58% |
 | + share-aware swap | 312 s | 30 s | 94 s | 63% |
 | + memory-aware admission (default with `--swap-gb`) | **150 s** | **21 s** | **32 s** | 90% |
 
@@ -105,13 +105,13 @@ swap-outs, 39 swap-ins, 1.9 s of IO for the whole run). 8 agents are unaffected
 
 ### Scaling the agent count (same workload, same 2.5 GB KV cap)
 
-| Agents | Live session state | **cinfer** wall | vLLM wall | Speedup | cinfer p95 turn | vLLM p95 turn |
+| Agents | Live session state | **FleetLLM** wall | vLLM wall | Speedup | FleetLLM p95 turn | vLLM p95 turn |
 |---|---|---|---|---|---|---|
 | 8 | ~65k tokens | **52 s** | 158 s | **3.0x** | 9 s | 42 s |
 | 16 | ~130k tokens | **85 s** | 315 s | **3.7x** | 17 s | 77 s |
 | 32 | ~260k tokens | **163 s** | 595 s | **3.6x** | 31 s | 162 s |
 
-cinfer: `--ngram --kv-int8 --swap-gb 24` (exact: outputs do not depend on
+FleetLLM: `--ngram --kv-int8 --swap-gb 24` (exact: outputs do not depend on
 batching). With the opt-in, lossy `--reuse-spans` (below): **43 / 64 / 111 s**
 (3.7x / 4.9x / 5.4x vLLM). Earlier versions of the exact column: 86 / 150 /
 292 s before decode attention on the neural accelerators, 68 / 117 / 229 s
@@ -130,13 +130,13 @@ greedy). The model chooses its own path, so work differs slightly by engine:
 
 | Agents | Engine | Wall | Model calls | Calls / min | Answered |
 |---|---|---|---|---|---|
-| 16 | cinfer | **13.9 s** | 94 | **406** | 12 |
+| 16 | FleetLLM | **13.9 s** | 94 | **406** | 12 |
 | 16 | vLLM (`--tool-call-parser llama3_json`) | 26.0 s | 95 | 219 | 10 (1 request rejected) |
-| 32 | cinfer | **17.0 s** | 188 | **663** | 24 |
+| 32 | FleetLLM | **17.0 s** | 188 | **663** | 24 |
 | 32 | vLLM | 26.3 s | 192 | 438 | 20 (2 requests rejected) |
 
 **One long-running agent** (1 agent x 14 turns, 0.5 s tools, context growing
-to 14k tokens): cinfer **50 s** vs vLLM 81 s (p50 turn 3.2 s vs 5.2 s).
+to 14k tokens): FleetLLM **50 s** vs vLLM 81 s (p50 turn 3.2 s vs 5.2 s).
 
 **Decode attention shared across agents (`attn_naxs`).** Every agent's context
 starts with the same system prompt (here ~3.5k tokens; real harnesses' tool
@@ -181,7 +181,7 @@ positions, except the first and last 64 tokens, which are recomputed.
 
 (Measured before `attn_naxs`; with it: 52 / 85 / 163 s exact, 43 / 64 / 111 s with reuse.)
 
-Quality (`tools/reuse_eval`: a file chunk's KV computed after one context,
+Quality (`fleet reuse-eval`: a file chunk's KV computed after one context,
 moved behind another of different length; perplexity of the file's
 continuation; Llama 8B, 8-bit KV, 10 file triples):
 
@@ -204,8 +204,8 @@ ones stubbed), 8 agents x 8 turns:
 | Engine | Wall | Median turn | p95 turn |
 |---|---|---|---|
 | vLLM | 161 s | 18.9 s | 25.5 s |
-| cinfer | 100 s | 9.6 s | 16.3 s |
-| cinfer `--reuse-spans` | **68 s** | **6.3 s** | **9.0 s** |
+| FleetLLM | 100 s | 9.6 s | 16.3 s |
+| FleetLLM `--reuse-spans` | **68 s** | **6.3 s** | **9.0 s** |
 
 (46.5k tokens moved from the sessions' own previous turns in 59 spans.)
 
@@ -218,7 +218,7 @@ took 287 s instead of 292 s: past ~8 resident sessions the GPU, not memory, is
 the limit, which is why 4-bit KV was not pursued (simulated in the 8-bit writer:
 asymmetric 4-bit with 16-value groups +0.7% perplexity at ~6 bits/value;
 5-bit-equivalent variants +1.5-2.3%). Both engines scale about linearly
-past the memory limit; cinfer keeps sessions' KV (on SSD when needed) where vLLM
+past the memory limit; FleetLLM keeps sessions' KV (on SSD when needed) where vLLM
 recomputes it.
 
 ## GPQA subset with the agent-oriented features (16 questions, Llama 3.1 8B)
@@ -226,7 +226,7 @@ recomputes it.
 | Version | 1 agent | 16 agents | Tokens generated |
 |---|---|---|---|
 | vLLM | 344 s | 80 s | |
-| cinfer baseline | 241 s | 59 s | 12.4k |
+| FleetLLM baseline | 241 s | 59 s | 12.4k |
 | + repeated-text drafts (`--ngram`, output identical) | 120 s | 36 s | 12.4k |
 | + 8-bit KV + grouped attention | **121 s** | **32 s** | 16.4k (8-bit KV changes some outputs) |
 | + NAX prefill / vec decode attention | 130 s | 36-42 s | 15.5-15.9k |
@@ -235,7 +235,7 @@ This subset does not separate the latest kernels: its prompts are ~200 tokens
 (attention is a small share of each step), different kernels change some greedy
 paths (token counts and repeated-text acceptance move with them), and the
 16-worker wall time is set by the slowest truncated question decoding alone
-(two runs of one build: 36 s and 42 s). The deterministic `bench`
+(two runs of one build: 36 s and 42 s). The deterministic `fleet bench`
 (16 agents, `--ngram`, 512 tokens each) measures the same build at 510 tok/s
 vs 368 with the previous decode kernel.
 
@@ -245,9 +245,9 @@ vs 368 with the previous decode kernel.
 on battery, both engines back to back. Workload: N concurrent agents, agent i
 gets task i % 8 from `bench/tasks.txt` (8 different tasks), all sent at t=0,
 greedy, exactly 128 output tokens each. Aggregate output tok/s
-(`build/bench` vs `scripts/bench_openai.py` against vllm-metal 0.32 on :8077).
+(`fleet bench` vs `scripts/bench_openai.py` against vllm-metal 0.32 on :8077).
 
-| Agents | vLLM, prefix cache off | cinfer, sharing off | vLLM, prefix cache on (default) | cinfer `--share` |
+| Agents | vLLM, prefix cache off | FleetLLM, sharing off | vLLM, prefix cache on (default) | FleetLLM `--share` |
 |---|---|---|---|---|
 | 1 | 17.3 | 16.6 | 18.2 | 18.1 |
 | 2 | 31.0 | 31.2 | 34.1 | 34.8 |
@@ -257,7 +257,7 @@ greedy, exactly 128 output tokens each. Aggregate output tok/s
 | 32 | 113.2 | **194.1** | 150.4 | **360.3** |
 
 Mean time to first token at 32 agents: vLLM 9.5 s / 1.0 s (cache off / on),
-cinfer 5.3 s / 0.08 s. Raw output in `results/`. With sharing, cinfer also
+FleetLLM 5.3 s / 0.08 s. Raw output in `results/`. With sharing, FleetLLM also
 deduplicates prompts that arrive at the same moment (a new agent waits for a
 still-prefilling agent with the same prefix and forks its KV); vLLM's prefix
 cache only reuses blocks that finished computing.
@@ -265,7 +265,7 @@ cache only reuses blocks that finished computing.
 Why it is faster at 4+ agents (all measured with the kernel microbenchmark):
 MLX's kernels re-read the weights for every 5 decode rows (`qmv_wide`) and its
 4-bit GEMM streams 32-byte pieces of 64 rows at once, so 8-32 rows cost 1.5-3x
-one row. cinfer repacks 4-bit weights at load into 64x64 tiles with the scales
+one row. FleetLLM repacks 4-bit weights at load into 64x64 tiles with the scales
 inline (each K step is one contiguous read) and runs them on the M5 neural
 accelerators with split-K, so 1-16 rows cost within ~10% of one row.
 
@@ -277,7 +277,7 @@ hidden states after layers 1/13/25/37/49, denoises a block (the last token + mas
 tokens) in one pass, and the target verifies all drafts in one batched forward;
 the longest matching prefix plus one bonus token is kept and rejected KV is
 truncated. Greedy outputs are identical to plain decoding
-(`bench --check-spec`: 8/8 tasks).
+(`fleet bench --check-spec`: 8/8 tasks).
 
 Drafts per agent shrink with concurrency so a step stays near `--spec-rows`
 (32) rows, the batch size the 4-bit kernels run at nearly flat cost; the
@@ -304,8 +304,8 @@ diverse prompts). The "no spec" numbers above are higher than in the vLLM table
 because greedy sampling now runs as a GPU argmax (no logits copy).
 
 ```bash
-./build/bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --levels 1,8,32 --gen 128 [--share]
-./build/bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --check-spec   # == plain greedy
+./build/fleet bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --levels 1,8,32 --gen 128 [--share]
+./build/fleet bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --check-spec   # == plain greedy
 ```
 
 ## Early baseline (GGUF kernels, before the tiled path) (M5 Pro, AC power, 8 different tasks, 128 tokens each, greedy, no prefix sharing)
@@ -326,7 +326,7 @@ at 1/8 agents and 148.5 at 32.
 Commands:
 
 ```bash
-./build/bench --model glimmer-mlx4 --budget-gb 18 --levels 1,2,4,8,16,32 --gen 128 [--share]
-./build/bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --levels 1,8,32 --gen 128 [--share]
+./build/fleet bench --model glimmer-mlx4 --budget-gb 18 --levels 1,2,4,8,16,32 --gen 128 [--share]
+./build/fleet bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --levels 1,8,32 --gen 128 [--share]
 python3 bench/bench_openai.py --base http://localhost:8077/v1 --model glimmer --levels 1,8,32 --gen 128   # vLLM
 ```

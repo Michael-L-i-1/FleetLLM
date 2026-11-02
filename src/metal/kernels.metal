@@ -1,4 +1,4 @@
-// cinfer Metal kernels (compiled at runtime from this embedded source).
+// FleetLLM Metal kernels (compiled at runtime from this embedded source).
 //
 // Weights are read in place from the mmap'd GGUF / safetensors (zero-copy
 // buffers); K-quant block layouts match ggml, affine layouts match MLX. Activations are f32; KV cache is f16 in pages of

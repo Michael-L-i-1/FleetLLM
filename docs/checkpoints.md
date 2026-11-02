@@ -6,7 +6,7 @@ Multi-turn agent sessions (`bench/agents.py`, 6 turns, shared context, tool
 results appended, ~8k-token contexts), Llama 3.1 8B MLX 4-bit, 2.5 GB KV cap,
 `--ngram --kv-int8 --swap-gb 24`, M5 Pro, vs vllm-metal 0.32 on the same file:
 
-| Agents | cinfer | vLLM | Speedup |
+| Agents | FleetLLM | vLLM | Speedup |
 |---|---|---|---|
 | 8 | 57 s | 158 s | 2.76x |
 | 16 | 93 s | 315 s | 3.40x |

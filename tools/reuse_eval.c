@@ -7,7 +7,7 @@
 // A and B are different preceding contexts of different lengths. Reports mean
 // nll of Y per variant over several (A, B, X) triples taken from --files.
 // --same uses B as the source context too (the move must then be exact).
-//   reuse_eval --model llama8b-mlx4 --kv-int8 --files src/*.c
+//   fleet reuse-eval --model llama8b-mlx4 --kv-int8 --files src/*.c
 #include "common.h"
 #include <math.h>
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     int nf = 0;
     for (int i = 1; i < argc && nf < 64; i++)
         if (!strcmp(argv[i], "--files")) for (int j = i + 1; j < argc && argv[j][0] != '-' && nf < 64; j++) list[nf++] = argv[j];
-    if (nf < 3) { fprintf(stderr, "usage: reuse_eval --model M --files f1 f2 f3 ... [--head R] [--tail T]\n"); return 1; }
+    if (nf < 3) { fprintf(stderr, "usage: fleet reuse-eval --model M --files f1 f2 f3 ... [--head R] [--tail T]\n"); return 1; }
     kv_rope rope = { rt.m->inv_freq, rt.m->c.rope_neox, NULL, NULL };
     uint8_t fr[256] = { 0 }, sr[256] = { 0 };
     for (int l = 0; l < rt.m->c.n_layer; l++) (rt.m->layers[l].swa ? sr : fr)[rt.m->layers[l].pool_layer] = rt.m->layers[l].rope;

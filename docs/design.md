@@ -1,12 +1,12 @@
 # Design
 
-cinfer is one engine (scheduler, paged KV, prefix sharing, speculation) over
+FleetLLM is one engine (scheduler, paged KV, prefix sharing, speculation) over
 pluggable backends (Metal for Apple GPUs, CPU for the Pi path). This file
 describes the pieces; `src/*.h` headers document the APIs.
 
 ## Request path
 
-`tools/serve` (OpenAI-compatible HTTP, `src/server.c`) -> one engine thread
+`fleet serve` (OpenAI-compatible HTTP, `src/server.c`) -> one engine thread
 that continuously batches every in-flight request (`src/engine.c`) -> backend
 forward over the mixed batch of decode rows, draft rows and prefill chunks.
 
@@ -36,7 +36,7 @@ and gate|up are fused. GGUF K-quants still use the older kernels in
 | 9-64 | fused GEMM: weight tiles decoded into threadgroup memory, simdgroup MMA |
 | > 64 (prefill) | dequantize once into an f16 scratch matrix (256 MB, row-chunked), dense GEMM |
 
-Crossovers are env-tunable: `CINFER_MV_MAX`, `CINFER_FUSED_MAX`.
+Crossovers are env-tunable: `FLEET_MV_MAX`, `FLEET_FUSED_MAX`.
 
 MLX affine 4-bit weights (repacked at load into 64-row x 64-K blocks, scales/biases inline):
 
@@ -84,7 +84,8 @@ src/engine.*      sequences, scheduler, prefix sharing, sampling
 src/cpu.c         CPU reference backend
 src/metal/        Metal backend (metal.m) and kernels (kernels.metal; kernels_nax.metal for the
                   M5 neural accelerators; vendored MLX headers in mlx/), embedded at build
-tools/            generate, bench, ppl, tokcheck, dequant_dump
+tools/            `fleet` subcommands (serve, generate, bench, ppl, reuse_eval, tokcheck,
+                  dequant_dump; built as build/fleet-<name>); tools/fleet/ is the dispatcher
 scripts/          verification scripts, Unicode table generator
-bench/tasks.txt   8 heterogeneous agent tasks used by bench
+bench/tasks.txt   8 heterogeneous agent tasks used by `fleet bench`
 ```

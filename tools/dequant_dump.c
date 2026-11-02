@@ -1,12 +1,12 @@
 // Dump the first `rows` dequantized rows of a tensor as raw f32 (for scripts/dequantcheck.py).
-//   dequant_dump model.gguf tensor_name rows out.bin
+//   fleet dequant-dump model.gguf tensor_name rows out.bin
 #include "gguf.h"
 #include "quant.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-    if (argc < 5) { fprintf(stderr, "usage: dequant_dump model.gguf tensor rows out.bin\n"); return 1; }
+    if (argc < 5) { fprintf(stderr, "usage: fleet dequant-dump model.gguf tensor rows out.bin\n"); return 1; }
     gguf_ctx *g = gguf_open(argv[1]);
     if (!g) return 1;
     const gguf_tensor *t = gguf_tensor_find(g, argv[2]);

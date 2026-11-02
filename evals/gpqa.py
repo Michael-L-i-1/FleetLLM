@@ -6,8 +6,8 @@ concurrently (each worker is one "agent" in flight), and records throughput
 from the API's usage fields alongside the score.
 
     sh evals/setup.sh
-    ./build/serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 &
-    evals/.venv/bin/python evals/gpqa.py --model llama8b-mlx4 --workers 16 --label cinfer
+    ./build/fleet serve --model llama8b-mlx4 --budget-gb 8 --kv-gb 2.5 &
+    evals/.venv/bin/python evals/gpqa.py --model llama8b-mlx4 --workers 16 --label fleet
 """
 import argparse
 import json

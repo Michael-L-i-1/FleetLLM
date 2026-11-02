@@ -4,6 +4,7 @@
 #include "chat.h"
 #include "engine.h"
 #include "model.h"
+#include "threadpool.h"
 #include "tokenizer.h"
 #include <glob.h>
 #include <stdio.h>
@@ -53,6 +54,8 @@ typedef struct { model *m, *draft; backend *be; tokenizer *tok; engine *e; } run
 static runtime load_runtime(int argc, char **argv) {
     runtime rt;
     double t = now_secs();
+    int threads = (int)arg_num(argc, argv, "--threads", 0); // CPU worker threads (0: performance cores)
+    if (threads > 0) tp_init(threads);
     const char *path = model_path(arg_str(argc, argv, "--model", "llama1b"));
     rt.m = model_load(path);
     if (!rt.m) exit(1);
@@ -68,7 +71,8 @@ static runtime load_runtime(int argc, char **argv) {
     size_t reserve = 600u << 20; // activations, logits, scratch, touched embedding rows
     size_t budget = (size_t)(budget_gb * 1e9);
     if (budget < streamed + reserve + (64u << 20)) { fprintf(stderr, "budget %.1f GB too small for %.2f GB of weights\n", budget_gb, streamed / 1e9); exit(1); }
-    rt.be = backend_create(arg_str(argc, argv, "--backend", "auto"), rt.m);
+    // --device auto|cpu|cpu-ref|metal (--backend: older spelling); auto = metal when built with it
+    rt.be = backend_create(arg_str(argc, argv, "--device", arg_str(argc, argv, "--backend", "auto")), rt.m);
     size_t pinned = arg_flag(argc, argv, "--no-pin") ? 0 : model_pin(rt.m);
     size_t kv = budget - streamed - reserve;
     double kv_gb = arg_num(argc, argv, "--kv-gb", 0); // cap the KV pool (it otherwise takes the rest of the budget)

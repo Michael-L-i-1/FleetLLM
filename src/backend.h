@@ -46,10 +46,10 @@ struct backend {
     void *impl;
 };
 
-backend *cpu_backend_new(void);
+backend *cpu_backend_new(model *m); // m: repack its weights (NULL: f32-dequant reference path)
 #ifdef CI_METAL
 backend *metal_backend_new(model *m);
 #endif
-// "cpu", "metal", or "auto" (metal when available). A backend may attach
+// "cpu", "cpu-ref", "metal", or "auto" (metal when available). A backend may attach
 // repacked copies of weight matrices to the model (qmat.gpu).
 backend *backend_create(const char *name, model *m);

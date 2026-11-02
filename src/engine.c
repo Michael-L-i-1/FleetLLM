@@ -599,7 +599,7 @@ typedef struct { int id, k, match; } ng_cand;
 // drafter, a repeated-text match of >= NG_TRUST tokens replaces its drafts.
 #define NG_TRUST 8
 static void ngram_phase(engine *e, const int *ids, int n) {
-    ng_cand *c = malloc(sizeof(ng_cand) * (n ? n : 1));
+    ng_cand *c = malloc(sizeof(ng_cand) * (size_t)(n > 0 ? n : 1));
     int nc = 0, nd = 0;
     int32_t buf[32];
     for (int i = 0; i < n; i++) {
@@ -659,7 +659,7 @@ bool engine_step(engine *e, const int *ids, int n) {
     for (int i = 0; i < n; i++) e->seqs[ids[i]].ng_drafts = 0;
     if (e->ngram) ngram_phase(e, ids, n);
     if (e->reuse_min && !e->draft) reuse_phase(e, ids, n); // (the drafter has no context for moved KV)
-    plan_item *plan = malloc(sizeof(plan_item) * (n ? n : 1));
+    plan_item *plan = malloc(sizeof(plan_item) * (size_t)(n > 0 ? n : 1));
     int np = 0, budget = e->row_budget, n_decode = 0;
     for (int i = 0; i < n; i++) resolve_wait(e, ids[i], false);
     // paused (swapped-out) sequences come back, oldest first, while their pages fit
@@ -718,7 +718,7 @@ bool engine_step(engine *e, const int *ids, int n) {
     }
     for (int i = 0; i < np; i++) n_rows += plan[i].take;
     if (n_rows > e->cap_rows) { e->cap_rows = n_rows * 2; e->rows = realloc(e->rows, sizeof(row_t) * e->cap_rows); }
-    const seq_pages **pages = malloc(sizeof(seq_pages *) * np);
+    const seq_pages **pages = malloc(sizeof(seq_pages *) * (size_t)(np > 0 ? np : 1));
     int r = 0, n_logits = 0;
     bool need_logits = !e->be->argmax_ok;
     for (int i = 0; i < np; i++) {

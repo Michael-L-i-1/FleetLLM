@@ -1,18 +1,54 @@
-// CPU reference backend: f32 activations and KV, weights dequantized one row at
-// a time and dotted against every token in the batch (weights are read once per
-// step regardless of batch size). Correctness reference for the GPU backend and
-// the starting point for the Pi path; NEON kernels come later.
+// CPU backend: f32 activations and KV. Weight matrices are repacked at load into
+// 4/8-bit blocks (cpuq.h) and multiplied against int8-quantized activations with
+// dot-product instructions; each weight block is read once per step and reused
+// across the batch. "cpu-ref" skips the repack and dequantizes rows to f32 (the
+// correctness reference for the other paths).
 #include "backend.h"
+#include "cpuq.h"
 #include "quant.h"
 #include "threadpool.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
+
+static inline float dot(const float *a, const float *b, int n) {
+#if defined(__ARM_NEON)
+    if (!(n & 15)) {
+        float32x4_t s0 = vdupq_n_f32(0), s1 = s0, s2 = s0, s3 = s0;
+        for (int i = 0; i < n; i += 16) {
+            s0 = vfmaq_f32(s0, vld1q_f32(a + i), vld1q_f32(b + i));
+            s1 = vfmaq_f32(s1, vld1q_f32(a + i + 4), vld1q_f32(b + i + 4));
+            s2 = vfmaq_f32(s2, vld1q_f32(a + i + 8), vld1q_f32(b + i + 8));
+            s3 = vfmaq_f32(s3, vld1q_f32(a + i + 12), vld1q_f32(b + i + 12));
+        }
+        return vaddvq_f32(vaddq_f32(vaddq_f32(s0, s1), vaddq_f32(s2, s3)));
+    }
+#endif
+    float s = 0;
+    for (int i = 0; i < n; i++) s += a[i] * b[i];
+    return s;
+}
+
+// y += w * x
+static inline void axpy(float *y, float w, const float *x, int n) {
+#if defined(__ARM_NEON)
+    if (!(n & 3)) {
+        for (int i = 0; i < n; i += 4) vst1q_f32(y + i, vfmaq_n_f32(vld1q_f32(y + i), vld1q_f32(x + i), w));
+        return;
+    }
+#endif
+    for (int i = 0; i < n; i++) y[i] += w * x[i];
+}
 
 typedef struct {
     float *x, *h, *q, *k, *v, *g, *att, *o, *fg, *fu, *cs, *sn, *hsel;
     size_t cap; // rows the buffers hold
+    const float *in; int in_n, in_cols; // matmul input set by mm_input
+    cq_act act; bool act_ok;            // its int8 copy (made on first use)
 } cpu_state;
 
 static void *cpu_alloc(backend *b, size_t bytes, void **handle) {
@@ -41,8 +77,29 @@ static void mm_rows(void *ctx, int r0, int r1) {
     free(row);
 }
 
-static void matmul(const qmat *w, const float *x, float *y, int n, int ldy) {
-    mm_job j = { w, x, y, n, ldy };
+typedef struct { const cq_mat *w; const cq_act *a; float *y; int ldy; } cq_job;
+
+static void cq_rows(void *ctx, int r0, int r1) {
+    cq_job *j = ctx;
+    cq_matmul_rows(j->w, j->a, j->y, j->ldy, r0, r1);
+}
+
+// Set the input (n x cols) of the following matmuls.
+static void mm_input(cpu_state *s, const float *x, int n, int cols) {
+    s->in = x;
+    s->in_n = n;
+    s->in_cols = cols;
+    s->act_ok = false;
+}
+
+static void matmul(cpu_state *s, const qmat *w, float *y, int ldy) {
+    if (w->gpu) {
+        if (!s->act_ok) { cq_quantize(&s->act, s->in, s->in_n, s->in_cols); s->act_ok = true; }
+        cq_job j = { w->gpu, &s->act, y, ldy };
+        parallel_for(w->rows, 16, cq_rows, &j);
+        return;
+    }
+    mm_job j = { w, s->in, y, s->in_n, ldy };
     parallel_for(w->rows, 16, mm_rows, &j);
 }
 
@@ -90,9 +147,7 @@ static void att_tasks(void *ctx, int t0, int t1) {
         for (int p = start; p <= end; p++) {
             uint32_t page = j->l->swa ? pg->swa[p / KV_PAGE] : pg->full[p / KV_PAGE];
             const float *kr = data + kv_tile(pool, page, j->l->pool_layer, 0, kvh) + (size_t)(p % KV_PAGE) * hd;
-            float s = 0;
-            for (int i = 0; i < hd; i++) s += qh[i] * kr[i];
-            s *= c->attn_scale;
+            float s = dot(qh, kr, hd) * c->attn_scale;
             sc[p - start] = s;
             if (s > mx) mx = s;
         }
@@ -103,8 +158,7 @@ static void att_tasks(void *ctx, int t0, int t1) {
         for (int p = start; p <= end; p++) {
             uint32_t page = j->l->swa ? pg->swa[p / KV_PAGE] : pg->full[p / KV_PAGE];
             const float *vr = data + kv_tile(pool, page, j->l->pool_layer, 1, kvh) + (size_t)(p % KV_PAGE) * hd;
-            float w = sc[p - start] / sum;
-            for (int i = 0; i < hd; i++) o[i] += w * vr[i];
+            axpy(o, sc[p - start] / sum, vr, hd);
         }
     }
     free(sc);
@@ -147,10 +201,11 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
         const layer *l = &m->layers[li];
         memcpy(s->h, s->x, sizeof(float) * n * d);
         for (int r = 0; r < n; r++) rms(s->h + (size_t)r * d, d, l->attn_norm, c->eps);
-        matmul(&l->wq, s->h, s->q, n, qd);
-        matmul(&l->wk, s->h, s->k, n, kvd);
-        matmul(&l->wv, s->h, s->v, n, kvd);
-        if (l->wg.data) matmul(&l->wg, s->h, s->g, n, qd);
+        mm_input(s, s->h, n, d);
+        matmul(s, &l->wq, s->q, qd);
+        matmul(s, &l->wk, s->k, kvd);
+        matmul(s, &l->wv, s->v, kvd);
+        if (l->wg.data) matmul(s, &l->wg, s->g, qd);
         for (int r = 0; r < n; r++) {
             if (l->bq) for (int i = 0; i < qd; i++) s->q[(size_t)r * qd + i] += l->bq[i];
             if (l->bk) for (int i = 0; i < kvd; i++) s->k[(size_t)r * kvd + i] += l->bk[i];
@@ -176,18 +231,21 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
             }
         }
         att_job aj = { m, l, kv, pages, rows, s->q, s->att };
-        parallel_for(n * c->n_head, 4, att_tasks, &aj);
+        parallel_for(n * c->n_head, 1, att_tasks, &aj);
         if (l->wg.data)
             for (size_t i = 0; i < (size_t)n * qd; i++) s->att[i] *= 1.f / (1.f + expf(-s->g[i]));
-        matmul(&l->wo, s->att, s->o, n, d);
+        mm_input(s, s->att, n, qd);
+        matmul(s, &l->wo, s->o, d);
         residual(s->x, s->o, n, d, l->post_attn_norm, c->post_eps);
 
         memcpy(s->h, s->x, sizeof(float) * n * d);
         for (int r = 0; r < n; r++) rms(s->h + (size_t)r * d, d, l->ffn_norm, c->eps);
-        matmul(&l->w_gate, s->h, s->fg, n, c->ff);
-        matmul(&l->w_up, s->h, s->fu, n, c->ff);
+        mm_input(s, s->h, n, d);
+        matmul(s, &l->w_gate, s->fg, c->ff);
+        matmul(s, &l->w_up, s->fu, c->ff);
         for (size_t i = 0; i < (size_t)n * c->ff; i++) { float g = s->fg[i]; s->fg[i] = g / (1.f + expf(-g)) * s->fu[i]; }
-        matmul(&l->w_down, s->fg, s->o, n, d);
+        mm_input(s, s->fg, n, c->ff);
+        matmul(s, &l->w_down, s->o, d);
         residual(s->x, s->o, n, d, l->post_ffn_norm, c->post_eps);
     }
     int ns = 0;
@@ -198,7 +256,8 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
         ns++;
     }
     if (ns) {
-        matmul(&m->output, s->hsel, logits, ns, c->vocab);
+        mm_input(s, s->hsel, ns, d);
+        matmul(s, &m->output, logits, c->vocab);
         size_t nv = (size_t)ns * c->vocab;
         if (c->softcap > 0) for (size_t i = 0; i < nv; i++) logits[i] = c->softcap * tanhf(logits[i] * c->logit_scale / c->softcap);
         else if (c->logit_scale != 1.f) for (size_t i = 0; i < nv; i++) logits[i] *= c->logit_scale;
@@ -206,9 +265,48 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
     return 0;
 }
 
-static void cpu_destroy(backend *b) { free(b->impl); free(b); }
+static void cpu_destroy(backend *b) {
+    cpu_state *s = b->impl;
+    free(s->act.q); free(s->act.s); free(s->act.sq);
+    free(s);
+    free(b);
+}
 
-backend *cpu_backend_new(void) {
+// ---- load-time repack of every streamed matrix ----
+typedef struct { qmat **mats; } repack_job;
+
+static void repack_mats(void *ctx, int i0, int i1) {
+    repack_job *j = ctx;
+    for (int i = i0; i < i1; i++) j->mats[i]->gpu = cq_from_qmat(j->mats[i]);
+}
+
+static void cpu_repack(model *m) {
+    int n = 0;
+    qmat **mats = malloc(sizeof(qmat *) * (8 * m->c.n_layer + 1));
+    for (int i = 0; i < m->c.n_layer; i++) {
+        layer *l = &m->layers[i];
+        qmat *ls[] = { &l->wq, &l->wk, &l->wv, &l->wg, &l->wo, &l->w_gate, &l->w_up, &l->w_down };
+        for (int k = 0; k < 8; k++) if (ls[k]->data && !ls[k]->gpu) mats[n++] = ls[k];
+    }
+    if (m->output.data && !m->output.gpu) mats[n++] = &m->output;
+    repack_job j = { mats };
+    parallel_for(n, 1, repack_mats, &j);
+    size_t src = 0, dst = 0;
+    int q4 = 0, q8 = 0, kept = 0;
+    for (int i = 0; i < n; i++) {
+        const cq_mat *c = mats[i]->gpu;
+        if (!c) { kept++; continue; }
+        src += qmat_bytes(mats[i]);
+        dst += cq_bytes(c);
+        c->kind == CQ4 ? q4++ : q8++;
+    }
+    fprintf(stderr, "[cpu] %s, %d threads; repacked %d matrices (%d 4-bit, %d 8-bit, %d left f32-dequant) %.2f -> %.2f GB\n", cq_isa(), tp_threads(), q4 + q8, q4, q8,
+            kept, src / 1e9, dst / 1e9);
+    free(mats);
+    model_drop_host_copies(m);
+}
+
+backend *cpu_backend_new(model *m) {
     backend *b = calloc(1, sizeof *b);
     b->name = "cpu";
     b->kv_elem = 4;
@@ -217,6 +315,8 @@ backend *cpu_backend_new(void) {
     b->destroy = cpu_destroy;
     b->impl = calloc(1, sizeof(cpu_state));
     tp_init(0);
+    if (m) cpu_repack(m);
+    else fprintf(stderr, "[cpu] reference path (f32 dequant), %d threads\n", tp_threads());
     return b;
 }
 
@@ -226,5 +326,7 @@ backend *backend_create(const char *name, model *m) {
 #else
     if (!strcmp(name, "metal")) { fprintf(stderr, "built without Metal\n"); exit(1); }
 #endif
-    return cpu_backend_new();
+    if (!strcmp(name, "cpu-ref")) return cpu_backend_new(NULL);
+    if (strcmp(name, "cpu") && strcmp(name, "auto")) { fprintf(stderr, "unknown device %s (auto, cpu, cpu-ref, metal)\n", name); exit(1); }
+    return cpu_backend_new(m);
 }

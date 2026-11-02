@@ -330,3 +330,15 @@ Commands:
 ./build/fleet bench --model glimmer-mlx4 --draft glimmer-draft --budget-gb 21 --levels 1,8,32 --gen 128 [--share]
 python3 bench/bench_openai.py --base http://localhost:8077/v1 --model glimmer --levels 1,8,32 --gen 128   # vLLM
 ```
+
+## Agent sessions on CPU (bench/agents.py, Llama 3.2 1B Q4_K_M, 1.5 GB 8-bit KV)
+
+Same workload as above (shared context, 6 turns, tool results appended, whole conversation resent each turn), on the M5 Pro CPU with 6 threads and both engines restricted to the Pi 5 instruction set (llama.cpp built with `GGML_CPU_ARM_ARCH=armv8.2-a+dotprod+fp16`). Scripts and raw JSON: `results/agents/cpu-swarm/`.
+
+| Engine | 8 agents: wall | median turn | p95 turn | prompt tokens from cache | 16 agents: wall | median turn | p95 turn |
+|---|---|---|---|---|---|---|---|
+| FleetLLM, exact (`--kv-int8 --ngram`) | 247.0 s | 39.68 s | 65.03 s | 88% | 279.4 s | 24.83 s | 72.32 s |
+| FleetLLM + `--reuse-spans` (lossy, +0.36% ppl on 8B) | 179.8 s | 20.47 s | 47.08 s | 88% | 162.1 s | 13.43 s | 34.24 s |
+| llama-server (`-np 16 -kvu -ctk/-ctv q8_0 --cache-reuse 256`) | 784.6 s | 129.8 s | 172.12 s | 79% | failed: KV full after 26 min ("Context size has been exceeded", no agent finished) | | |
+
+On raw decode throughput the CPU kernels are at 75% (1 sequence) to 95% (32 sequences) of llama.cpp's; on agent sessions FleetLLM finishes 3.2x (exact) to 4.4x (span reuse) faster at 8 agents. llama-server shares KV only between sub-requests of one request (`copy_prompt_to`), so each agent re-prefills the shared context unless its own slot still holds it, and with 16 agents it runs out of KV where FleetLLM's prefix sharing and admission control keep every agent going within the same 1.5 GB.

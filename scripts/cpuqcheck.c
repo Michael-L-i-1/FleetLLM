@@ -2,6 +2,7 @@
 // fallback without model downloads. Run scripts/cpuqcheck.sh.
 #include "cpuq.h"
 #include "quant.h"
+#include <fenv.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,36 @@
 
 void scalar_matmul(const cq_mat *, const cq_act *, float *, int, int, int);
 
+void scalar_cq_quantize(cq_act *, const float *, int, int);
+
+static int check_quant(void) {
+    enum { K = 768, N = 17 };
+    float x[N * K];
+    cq_act a = {0}, ref = {0};
+    const int modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+    int saved = fegetround();
+    for (int mode = 0; mode < 4; mode++) {
+        fesetround(modes[mode]);
+        for (int rep = 0; rep < 16; rep++) {
+            for (int i = 0; i < N * K; i++) x[i] = rep == 0 ? 0 : ldexpf((rand() % 65537 - 32768) / 32768.f, rep * 8 - 64);
+            // amax 127 makes scale one: half-integers exercise rounding ties.
+            for (int i = 0; i < 32; i++) x[i] = i == 31 ? 127.f : (i - 15) * 0.5f;
+            cq_quantize(&a, x, N, K); scalar_cq_quantize(&ref, x, N, K);
+            if (memcmp(a.q, ref.q, N * K) || memcmp(a.s, ref.s, sizeof(float) * N * K / 32) ||
+                memcmp(a.sq, ref.sq, sizeof(float) * N * K / 32)) {
+                fprintf(stderr, "quantization mismatch mode %d rep %d\n", mode, rep); return 1;
+            }
+        }
+    }
+    fesetround(saved);
+    free(a.q); free(a.s); free(a.sq);
+    free(ref.q); free(ref.s); free(ref.sq);
+    puts("quantization: scalar bitwise, four rounding modes, zero/ties/wide exponents PASS");
+    return 0;
+}
+
 int main(void) {
+    if (check_quant()) return 1;
     enum { R = 13, K = 768, N = 17 };
     float x[N * K], y[N * R], ref[N * R], seq[R], scalar[N * R];
     for (int i = 0; i < N * K; i++) x[i] = sinf(i * 0.17f) * 0.7f;

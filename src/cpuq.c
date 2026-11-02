@@ -267,6 +267,21 @@ static void quant_blocks(void *ctx, int b0, int b1) {
     const float *x = a->src;
     for (size_t b = b0; b < (size_t)b1; b++) {
         const float *xb = x + b * CQ_BLOCK;
+#if defined(__ARM_FEATURE_DOTPROD)
+        float32x4_t mx = vdupq_n_f32(0);
+        for (int j = 0; j < CQ_BLOCK; j += 4) mx = vmaxnmq_f32(mx, vabsq_f32(vld1q_f32(xb + j)));
+        float amax = vmaxnmvq_f32(mx);
+        float s = amax / 127.f, inv = s > 0 ? 1.f / s : 0;
+        int32x4_t sums = vdupq_n_s32(0);
+        for (int j = 0; j < CQ_BLOCK; j += 8) {
+            // FRINTI follows the same rounding mode as lrintf, before narrowing.
+            int32x4_t q0 = vcvtq_s32_f32(vrndiq_f32(vmulq_n_f32(vld1q_f32(xb + j), inv)));
+            int32x4_t q1 = vcvtq_s32_f32(vrndiq_f32(vmulq_n_f32(vld1q_f32(xb + j + 4), inv)));
+            vst1_s8(a->q + b * CQ_BLOCK + j, vmovn_s16(vcombine_s16(vmovn_s32(q0), vmovn_s32(q1))));
+            sums = vaddq_s32(sums, vaddq_s32(q0, q1));
+        }
+        int sum = vaddvq_s32(sums);
+#else
         float amax = 0;
         for (int j = 0; j < CQ_BLOCK; j++) amax = fmaxf(amax, fabsf(xb[j]));
         float s = amax / 127.f, inv = s > 0 ? 1.f / s : 0;
@@ -276,6 +291,7 @@ static void quant_blocks(void *ctx, int b0, int b1) {
             a->q[b * CQ_BLOCK + j] = (int8_t)q;
             sum += q;
         }
+#endif
         a->s[b] = s;
         a->sq[b] = s * (float)sum;
     }

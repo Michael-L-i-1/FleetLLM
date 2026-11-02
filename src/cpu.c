@@ -317,17 +317,24 @@ static void cpu_repack(model *m) {
     if (m->output.data && !m->output.gpu) mats[n++] = &m->output;
     repack_job j = { mats };
     parallel_for(n, 1, repack_mats, &j);
+    // per format: count, and the worst error against the reference dequantizer
+    // over each matrix's first rows (0 when the repack is exact)
     size_t src = 0, dst = 0;
-    int q4 = 0, q8 = 0, kept = 0;
+    int count[CQ8 + 1] = { 0 }, kept = 0;
+    float err[CQ8 + 1] = { 0 };
     for (int i = 0; i < n; i++) {
         const cq_mat *c = mats[i]->gpu;
         if (!c) { kept++; continue; }
         src += qmat_bytes(mats[i]);
         dst += cq_bytes(c);
-        c->kind == CQ4 ? q4++ : q8++;
+        count[c->kind]++;
+        float e = cq_check(mats[i], c, 4);
+        if (e > err[c->kind]) err[c->kind] = e;
     }
-    fprintf(stderr, "[cpu] %s, %d threads; repacked %d matrices (%d 4-bit, %d 8-bit, %d left f32-dequant) %.2f -> %.2f GB\n", cq_isa(), tp_threads(), q4 + q8, q4, q8,
-            kept, src / 1e9, dst / 1e9);
+    fprintf(stderr, "[cpu] %s, %d threads; weights %.2f GB -> %.2f GB:", cq_isa(), tp_threads(), src / 1e9, dst / 1e9);
+    for (int k = 0; k <= CQ8; k++) if (count[k]) fprintf(stderr, " %d %s (err %.1e)", count[k], cq_kind_name(k), err[k]);
+    if (kept) fprintf(stderr, " %d f32-dequant", kept);
+    fprintf(stderr, "\n");
     free(mats);
     model_drop_host_copies(m);
 }

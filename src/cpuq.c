@@ -382,14 +382,14 @@ static inline __attribute__((always_inline)) void block_dot(const int kind, cons
     if (kind == CQ4 || kind == CQ4K) *bacc = vfmaq_n_f32(*bacc, wb, sq);
 }
 
-static inline __attribute__((always_inline)) void mm_kind(const cq_mat *w, const cq_act *a, float *y, int ldy, int r0, int r1, const int kind, const int tile) {
+static inline __attribute__((always_inline)) void mm_kind(const cq_mat *w, const cq_act *a, float *y, int ldy, int r0, int r1, const int kind, const int tile, int t_begin, int t_end) {
     const int G = w->cols / CQ_BLOCK;
     const float32x4_t zf = vdupq_n_f32(0);
     for (int rg = r0 >> 2; rg * 4 < r1; rg++) {
         float32x4_t d = zf, dmin = zf, ws, wsh, wb = zf;
         int8x16_t lo[4], hi[4];
-        for (int t0 = 0; t0 < a->n; t0 += tile) {
-            const int nt = a->n - t0 < tile ? a->n - t0 : tile;
+        for (int t0 = t_begin; t0 < t_end; t0 += tile ? tile : CQ_TILE) {
+            const int nt = tile ? tile : t_end - t0;
             float32x4_t acc[CQ_TILE]; // lanes: the 4 weight rows
             for (int i = 0; i < CQ_TILE; i++) acc[i] = zf;
             for (int g = 0; g < G; g++) {
@@ -408,20 +408,24 @@ static inline __attribute__((always_inline)) void mm_kind(const cq_mat *w, const
     }
 }
 
+// Full tiles have a constant trip count so accumulators stay in registers.
+// The tail shares the same block_dot and therefore the same summation order.
+static inline __attribute__((always_inline)) void mm_dispatch(const cq_mat *w, const cq_act *a, float *y, int ldy, int r0, int r1, const int kind) {
+    if (a->n == 1) mm_kind(w, a, y, ldy, r0, r1, kind, 1, 0, 1);
+    else {
+        int full = a->n / CQ_TILE * CQ_TILE;
+        if (full) mm_kind(w, a, y, ldy, r0, r1, kind, CQ_TILE, 0, full);
+        if (full < a->n) mm_kind(w, a, y, ldy, r0, r1, kind, 0, full, a->n);
+    }
+}
+
 void cq_matmul_rows(const cq_mat *w, const cq_act *a, float *y, int ldy, int r0, int r1) {
-    // A constant single-row tile removes the dynamic accumulator loop in decode.
-    // block_dot is shared with batches to keep the exact same summation order.
-    switch (w->kind) { // one specialized copy per format
-    case CQ4: if (a->n == 1) mm_kind(w, a, y, ldy, r0, r1, CQ4, 1);
-        else mm_kind(w, a, y, ldy, r0, r1, CQ4, CQ_TILE); break;
-    case CQ4S: if (a->n == 1) mm_kind(w, a, y, ldy, r0, r1, CQ4S, 1);
-        else mm_kind(w, a, y, ldy, r0, r1, CQ4S, CQ_TILE); break;
-    case CQ4K: if (a->n == 1) mm_kind(w, a, y, ldy, r0, r1, CQ4K, 1);
-        else mm_kind(w, a, y, ldy, r0, r1, CQ4K, CQ_TILE); break;
-    case CQ6K: if (a->n == 1) mm_kind(w, a, y, ldy, r0, r1, CQ6K, 1);
-        else mm_kind(w, a, y, ldy, r0, r1, CQ6K, CQ_TILE); break;
-    default: if (a->n == 1) mm_kind(w, a, y, ldy, r0, r1, CQ8, 1);
-        else mm_kind(w, a, y, ldy, r0, r1, CQ8, CQ_TILE); break;
+    switch (w->kind) {
+    case CQ4: mm_dispatch(w, a, y, ldy, r0, r1, CQ4); break;
+    case CQ4S: mm_dispatch(w, a, y, ldy, r0, r1, CQ4S); break;
+    case CQ4K: mm_dispatch(w, a, y, ldy, r0, r1, CQ4K); break;
+    case CQ6K: mm_dispatch(w, a, y, ldy, r0, r1, CQ6K); break;
+    default: mm_dispatch(w, a, y, ldy, r0, r1, CQ8); break;
     }
 }
 #else

@@ -44,11 +44,15 @@ static inline void axpy(float *y, float w, const float *x, int n) {
     for (int i = 0; i < n; i++) y[i] += w * x[i];
 }
 
+typedef struct { int ri, kvh, p0, p1, part; } att_task; // attention work item; part: partial slot (-1: single chunk)
+
 typedef struct {
     float *x, *h, *q, *k, *v, *g, *att, *o, *fg, *fu, *cs, *sn, *hsel;
     size_t cap; // rows the buffers hold
     const float *in; int in_n, in_cols; // matmul input set by mm_input
     cq_act act; bool act_ok;            // its int8 copy (made on first use)
+    att_task *att_tasks; int *att_first; size_t att_cap; // attention task list (see attention())
+    float *part; size_t part_cap;                    // attention chunk partials
 } cpu_state;
 
 static void *cpu_alloc(backend *b, size_t bytes, void **handle) {
@@ -120,32 +124,141 @@ static void rope(float *x, const float *cs, const float *sn, int half, bool neox
     }
 }
 
-// ---- attention over paged KV, one task per (row, kv head) ----
-// The q heads sharing a kv head are scored together, so each K / V vector is
-// read (and converted from f16 / int8) once per row.
+// e^x for x <= 0 (softmax, after subtracting the max): Cephes-style range
+// reduction and degree-6 polynomial, ~1 ulp; vectorized where NEON is available.
+#if defined(__ARM_NEON)
+static inline float32x4_t vexp(float32x4_t x) {
+    x = vmaxq_f32(x, vdupq_n_f32(-87.f));
+    float32x4_t n = vrndnq_f32(vmulq_n_f32(x, 1.44269504f));
+    float32x4_t r = vfmsq_f32(vfmsq_f32(x, n, vdupq_n_f32(0.693359375f)), n, vdupq_n_f32(-2.12194440e-4f));
+    float32x4_t p = vdupq_n_f32(1.9875691500e-4f);
+    p = vfmaq_f32(vdupq_n_f32(1.3981999507e-3f), p, r);
+    p = vfmaq_f32(vdupq_n_f32(8.3334519073e-3f), p, r);
+    p = vfmaq_f32(vdupq_n_f32(4.1665795894e-2f), p, r);
+    p = vfmaq_f32(vdupq_n_f32(1.6666665459e-1f), p, r);
+    p = vfmaq_f32(vdupq_n_f32(5.0000001201e-1f), p, r);
+    p = vfmaq_f32(vaddq_f32(r, vdupq_n_f32(1.f)), p, vmulq_f32(r, r));
+    return vreinterpretq_f32_s32(vaddq_s32(vreinterpretq_s32_f32(p), vshlq_n_s32(vcvtq_s32_f32(n), 23)));
+}
+#endif
+
+// x[i] = e^(x[i] - mx); returns the sum
+static float exp_sum(float *x, int n, float mx) {
+    float z = 0;
+    int i = 0;
+#if defined(__ARM_NEON)
+    float32x4_t vz = vdupq_n_f32(0), vm = vdupq_n_f32(mx);
+    for (; i + 4 <= n; i += 4) {
+        float32x4_t e = vexp(vsubq_f32(vld1q_f32(x + i), vm));
+        vst1q_f32(x + i, e);
+        vz = vaddq_f32(vz, e);
+    }
+    z = vaddvq_f32(vz);
+#endif
+    for (; i < n; i++) { x[i] = expf(x[i] - mx); z += x[i]; }
+    return z;
+}
+
+// ---- attention over paged KV ----
+// One task per (row, kv head, chunk of ATT_CHUNK positions): the q heads sharing
+// a kv head are scored together, so each K / V vector is read (and converted
+// from f16 / int8) once per row, and a single decode row still spreads over all
+// threads. Chunks write unnormalized partials (max, sum, output) that a second
+// pass merges (flash-decoding); a row with one chunk writes its output directly.
+#define ATT_CHUNK 256
+
 typedef struct {
     const model *m; const layer *l; const kv_cache *kv; const seq_pages *const *pages; const row_t *rows;
     const float *q; float *out;
+    const att_task *tasks;
+    float *part; // per partial slot: group maxima, group sums, group x hd outputs
 } att_job;
 
-// K or V vector of one token as floats (f32 storage: the stored vector itself)
-static inline const float *kv_vec(const kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, float *buf) {
-    size_t at = kv_tile(p, page, layer, kv, head) + (size_t)slot * p->head_dim;
-    int hd = p->head_dim;
+// K or V of slots [s0, s1) of one page tile as rows of head_dim floats (f32
+// storage: the stored tile itself; else converted into buf)
+static const float *kv_rows(const kv_pool *p, uint32_t page, int layer, int kv, int head, int s0, int s1, float *buf) {
+    int hd = p->head_dim, n = (s1 - s0) * hd;
+    size_t at = kv_tile(p, page, layer, kv, head) + (size_t)s0 * hd;
     if (p->elem == 4) return (const float *)p->data + at;
     if (p->elem == 2) {
 #if defined(__aarch64__)
         const __fp16 *h = (const __fp16 *)p->data + at;
-        for (int i = 0; i < hd; i++) buf[i] = h[i];
+        for (int i = 0; i < n; i++) buf[i] = h[i];
 #else
-        for (int i = 0; i < hd; i++) buf[i] = fp16_to_f32(((const uint16_t *)p->data)[at + i]);
+        for (int i = 0; i < n; i++) buf[i] = fp16_to_f32(((const uint16_t *)p->data)[at + i]);
 #endif
         return buf;
     }
     const int8_t *q = (const int8_t *)p->data + at;
-    float sc = fp16_to_f32(kv_scales(p, page, layer, kv, head)[slot]);
-    for (int i = 0; i < hd; i++) buf[i] = q[i] * sc;
+    const uint16_t *sc = kv_scales(p, page, layer, kv, head);
+    for (int t = 0; t < s1 - s0; t++) {
+        float f = fp16_to_f32(sc[s0 + t]);
+        for (int i = 0; i < hd; i++) buf[t * hd + i] = q[t * hd + i] * f;
+    }
     return buf;
+}
+
+// out[i] = scale * q . k[i] for np rows k of hd floats
+static void tile_scores(const float *q, const float *k, int np, int hd, float scale, float *out) {
+    int i = 0;
+#if defined(__ARM_NEON)
+    if (!(hd & 3))
+        for (; i + 4 <= np; i += 4) { // 4 rows per pass share each q load
+            const float *k0 = k + (size_t)i * hd;
+            float32x4_t a0 = vdupq_n_f32(0), a1 = a0, a2 = a0, a3 = a0;
+            for (int e = 0; e < hd; e += 4) {
+                float32x4_t qv = vld1q_f32(q + e);
+                a0 = vfmaq_f32(a0, qv, vld1q_f32(k0 + e));
+                a1 = vfmaq_f32(a1, qv, vld1q_f32(k0 + hd + e));
+                a2 = vfmaq_f32(a2, qv, vld1q_f32(k0 + 2 * hd + e));
+                a3 = vfmaq_f32(a3, qv, vld1q_f32(k0 + 3 * hd + e));
+            }
+            vst1q_f32(out + i, vmulq_n_f32(vpaddq_f32(vpaddq_f32(a0, a1), vpaddq_f32(a2, a3)), scale));
+        }
+#endif
+    for (; i < np; i++) out[i] = dot(q, k + (size_t)i * hd, hd) * scale;
+}
+
+// o += sum_i w[i] * v[i] for np rows v of hd floats
+static void tile_accum(float *o, const float *w, const float *v, int np, int hd) {
+#if defined(__ARM_NEON)
+    if (!(hd & 31)) {
+        for (int e = 0; e < hd; e += 32) { // 32 outputs stay in registers across the rows
+            float32x4_t a[8];
+            for (int k = 0; k < 8; k++) a[k] = vld1q_f32(o + e + 4 * k);
+            for (int i = 0; i < np; i++) {
+                const float *vr = v + (size_t)i * hd + e;
+                for (int k = 0; k < 8; k++) a[k] = vfmaq_n_f32(a[k], vld1q_f32(vr + 4 * k), w[i]);
+            }
+            for (int k = 0; k < 8; k++) vst1q_f32(o + e + 4 * k, a[k]);
+        }
+        return;
+    }
+#endif
+    for (int i = 0; i < np; i++) axpy(o, w[i], v + (size_t)i * hd, hd);
+}
+
+static float max_of(const float *x, int n) {
+    float m = -INFINITY;
+    int i = 0;
+#if defined(__ARM_NEON)
+    float32x4_t vm = vdupq_n_f32(-INFINITY);
+    for (; i + 4 <= n; i += 4) vm = vmaxq_f32(vm, vld1q_f32(x + i));
+    m = vmaxvq_f32(vm);
+#endif
+    for (; i < n; i++) m = fmaxf(m, x[i]);
+    return m;
+}
+
+// Prefetch the (layer, kv, head) tile of the page holding position p (if < end):
+// tiles of consecutive pages are a whole page stride apart, too far for the
+// hardware prefetcher to follow.
+static inline void kv_prefetch(const kv_pool *pool, const uint32_t *pages, int p, int end, int layer, int kv, int head) {
+    if (p >= end) return;
+    const uint8_t *t = pool->data + kv_tile(pool, pages[p / KV_PAGE], layer, kv, head) * pool->elem;
+    size_t bytes = (size_t)KV_PAGE * pool->head_dim * pool->elem;
+    for (size_t o = 0; o < bytes; o += 64) __builtin_prefetch(t + o);
+    if (pool->elem == 1) __builtin_prefetch(kv_scales(pool, pages[p / KV_PAGE], layer, kv, head));
 }
 
 static void att_tasks(void *ctx, int t0, int t1) {
@@ -153,42 +266,119 @@ static void att_tasks(void *ctx, int t0, int t1) {
     const model_cfg *c = &j->m->c;
     const kv_pool *pool = j->l->swa ? &j->kv->swa : &j->kv->full;
     int hd = c->hd, group = c->n_head / c->n_kv, qd = c->n_head * hd, pl = j->l->pool_layer;
-    float *sc = NULL, buf[512];
-    int sc_cap = 0;
+    float sc[64 * ATT_CHUNK], buf[KV_PAGE * 512];
     for (int t = t0; t < t1; t++) {
-        int ri = t / c->n_kv, kvh = t % c->n_kv;
-        const row_t *r = &j->rows[ri];
-        const seq_pages *pg = j->pages[r->seq];
-        int end = r->ctx_end;
-        int start = j->l->swa ? (end + 1 > j->kv->window ? end + 1 - j->kv->window : 0) : 0;
-        int ctx = end + 1 - start;
-        if (ctx * group > sc_cap) { sc_cap = ctx * group; sc = realloc(sc, sizeof(float) * sc_cap); }
-        const float *q0 = j->q + (size_t)ri * qd + (size_t)kvh * group * hd;
+        const att_task *tk = &j->tasks[t];
+        const seq_pages *pg = j->pages[j->rows[tk->ri].seq];
+        const uint32_t *pages = j->l->swa ? pg->swa : pg->full;
+        int ctx = tk->p1 - tk->p0;
+        const float *q0 = j->q + (size_t)tk->ri * qd + (size_t)tk->kvh * group * hd;
+        // scores, one KV page tile at a time
+        for (int p = tk->p0; p < tk->p1;) {
+            int s0 = p % KV_PAGE, s1 = s0 + (tk->p1 - p) < KV_PAGE ? s0 + (tk->p1 - p) : KV_PAGE;
+            kv_prefetch(pool, pages, p - s0 + 2 * KV_PAGE, tk->p1, pl, 0, tk->kvh);
+            if (p == tk->p0) kv_prefetch(pool, pages, p - s0 + KV_PAGE, tk->p1, pl, 0, tk->kvh);
+            const float *kt = kv_rows(pool, pages[p / KV_PAGE], pl, 0, tk->kvh, s0, s1, buf);
+            for (int g = 0; g < group; g++) tile_scores(q0 + (size_t)g * hd, kt, s1 - s0, hd, c->attn_scale, sc + g * ctx + p - tk->p0);
+            p += s1 - s0;
+        }
         float mx[64], sum[64];
-        for (int g = 0; g < group; g++) mx[g] = -INFINITY;
-        for (int p = start; p <= end; p++) {
-            uint32_t page = j->l->swa ? pg->swa[p / KV_PAGE] : pg->full[p / KV_PAGE];
-            const float *kr = kv_vec(pool, page, pl, 0, kvh, p % KV_PAGE, buf);
-            for (int g = 0; g < group; g++) {
-                float s = dot(q0 + (size_t)g * hd, kr, hd) * c->attn_scale;
-                sc[(size_t)g * ctx + p - start] = s;
-                if (s > mx[g]) mx[g] = s;
-            }
-        }
+        float *part = tk->part >= 0 ? j->part + (size_t)tk->part * group * (hd + 2) : NULL;
         for (int g = 0; g < group; g++) {
-            float *sg = sc + (size_t)g * ctx, z = 0;
-            for (int i = 0; i < ctx; i++) { sg[i] = expf(sg[i] - mx[g]); z += sg[i]; }
-            sum[g] = 1.f / z;
+            float *sg = sc + g * ctx;
+            mx[g] = max_of(sg, ctx);
+            sum[g] = exp_sum(sg, ctx, mx[g]);
+            if (!part) for (int i = 0; i < ctx; i++) sg[i] /= sum[g]; // final weights
         }
-        float *o0 = j->out + (size_t)ri * qd + (size_t)kvh * group * hd;
+        float *o0 = part ? part + 2 * group : j->out + (size_t)tk->ri * qd + (size_t)tk->kvh * group * hd;
         memset(o0, 0, sizeof(float) * group * hd);
-        for (int p = start; p <= end; p++) {
-            uint32_t page = j->l->swa ? pg->swa[p / KV_PAGE] : pg->full[p / KV_PAGE];
-            const float *vr = kv_vec(pool, page, pl, 1, kvh, p % KV_PAGE, buf);
-            for (int g = 0; g < group; g++) axpy(o0 + (size_t)g * hd, sc[(size_t)g * ctx + p - start] * sum[g], vr, hd);
+        for (int p = tk->p0; p < tk->p1;) {
+            int s0 = p % KV_PAGE, s1 = s0 + (tk->p1 - p) < KV_PAGE ? s0 + (tk->p1 - p) : KV_PAGE;
+            kv_prefetch(pool, pages, p - s0 + 2 * KV_PAGE, tk->p1, pl, 1, tk->kvh);
+            if (p == tk->p0) kv_prefetch(pool, pages, p - s0 + KV_PAGE, tk->p1, pl, 1, tk->kvh);
+            const float *vt = kv_rows(pool, pages[p / KV_PAGE], pl, 1, tk->kvh, s0, s1, buf);
+            for (int g = 0; g < group; g++) tile_accum(o0 + (size_t)g * hd, sc + g * ctx + p - tk->p0, vt, s1 - s0, hd);
+            p += s1 - s0;
+        }
+        if (part) { memcpy(part, mx, sizeof(float) * group); memcpy(part + group, sum, sizeof(float) * group); }
+    }
+}
+
+// x = silu(x) * u
+static void silu_mul(float *x, const float *u, size_t n) {
+    size_t i = 0;
+#if defined(__ARM_NEON)
+    for (; i + 4 <= n; i += 4) {
+        float32x4_t g = vld1q_f32(x + i), e = vexp(vminq_f32(vnegq_f32(g), vdupq_n_f32(87.f)));
+        vst1q_f32(x + i, vmulq_f32(vdivq_f32(g, vaddq_f32(vdupq_n_f32(1.f), e)), vld1q_f32(u + i)));
+    }
+#endif
+    for (; i < n; i++) x[i] = x[i] / (1.f + expf(-x[i])) * u[i];
+}
+
+// merge the chunk partials of the (row, kv head) whose first task is tasks[t]
+typedef struct { att_job *j; const int *first; } merge_job;
+
+static void att_merge(void *ctx, int i0, int i1) {
+    merge_job *mj = ctx;
+    att_job *j = mj->j;
+    const model_cfg *c = &j->m->c;
+    int hd = c->hd, group = c->n_head / c->n_kv, qd = c->n_head * hd;
+    for (int i = i0; i < i1; i++) {
+        const att_task *t0 = &j->tasks[mj->first[i]];
+        int nch = (j->rows[t0->ri].ctx_end + 1 - t0->p0 + ATT_CHUNK - 1) / ATT_CHUNK;
+        float *o0 = j->out + (size_t)t0->ri * qd + (size_t)t0->kvh * group * hd;
+        for (int g = 0; g < group; g++) {
+            float M = -INFINITY, L = 0;
+            for (int k = 0; k < nch; k++) M = fmaxf(M, j->part[(size_t)(t0->part + k) * group * (hd + 2) + g]);
+            float *o = o0 + (size_t)g * hd;
+            memset(o, 0, sizeof(float) * hd);
+            for (int k = 0; k < nch; k++) {
+                const float *pp = j->part + (size_t)(t0->part + k) * group * (hd + 2);
+                float w = expf(pp[g] - M);
+                L += pp[group + g] * w;
+                axpy(o, w, pp + 2 * group + (size_t)g * hd, hd);
+            }
+            for (int d = 0; d < hd; d++) o[d] /= L;
         }
     }
-    free(sc);
+}
+
+// attention for all rows of one layer
+static void attention(cpu_state *s, const model *m, const layer *l, const kv_cache *kv, const seq_pages *const *pages, const row_t *rows, int n) {
+    const model_cfg *c = &m->c;
+    int nt = 0, np = 0, nm = 0, group = c->n_head / c->n_kv;
+    for (int pass = 0; pass < 2; pass++) { // count, then fill
+        nt = np = nm = 0;
+        for (int r = 0; r < n; r++) {
+            int end = rows[r].ctx_end + 1, start = l->swa && end > kv->window ? end - kv->window : 0;
+            int nch = (end - start + ATT_CHUNK - 1) / ATT_CHUNK;
+            for (int h = 0; h < c->n_kv; h++) {
+                if (pass && nch > 1) s->att_first[nm] = nt;
+                nm += nch > 1;
+                for (int k = 0; k < nch; k++, nt++) {
+                    if (pass) {
+                        int p0 = start + k * ATT_CHUNK;
+                        s->att_tasks[nt] = (att_task){ r, h, p0, p0 + ATT_CHUNK < end ? p0 + ATT_CHUNK : end, nch > 1 ? np : -1 };
+                    }
+                    np += nch > 1;
+                }
+            }
+        }
+        if (!pass) {
+            if ((size_t)nt > s->att_cap) {
+                s->att_cap = nt;
+                s->att_tasks = realloc(s->att_tasks, sizeof(att_task) * nt);
+                s->att_first = realloc(s->att_first, sizeof(int) * (nt + 1));
+            }
+            if ((size_t)np * group * (c->hd + 2) > s->part_cap) { s->part_cap = (size_t)np * group * (c->hd + 2); free(s->part); s->part = malloc(sizeof(float) * s->part_cap); }
+        }
+    }
+    s->att_first[nm] = nt;
+    att_job aj = { m, l, kv, pages, rows, s->q, s->att, s->att_tasks, s->part };
+    parallel_for(nt, 1, att_tasks, &aj);
+    merge_job mj = { &aj, s->att_first };
+    if (nm) parallel_for(nm, 1, att_merge, &mj);
 }
 
 static void ensure(cpu_state *s, const model_cfg *c, int n) {
@@ -256,8 +446,7 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
                 kv_vec_store(pool, page, l->pool_layer, 1, h, rows[r].pos % KV_PAGE, s->v + (size_t)r * kvd + (size_t)h * hd);
             }
         }
-        att_job aj = { m, l, kv, pages, rows, s->q, s->att };
-        parallel_for(n * c->n_kv, 1, att_tasks, &aj);
+        attention(s, m, l, kv, pages, rows, n);
         if (l->wg.data)
             for (size_t i = 0; i < (size_t)n * qd; i++) s->att[i] *= 1.f / (1.f + expf(-s->g[i]));
         mm_input(s, s->att, n, qd);
@@ -269,7 +458,7 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
         mm_input(s, s->h, n, d);
         matmul(s, &l->w_gate, s->fg, c->ff);
         matmul(s, &l->w_up, s->fu, c->ff);
-        for (size_t i = 0; i < (size_t)n * c->ff; i++) { float g = s->fg[i]; s->fg[i] = g / (1.f + expf(-g)) * s->fu[i]; }
+        silu_mul(s->fg, s->fu, (size_t)n * c->ff);
         mm_input(s, s->fg, n, c->ff);
         matmul(s, &l->w_down, s->o, d);
         residual(s->x, s->o, n, d, l->post_ffn_norm, c->post_eps);
@@ -294,6 +483,7 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
 static void cpu_destroy(backend *b) {
     cpu_state *s = b->impl;
     free(s->act.q); free(s->act.s); free(s->act.sq);
+    free(s->att_tasks); free(s->att_first); free(s->part);
     free(s);
     free(b);
 }

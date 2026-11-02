@@ -272,7 +272,9 @@ void cq_quantize(cq_act *a, const float *x, int n, int cols) {
 }
 
 // ---------------------------------------------------------------- kernels
-// Per group of 4 weight rows and tile of up to 4 activation rows: each weight
+#define CQ_TILE 8 // activation rows per pass over a weight row group
+
+// Per group of 4 weight rows and tile of up to CQ_TILE activation rows: each weight
 // block is unpacked once and dotted against every activation row of the tile.
 
 #if defined(__ARM_FEATURE_DOTPROD)
@@ -292,9 +294,10 @@ static inline __attribute__((always_inline)) void mm_kind(const cq_mat *w, const
     const int8x16_t off = vdupq_n_s8(kind == CQ4S ? 8 : 32);
     for (int rg = r0 >> 2; rg * 4 < r1; rg++) {
         const size_t base = (size_t)rg * G * 4; // first block of this row group
-        for (int t0 = 0; t0 < a->n; t0 += 4) {
-            const int nt = a->n - t0 < 4 ? a->n - t0 : 4;
-            float32x4_t acc[4] = { vdupq_n_f32(0), vdupq_n_f32(0), vdupq_n_f32(0), vdupq_n_f32(0) }; // lanes: the 4 weight rows
+        for (int t0 = 0; t0 < a->n; t0 += CQ_TILE) {
+            const int nt = a->n - t0 < CQ_TILE ? a->n - t0 : CQ_TILE;
+            float32x4_t acc[CQ_TILE]; // lanes: the 4 weight rows
+            for (int i = 0; i < CQ_TILE; i++) acc[i] = vdupq_n_f32(0);
             float32x4_t d = vdupq_n_f32(0), dmin = d;
             for (int g = 0; g < G; g++) {
                 const size_t b = base + (size_t)g * 4;

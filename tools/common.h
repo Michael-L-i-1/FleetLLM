@@ -78,7 +78,6 @@ static runtime load_runtime(int argc, char **argv) {
     double kv_gb = arg_num(argc, argv, "--kv-gb", 0); // cap the KV pool (it otherwise takes the rest of the budget)
     if (kv_gb > 0 && (size_t)(kv_gb * 1e9) < kv) kv = (size_t)(kv_gb * 1e9);
     if (arg_flag(argc, argv, "--kv-int8")) { // 8-bit KV (per-token-per-head scales): ~2x the tokens per GB
-        if (strcmp(rt.be->name, "metal")) { fprintf(stderr, "--kv-int8 needs the metal backend\n"); exit(1); }
         rt.be->kv_elem = 1;
     }
     rt.e = engine_new(rt.m, rt.be, rt.tok, kv);

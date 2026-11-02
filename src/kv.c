@@ -162,7 +162,7 @@ bool kv_fill_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags) {
 
 // One token's K or V vector of one (layer, head): load as floats / store back
 // (8-bit: per-token-per-head f16 scale, requantized on store).
-static void vec_load(const kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, float *x) {
+void kv_vec_load(const kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, float *x) {
     size_t at = kv_tile(p, page, layer, kv, head) + (size_t)slot * p->head_dim;
     if (p->elem == 4) memcpy(x, (const float *)p->data + at, sizeof(float) * p->head_dim);
     else if (p->elem == 2)
@@ -176,7 +176,7 @@ static void vec_load(const kv_pool *p, uint32_t page, int layer, int kv, int hea
     }
 }
 
-static void vec_store(kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, const float *x) {
+void kv_vec_store(kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, const float *x) {
     size_t at = kv_tile(p, page, layer, kv, head) + (size_t)slot * p->head_dim;
     if (p->elem == 4) memcpy((float *)p->data + at, x, sizeof(float) * p->head_dim);
     else if (p->elem == 2)
@@ -216,13 +216,13 @@ static void pool_move(kv_pool *p, const uint32_t *sp, int src_pos, const uint32_
         for (int l = 0; l < p->n_layers; l++)
             for (int h = 0; h < p->kv_heads; h++) {
                 if (rope[l] && d != 0) { // K: rotate by the position change
-                    vec_load(p, ps, l, 0, h, a % KV_PAGE, x);
+                    kv_vec_load(p, ps, l, 0, h, a % KV_PAGE, x);
                     for (int i = 0; i < half; i++) {
                         int i0 = r->neox ? i : 2 * i, i1 = r->neox ? i + half : 2 * i + 1;
                         y[i0] = x[i0] * c[i] - x[i1] * s[i];
                         y[i1] = x[i0] * s[i] + x[i1] * c[i];
                     }
-                    vec_store(p, pd, l, 0, h, b % KV_PAGE, y);
+                    kv_vec_store(p, pd, l, 0, h, b % KV_PAGE, y);
                 } else vec_copy(p, ps, a % KV_PAGE, pd, b % KV_PAGE, l, 0, h);
                 vec_copy(p, ps, a % KV_PAGE, pd, b % KV_PAGE, l, 1, h); // V: unchanged
             }

@@ -57,6 +57,13 @@ static inline bool kv_exclusive(const kv_pool *p, uint32_t page) { return page !
 void kv_release_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags);
 // Allocate fresh pages for the flagged holes; false, allocating nothing, if a pool is short.
 bool kv_fill_flagged(kv_cache *kv, seq_pages *s, const uint8_t *flags);
+// One token's K (kv=0) or V (kv=1) vector of one (layer, head) at slot of page,
+// as head_dim floats, in any element type (8-bit: f16 scale = absmax / 127).
+void kv_vec_load(const kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, float *x);
+void kv_vec_store(kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, const float *x);
+static inline const uint16_t *kv_scales(const kv_pool *p, uint32_t page, int layer, int kv, int head) { // 8-bit: KV_PAGE f16 scales
+    return (const uint16_t *)(p->data + (size_t)page * p->page_stride + p->scale_off + (((size_t)layer * 2 + kv) * p->kv_heads + head) * KV_PAGE * 2);
+}
 static inline size_t kv_page_bytes(const kv_pool *p) { return p->page_stride * p->elem; }
 // Moving KV to another position: K carries RoPE, so it is rotated by the
 // position change; V is copied. rope[l]: pool layer l uses rotary embedding.

@@ -120,45 +120,72 @@ static void rope(float *x, const float *cs, const float *sn, int half, bool neox
     }
 }
 
-// ---- attention over paged KV, one task per (row, q head) ----
+// ---- attention over paged KV, one task per (row, kv head) ----
+// The q heads sharing a kv head are scored together, so each K / V vector is
+// read (and converted from f16 / int8) once per row.
 typedef struct {
     const model *m; const layer *l; const kv_cache *kv; const seq_pages *const *pages; const row_t *rows;
     const float *q; float *out;
 } att_job;
 
+// K or V vector of one token as floats (f32 storage: the stored vector itself)
+static inline const float *kv_vec(const kv_pool *p, uint32_t page, int layer, int kv, int head, int slot, float *buf) {
+    size_t at = kv_tile(p, page, layer, kv, head) + (size_t)slot * p->head_dim;
+    int hd = p->head_dim;
+    if (p->elem == 4) return (const float *)p->data + at;
+    if (p->elem == 2) {
+#if defined(__aarch64__)
+        const __fp16 *h = (const __fp16 *)p->data + at;
+        for (int i = 0; i < hd; i++) buf[i] = h[i];
+#else
+        for (int i = 0; i < hd; i++) buf[i] = fp16_to_f32(((const uint16_t *)p->data)[at + i]);
+#endif
+        return buf;
+    }
+    const int8_t *q = (const int8_t *)p->data + at;
+    float sc = fp16_to_f32(kv_scales(p, page, layer, kv, head)[slot]);
+    for (int i = 0; i < hd; i++) buf[i] = q[i] * sc;
+    return buf;
+}
+
 static void att_tasks(void *ctx, int t0, int t1) {
     att_job *j = ctx;
     const model_cfg *c = &j->m->c;
     const kv_pool *pool = j->l->swa ? &j->kv->swa : &j->kv->full;
-    const float *data = (const float *)pool->data;
-    int hd = c->hd, group = c->n_head / c->n_kv, qd = c->n_head * hd;
-    float *sc = NULL;
+    int hd = c->hd, group = c->n_head / c->n_kv, qd = c->n_head * hd, pl = j->l->pool_layer;
+    float *sc = NULL, buf[512];
     int sc_cap = 0;
     for (int t = t0; t < t1; t++) {
-        int ri = t / c->n_head, h = t % c->n_head, kvh = h / group;
+        int ri = t / c->n_kv, kvh = t % c->n_kv;
         const row_t *r = &j->rows[ri];
         const seq_pages *pg = j->pages[r->seq];
         int end = r->ctx_end;
         int start = j->l->swa ? (end + 1 > j->kv->window ? end + 1 - j->kv->window : 0) : 0;
         int ctx = end + 1 - start;
-        if (ctx > sc_cap) { sc_cap = ctx; sc = realloc(sc, sizeof(float) * sc_cap); }
-        const float *qh = j->q + (size_t)ri * qd + (size_t)h * hd;
-        float mx = -INFINITY;
+        if (ctx * group > sc_cap) { sc_cap = ctx * group; sc = realloc(sc, sizeof(float) * sc_cap); }
+        const float *q0 = j->q + (size_t)ri * qd + (size_t)kvh * group * hd;
+        float mx[64], sum[64];
+        for (int g = 0; g < group; g++) mx[g] = -INFINITY;
         for (int p = start; p <= end; p++) {
             uint32_t page = j->l->swa ? pg->swa[p / KV_PAGE] : pg->full[p / KV_PAGE];
-            const float *kr = data + kv_tile(pool, page, j->l->pool_layer, 0, kvh) + (size_t)(p % KV_PAGE) * hd;
-            float s = dot(qh, kr, hd) * c->attn_scale;
-            sc[p - start] = s;
-            if (s > mx) mx = s;
+            const float *kr = kv_vec(pool, page, pl, 0, kvh, p % KV_PAGE, buf);
+            for (int g = 0; g < group; g++) {
+                float s = dot(q0 + (size_t)g * hd, kr, hd) * c->attn_scale;
+                sc[(size_t)g * ctx + p - start] = s;
+                if (s > mx[g]) mx[g] = s;
+            }
         }
-        float sum = 0;
-        for (int i = 0; i < ctx; i++) { sc[i] = expf(sc[i] - mx); sum += sc[i]; }
-        float *o = j->out + (size_t)ri * qd + (size_t)h * hd;
-        memset(o, 0, sizeof(float) * hd);
+        for (int g = 0; g < group; g++) {
+            float *sg = sc + (size_t)g * ctx, z = 0;
+            for (int i = 0; i < ctx; i++) { sg[i] = expf(sg[i] - mx[g]); z += sg[i]; }
+            sum[g] = 1.f / z;
+        }
+        float *o0 = j->out + (size_t)ri * qd + (size_t)kvh * group * hd;
+        memset(o0, 0, sizeof(float) * group * hd);
         for (int p = start; p <= end; p++) {
             uint32_t page = j->l->swa ? pg->swa[p / KV_PAGE] : pg->full[p / KV_PAGE];
-            const float *vr = data + kv_tile(pool, page, j->l->pool_layer, 1, kvh) + (size_t)(p % KV_PAGE) * hd;
-            axpy(o, sc[p - start] / sum, vr, hd);
+            const float *vr = kv_vec(pool, page, pl, 1, kvh, p % KV_PAGE, buf);
+            for (int g = 0; g < group; g++) axpy(o0 + (size_t)g * hd, sc[(size_t)g * ctx + p - start] * sum[g], vr, hd);
         }
     }
     free(sc);
@@ -185,6 +212,7 @@ static void residual(float *x, float *o, int n, int d, const float *post, float 
 static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages *const *pages, const row_t *rows, int n, float *logits) {
     cpu_state *s = b->impl;
     const model_cfg *c = &m->c;
+    if (c->hd > 512 || c->n_head / c->n_kv > 64) { fprintf(stderr, "cpu: head_dim %d / group %d not supported\n", c->hd, c->n_head / c->n_kv); return 1; }
     ensure(s, c, n);
     int d = c->d, hd = c->hd, half = hd / 2, qd = c->n_head * hd, kvd = c->n_kv * hd;
     int32_t *toks = malloc(sizeof(int32_t) * n);
@@ -220,18 +248,16 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
         }
         // write K/V for all rows first so prefill rows see each other
         kv_pool *pool = l->swa ? &kv->swa : &kv->full;
-        float *data = (float *)pool->data;
         for (int r = 0; r < n; r++) {
             const seq_pages *pg = pages[rows[r].seq];
             uint32_t page = l->swa ? pg->swa[rows[r].pos / KV_PAGE] : pg->full[rows[r].pos / KV_PAGE];
             for (int h = 0; h < c->n_kv; h++) {
-                size_t off = (size_t)(rows[r].pos % KV_PAGE) * hd;
-                memcpy(data + kv_tile(pool, page, l->pool_layer, 0, h) + off, s->k + (size_t)r * kvd + (size_t)h * hd, sizeof(float) * hd);
-                memcpy(data + kv_tile(pool, page, l->pool_layer, 1, h) + off, s->v + (size_t)r * kvd + (size_t)h * hd, sizeof(float) * hd);
+                kv_vec_store(pool, page, l->pool_layer, 0, h, rows[r].pos % KV_PAGE, s->k + (size_t)r * kvd + (size_t)h * hd);
+                kv_vec_store(pool, page, l->pool_layer, 1, h, rows[r].pos % KV_PAGE, s->v + (size_t)r * kvd + (size_t)h * hd);
             }
         }
         att_job aj = { m, l, kv, pages, rows, s->q, s->att };
-        parallel_for(n * c->n_head, 1, att_tasks, &aj);
+        parallel_for(n * c->n_kv, 1, att_tasks, &aj);
         if (l->wg.data)
             for (size_t i = 0; i < (size_t)n * qd; i++) s->att[i] *= 1.f / (1.f + expf(-s->g[i]));
         mm_input(s, s->att, n, qd);
@@ -309,7 +335,7 @@ static void cpu_repack(model *m) {
 backend *cpu_backend_new(model *m) {
     backend *b = calloc(1, sizeof *b);
     b->name = "cpu";
-    b->kv_elem = 4;
+    b->kv_elem = m ? 2 : 4; // f16 KV (8-bit with --kv-int8); the reference path keeps f32
     b->alloc_kv = cpu_alloc;
     b->forward = cpu_forward;
     b->destroy = cpu_destroy;

@@ -1,0 +1,27 @@
+  0%|          | 0/4 [00:00<?, ?it/s][gpqa] 0a00b583063f: score=1.0
+[gpqa] 305e3fdfc219: score=1.0
+[gpqa] 910f1117b0d8: score=1.0
+[gpqa] 1c7749b4f511: score=1.0
+100%|██████████| 4/4 [00:00<00:00, 84.95it/s]
+{
+  "label": "fixture",
+  "model": "fixture",
+  "base_url": "http://127.0.0.1:50926/v1",
+  "harness": "openai/simple-evals gpqa_eval (diamond)",
+  "questions": 4,
+  "workers": 4,
+  "temperature": 0.0,
+  "max_tokens": 8,
+  "reasoning_effort": "low",
+  "stream": true,
+  "score": 1.0,
+  "wall_secs": 0.1,
+  "questions_per_min": 4117.92,
+  "completion_tokens": 32,
+  "prompt_tokens": 80,
+  "gen_tok_per_sec": 549.1,
+  "mean_completion_tokens": 8.0,
+  "mean_request_secs": 0.04,
+  "truncated": 4
+}
+PASS: four concurrent streams, separate reasoning/final content, official final-only grading, usage, truncation and question IDs; no dataset/model requests

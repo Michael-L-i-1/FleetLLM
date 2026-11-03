@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            .message {
+                padding: 8px 16px;
+                margin-bottom: 8px;
+                border-radius: 4px;
+            }
+            .message.user {
+                background-color: #B2DFDB;
+                color: #00695C;
+            }
+            .message.assistant {
+                background-color: #B39DDB;
+                color: #4527A0;
+            }
+            .message.system {
+                background-color: #EEEEEE;
+                color: #212121;
+            }
+            .role {
+                font-weight: bold;
+                margin-bottom: 4px;
+            }
+            .variant {
+                color: #795548;
+            }
+            table, th, td {
+                border: 1px solid black;
+            }
+            pre {
+                white-space: pre-wrap;
+            }
+        </style>
+    </head>
+    <body>
+    
+    <h1>Metrics</h1>
+    <table>
+    <tr>
+        <th>Metric</th>
+        <th>Value</th>
+    </tr>
+    <tr>
+        <td><b>Score</b></td>
+        <td>0.5</td>
+    </tr>
+    
+    <tr>
+        <td>chars</td>
+        <td>235.75</td>
+    </tr>
+    
+    <tr>
+        <td>chars:std</td>
+        <td>253.16632378734735</td>
+    </tr>
+    
+    <tr>
+        <td>score:std</td>
+        <td>0.5</td>
+    </tr>
+    
+    </table>
+    
+    <h1>Examples</h1>
+    
+    
+<h3>Prompt conversation</h3>
+
+
+<div class="message user">
+    <div class="role">
+    user
+    
+    </div>
+    <div class="content">
+    <pre>Answer the following multiple choice question. The last line of your response should be of the following format: &#39;Answer: $LETTER&#39; (without quotes) where LETTER is one of ABCD. Think step by step before answering.
+
+You have prepared an unknown compound. To identify the product, you have used the following characterisation techniques: FTIR and 1H NMR. The FTIR spectrum shows a very broad absorption peak at 3000 wavenumbers. A strong absorption peak is also observed at 1700 wavenumbers. Several peaks were observed in the 1H NMR spectrum, none of which are correspond to vinyl-hydrogens. One of the signals in the 1H NMR is a doublet of triplets of quartets whilst a different signal is a doublet of triplets of triplets. Identify the compound as either, CH3CH2C(H)(CH3)C(H)(CH3)COOH, CH3CH2C(H)(C2H5)C(H)(C2H5)COOH, CH3C(H)(CH3)C(H)(CH3)CH2COOH, or CH3C(H)(C2H5)C(H)(C2H5)CH2COOH
+
+A) CH3C(H)(CH3)C(H)(CH3)CH2COOH
+B) CH3CH2C(H)(C2H5)C(H)(C2H5)COOH
+C) CH3CH2C(H)(CH3)C(H)(CH3)COOH
+D) CH3C(H)(C2H5)C(H)(C2H5)CH2COOH</pre>
+    </div>
+</div>
+
+<h3>Sampled message</h3>
+
+<div class="message assistant">
+    <div class="role">
+    assistant
+    
+    </div>
+    <div class="content">
+    <pre></pre>
+    </div>
+</div>
+<h3>Results</h3>
+<p>Correct Answer: D</p>
+<p>Extracted Answer: None</p>
+<p>Score: 0.0</p>
+    <hr>
+    
+    
+<h3>Prompt conversation</h3>
+
+
+<div class="message user">
+    <div class="role">
+    user
+    
+    </div>
+    <div class="content">
+    <pre>Answer the following multiple choice question. The last line of your response should be of the following format: &#39;Answer: $LETTER&#39; (without quotes) where LETTER is one of ABCD. Think step by step before answering.
+
+Astronomers are observing a planet with a radius of 1 Earth radius in a circular orbit, with a transit impact parameter of 0.2, around a star that has a radius 1.5 times that of the Sun. This planet has an orbital period of 3 days. What is the maximum orbital period of a second planet, with a radius of 2.5 times that of Earth, in the same system that will exhibit both transit and occultation events? Assume that the second planet also has a circular orbit and shares the same orbital plane as the previously mentioned transiting planet.
+
+A) ~ 37.5
+B) ~ 7.5
+C) ~ 12.5
+D) ~ 33.5</pre>
+    </div>
+</div>
+
+<h3>Sampled message</h3>
+
+<div class="message assistant">
+    <div class="role">
+    assistant
+    
+    </div>
+    <div class="content">
+    <pre></pre>
+    </div>
+</div>
+<h3>Results</h3>
+<p>Correct Answer: D</p>
+<p>Extracted Answer: None</p>
+<p>Score: 0.0</p>
+    <hr>
+    
+    
+<h3>Prompt conversation</h3>
+
+
+<div class="message user">
+    <div class="role">
+    user
+    
+    </div>
+    <div class="content">
+    <pre>Answer the following multiple choice question. The last line of your response should be of the following format: &#39;Answer: $LETTER&#39; (without quotes) where LETTER is one of ABCD. Think step by step before answering.
+
+For a magnetic field \vec{B}, parallel to Oz, with small values of m (orbital magnetic quantum number) and B=1T, compare the order of magnitude of the paramagnetic coupling term with transition energy \Delta E of Hydrogen atom with wavelength \lambda=0.4861\mu m.
+
+PS: for the maths use an online LaTeX editor.
+
+A) \left\langle H\right\rangle \gg\Delta E
+B) \left\langle H\right\rangle &gt;\Delta E
+C) \left\langle H\right\rangle \ll\Delta E
+D) \left\langle H\right\rangle =\Delta E</pre>
+    </div>
+</div>
+
+<h3>Sampled message</h3>
+
+<div class="message assistant">
+    <div class="role">
+    assistant
+    
+    </div>
+    <div class="content">
+    <pre>The transition energy for $\lambda =0.4861\,\mu\text{m}$ is
+
+$$
+\Delta E = \frac{hc}{\lambda}\approx\frac{6.626\times10^{-34}\times3.00\times10^{8}}{0.4861\times10^{-6}}\approx4.1\times10^{-19}\,\text{J}\approx2.6\;\text{eV}.
+$$
+
+The Zeeman/paramagnetic coupling term is of order $\mu_{B}B\,|m|$ with $\mu_{B}=9.274\times10^{-24}\,\text{J/T}$.
+
+For $B=1\,$T and $|m|\sim1$,
+
+$$
+\langle H\rangle\sim \mu_{B}B\approx9.3\times10^{-24}\,\text{J}\approx5.7\times10^{-5}\,\text{eV}\ll\Delta E .
+$$
+
+Hence the magnetic coupling is many orders of magnitude smaller than the atomic transition energy.
+
+Answer: C</pre>
+    </div>
+</div>
+<h3>Results</h3>
+<p>Correct Answer: C</p>
+<p>Extracted Answer: C</p>
+<p>Score: 1.0</p>
+    <hr>
+    
+    
+<h3>Prompt conversation</h3>
+
+
+<div class="message user">
+    <div class="role">
+    user
+    
+    </div>
+    <div class="content">
+    <pre>Answer the following multiple choice question. The last line of your response should be of the following format: &#39;Answer: $LETTER&#39; (without quotes) where LETTER is one of ABCD. Think step by step before answering.
+
+All the following statements about the molecular biology of Severe Acute Respiratory Syndrome Coronavirus 2 (SARS‑CoV‑2) are correct except
+
+
+
+
+A) The rate of frameshifting in vitro is linearly correlated with the number of conformations that a pseudoknot can adopt. Both SARS-CoV and SARS-CoV-2 Programmed -1 Frameshift Signals show two conformations when under tension, similar to other pseudoknots that induce comparable frameshifting rates. 
+B) SARS-CoV-2 ORF3a has the ability to trigger caspase-8 activation/cleavage, without affecting the expression levels of Bcl-2. Caspase-8 activation is recognized as a characteristic feature of the extrinsic apoptotic pathway via death receptors, while Bcl-2 plays a crucial role in initiating the mitochondrial pathway. This suggests that the mechanism through which SARS-CoV-2 ORF3a induces apoptosis is via the extrinsic apoptotic pathway.
+
+C) SARS-CoV-2 nsp10/nsp14-ExoN operates as heterodimers in a mismatch repair mechanism. The N-terminal ExoN domain of nsp14 could bind to nsp10 making an active exonuclease complex that prevents the breakdown of dsRNA. 
+D) Programmed ribosomal frameshifting creates two polyproteins near to 5` end of the genome by moving back by 1 nucleotide with the help of slippery nucleotides, and pseudoknot. The SARS-CoV-2 programmed ribosomal frameshifting mostly has the same conformation as the SARS-CoV programmed ribosomal frameshifting.</pre>
+    </div>
+</div>
+
+<h3>Sampled message</h3>
+
+<div class="message assistant">
+    <div class="role">
+    assistant
+    
+    </div>
+    <div class="content">
+    <pre>The statements A, B and D describe established features of SARS-CoV-2 frameshifting and ORF3a-mediated apoptosis. The nsp10/nsp14 ExoN complex is a proofreading exonuclease that degrades RNA rather than preventing dsRNA breakdown, and it functions in RNA repair, not as a mismatch-repair heterodimer that prevents dsRNA breakdown.
+
+Answer: C</pre>
+    </div>
+</div>
+<h3>Results</h3>
+<p>Correct Answer: C</p>
+<p>Extracted Answer: C</p>
+<p>Score: 1.0</p>
+    <hr>
+    
+    </body>
+</html>

@@ -1,0 +1,26 @@
+  0%|          | 0/4 [00:00<?, ?it/s][gpqa] 0c38e0dd0dd8: score=1.0
+[gpqa] c9ed693d3f7d: score=1.0
+[gpqa] e23b62b19c3a: score=0.0
+ 25%|██▌       | 1/4 [33:52<1:41:38, 2032.71s/it][gpqa] 35cf9161cc3c: score=0.0
+ 50%|█████     | 2/4 [37:23<32:01, 960.89s/it]   100%|██████████| 4/4 [37:23<00:00, 560.83s/it]
+{
+  "label": "pilot",
+  "model": "pi-gpqa-glimmer",
+  "base_url": "http://127.0.0.1:18096/v1",
+  "harness": "openai/simple-evals gpqa_eval (diamond)",
+  "questions": 4,
+  "workers": 4,
+  "temperature": 0.0,
+  "max_tokens": 1024,
+  "reasoning_effort": "low",
+  "stream": true,
+  "score": 0.5,
+  "wall_secs": 2243.3,
+  "questions_per_min": 0.11,
+  "completion_tokens": 3124,
+  "prompt_tokens": 1295,
+  "gen_tok_per_sec": 1.4,
+  "mean_completion_tokens": 781.0,
+  "mean_request_secs": 1829.76,
+  "truncated": 2
+}

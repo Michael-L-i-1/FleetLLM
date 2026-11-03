@@ -1,0 +1,68 @@
+{
+  "questions": [
+    {
+      "question": 1,
+      "id": "e23b62b19c3a",
+      "score": 0.0,
+      "prompt_tokens": 385,
+      "generated_tokens": 1024,
+      "finish_reason": "length",
+      "minutes": 33.878467082977295,
+      "extracted_answer": null,
+      "answer_characters": 0,
+      "reasoning_characters": 3045,
+      "first_output_seconds": 218.0186219215393,
+      "first_answer_seconds": null
+    },
+    {
+      "question": 2,
+      "id": "35cf9161cc3c",
+      "score": 0.0,
+      "prompt_tokens": 254,
+      "generated_tokens": 1024,
+      "finish_reason": "length",
+      "minutes": 37.388855735460915,
+      "extracted_answer": null,
+      "answer_characters": 0,
+      "reasoning_characters": 4027,
+      "first_output_seconds": 141.3531048297882,
+      "first_answer_seconds": null
+    },
+    {
+      "question": 3,
+      "id": "c9ed693d3f7d",
+      "score": 1.0,
+      "prompt_tokens": 226,
+      "generated_tokens": 465,
+      "finish_reason": "stop",
+      "minutes": 25.934468265374502,
+      "extracted_answer": "C",
+      "answer_characters": 602,
+      "reasoning_characters": 730,
+      "first_output_seconds": 248.7152659893036,
+      "first_answer_seconds": 1066.3422367572784
+    },
+    {
+      "question": 4,
+      "id": "0c38e0dd0dd8",
+      "score": 1.0,
+      "prompt_tokens": 430,
+      "generated_tokens": 611,
+      "finish_reason": "stop",
+      "minutes": 24.782007416089375,
+      "extracted_answer": "C",
+      "answer_characters": 341,
+      "reasoning_characters": 2136,
+      "first_output_seconds": 359.2537589073181,
+      "first_answer_seconds": 1319.9266338348389
+    }
+  ],
+  "valid_final_answers": 2,
+  "truncated_without_final": 2,
+  "accuracy": 0.5,
+  "elapsed_minutes": 37.388333333333335,
+  "generated_tokens": 3124,
+  "end_to_end_generated_tok_s": 1.3925912717870992,
+  "full_198_linear_hours": 30.845375,
+  "caveat": "Four examples only; two cap-limited outputs. Linear runtime extrapolation is not a reliable full-run forecast and does not apply if the token cap changes."
+}

@@ -1,0 +1,26 @@
+{
+  "label": "pilot",
+  "model": "pi-gpqa-glimmer",
+  "base_url": "http://127.0.0.1:18096/v1",
+  "harness": "openai/simple-evals gpqa_eval (diamond)",
+  "questions": 4,
+  "workers": 4,
+  "temperature": 0.0,
+  "max_tokens": 1024,
+  "reasoning_effort": "low",
+  "stream": true,
+  "score": 0.5,
+  "wall_secs": 2243.3,
+  "questions_per_min": 0.11,
+  "completion_tokens": 3124,
+  "prompt_tokens": 1295,
+  "gen_tok_per_sec": 1.4,
+  "mean_completion_tokens": 781.0,
+  "mean_request_secs": 1829.76,
+  "truncated": 2,
+  "metrics": {
+    "chars": 235.75,
+    "chars:std": 253.16632378734735,
+    "score:std": 0.5
+  }
+}

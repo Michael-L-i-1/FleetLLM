@@ -1,0 +1,15 @@
+{
+  "files": {
+    "evals/gpqa.py": "7bcc6f8dfed40252d682db11ef7724035c10855262dc3afd8376ab04d5f5bc62",
+    "scripts/gpqa_streamcheck.py": "f2a37e13e794eff842bc715e343b80d15dea2263aeb01e70e908210876dc7f01",
+    "src/server.c": "17b649ea1a4d3e83175db230d15a296f02f17e7c635662907cebf4e5f2809e76",
+    "src/engine.c": "9d9f40d217096a0327444a03a5ef54598208d607169d159ec66f03e2a931111d",
+    "scripts/pimon.py": "523addaefdcb42f2fbf10c2a9b0d8082753adf8b50d366b1313bfd3163cbca5a"
+  },
+  "harness_files": {
+    "gpqa_eval.py": "f746e411bdbd3ec8cd0738e30fc0989ac0d6b5a1b988a454633553b419b724d3",
+    "sampler/chat_completion_sampler.py": "d9d7568ad5b04379342b7f269a6028c6945c518bc8baa56969aad035afc8d435",
+    "common.py": "84616c52821a30ae3f55f153a763153fd833cb41b547b09f547b46e6337f8f35"
+  },
+  "note": "Pinned evaluator unmodified; wrapper adds streaming observability and finite client timeout. pimon hash is recorded to confirm it was not edited."
+}

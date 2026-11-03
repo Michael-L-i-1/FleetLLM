@@ -18,8 +18,15 @@ def main():
     p.add_argument("--model", type=Path, required=True)
     p.add_argument("--record", type=Path, required=True)
     p.add_argument("--task", default="rainbow")
+    p.add_argument(
+        "--max-tokens",
+        type=int,
+        help="Quality probe with this output cap; omit for matched output-count timing",
+    )
     p.add_argument("--output", type=Path, required=True)
     a = p.parse_args()
+    if a.max_tokens is not None and a.max_tokens < 1:
+        p.error("--max-tokens must be positive")
     row = next(
         r
         for r in map(json.loads, a.record.read_text().splitlines())
@@ -69,7 +76,7 @@ def main():
                     time.sleep(0.2)
             body = dict(
                 prompt=row["input_tokens"],
-                n_predict=row["generated_tokens"],
+                n_predict=a.max_tokens or row["generated_tokens"],
                 temperature=0,
                 seed=42,
                 stream=False,
@@ -86,7 +93,8 @@ def main():
                 result = json.load(response)
             elapsed = time.monotonic() - start
             assert result["timings"]["prompt_n"] == len(row["input_tokens"])
-            assert result["timings"]["predicted_n"] == row["generated_tokens"]
+            if a.max_tokens is None:
+                assert result["timings"]["predicted_n"] == row["generated_tokens"]
             record = dict(
                 command=cmd,
                 request=body,
@@ -94,6 +102,7 @@ def main():
                 response=result,
                 fleet=row,
                 same_text=result["content"] == row["text"],
+                matched_output_count=a.max_tokens is None,
             )
             (a.output / "result.json").write_text(json.dumps(record, indent=2) + "\n")
             print(

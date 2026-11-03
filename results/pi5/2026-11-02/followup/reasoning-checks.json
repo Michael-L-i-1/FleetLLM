@@ -10,5 +10,17 @@
       "collision": 0.958552,
       "buffer": 0.95897
     }
+  },
+  "results/pi5/2026-11-02/followup/qwen-reasoning/exact.jsonl": {
+    "checks": {
+      "bayes": false,
+      "collision": false,
+      "buffer": false
+    },
+    "decode_rates": {
+      "bayes": 2.242447,
+      "collision": 2.241653,
+      "buffer": 2.234758
+    }
   }
 }

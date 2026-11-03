@@ -1,0 +1,33 @@
+{
+  "active_inference_processes": [],
+  "removed_experiment_directories": [
+    "/home/mli5/fleetllm-experiments/cpu-tuning",
+    "/home/mli5/fleetllm-experiments/draft-tuning",
+    "/home/mli5/fleetllm-experiments/tmac",
+    "/home/mli5/fleetllm-experiments/reference"
+  ],
+  "temperature": "temp=45.5'C",
+  "throttle": "throttled=0x0",
+  "governor": "ondemand",
+  "meminfo": {
+    "MemTotal": "16607536 kB",
+    "MemAvailable": "16240816 kB",
+    "SwapTotal": "2097136 kB",
+    "SwapFree": "2061840 kB"
+  },
+  "source_sha256": {
+    "src/cpu.c": "fee75d0b24a2943e5178fcb8fe08cf4d5d23b04cf123078587e12c9cf6336eda",
+    "src/cpuq.c": "e59116315e29a38f00e5434684da6622006fd315e5b02b39ac9b7ec6d921df5d",
+    "src/cpuq.h": "f124323615b37d130fe47c2d9285f1e898ee453b41f00e35383a76e9e484fd6c",
+    "src/engine.c": "9d9f40d217096a0327444a03a5ef54598208d607169d159ec66f03e2a931111d",
+    "src/model.c": "d4506df0ff85df40895b20a171ba987b942ddb0f1a7832e4b3b2b9c48fc6fd01",
+    "src/server.c": "17b649ea1a4d3e83175db230d15a296f02f17e7c635662907cebf4e5f2809e76",
+    "tools/common.h": "a0409aa4f237bb68661827e83066b84a926355b5582855f7b911bd2be32194ac",
+    "tools/eval.c": "c1b15e0f097d5d8ff680b714530888b1e6910a01ec23f175003153708fe5bee9",
+    "scripts/pi-demo.sh": "7361c592dc45da92d514790acc2fd59f1d701f2d7480d9542ff483ea14d25cf5",
+    "scripts/pi-demo-server.sh": "c826bf7c2f27db90dbc0a8e85136763631e3f4bdaddbaa1042035573af9200b8",
+    "scripts/pi-glimmer.sh": "7b8fc88d6ff91d256ff71aa731f1419518fef3f10dcc85d9bfae781bc16b5dd0",
+    "scripts/pi-qwen8b.sh": "d5df367b99316c9b7634e12e017acec79f996ec40837b02eaaba275e47c7e1d7"
+  },
+  "production_source_matches_local": true
+}

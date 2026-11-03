@@ -50,6 +50,13 @@ the anchor. Batching and speculation share this budget.
   tokens (+0.87%). Keep this option explicit; the sample is too small to promise
   a universal quality bound.
 
+The later [follow-up checks](../results/pi5/2026-11-02/followup/README.md)
+exposed incorrect science answers with both default-precision checkpoints under
+the direct-answer template. Qwen also missed the requested JSON structure on
+those longer prompts. The six earlier smoke tasks are insufficient to endorse
+either configuration for GPQA; evaluate the intended reasoning protocol and
+answer accuracy separately from decode throughput.
+
 The layer/FFN pruning trials did not justify a demo preset. In particular,
 skipping eight layers introduced a false explanation; skipping nearly half
 produced unusable text. The FFN block-pruning prototype changed responses with

@@ -88,8 +88,9 @@ The first serial build preceded the lock requirement, while root kept other
 benchmarks paused; the measurements held the lock. The decoder-only follow-up
 held the lock for both its tiny driver build and measurements. All model runs
 were serialized by the root agent. No production Pi checkout or demo launcher
-was changed. The experiment lives under `~/fleetllm-experiments/cpu-tuning` on
-the Pi; it installs no system service or long-running process.
+was changed. The experiment ran under `~/fleetllm-experiments/cpu-tuning` on
+the Pi; its temporary directory was removed after archiving these results. It
+installed no system service or long-running process.
 
 The baseline was four CPU threads, group-32 activation scaling, row grain 64,
 and the existing native NEON/dot-product K-quant kernels at `dfd72cb`. Input

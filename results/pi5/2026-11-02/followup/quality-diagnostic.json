@@ -1,0 +1,9 @@
+{
+  "same_visible_text": true,
+  "input_token_ids_identical": true,
+  "quality_probe_max_tokens": 128,
+  "actual_answer": "4.5",
+  "expected_answer": "12",
+  "format_followed": false,
+  "note": "Both engines produced the same visible incorrect reply under this direct-answer protocol. Raw same_text is false due to Fleet end-of-turn marker; no general quality or engine-equivalence claim."
+}

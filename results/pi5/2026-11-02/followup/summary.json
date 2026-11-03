@@ -1,0 +1,34 @@
+{
+  "baseline_commit": "dfd72cb",
+  "production_source_changed": false,
+  "demo_launchers_changed": false,
+  "tmac": {
+    "baseline_tok_s": 0.959526,
+    "candidate_tok_s": 0.801545,
+    "relative_throughput": 0.8353551649460254,
+    "selected_target_tokens_identical": true,
+    "decision": "reject prototype, branch/worktree removed",
+    "report": "../tmac-prototype/README.md"
+  },
+  "memory_tuning": {
+    "decision": "no broad repeatable gain; production unchanged, branch/worktree removed",
+    "report": "../stream-tuning/README.md"
+  },
+  "draft_shortlist": {
+    "baseline_mean_tok_s": 1.109986,
+    "shortlist_32768_tok_s": 1.030248,
+    "shortlist_8192_tok_s": 1.0433,
+    "selected_target_tokens_identical": true,
+    "decision": "reject, branch/worktree removed",
+    "report": "../draft-vocab/README.md"
+  },
+  "quality": {
+    "protocol": "direct-answer, greedy, three self-written science questions; not GPQA",
+    "glimmer_json_answer_checks_passed": 1,
+    "qwen_json_answer_checks_passed": 0,
+    "qwen_manual_numeric_answers_correct": 1,
+    "question_count": 3,
+    "qwen_collision_visible_reply_matches_llama_cpp": true,
+    "caveat": "No reasoning-enabled evaluation or general capability ranking."
+  }
+}

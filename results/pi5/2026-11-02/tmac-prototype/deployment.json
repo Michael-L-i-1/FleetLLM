@@ -1,0 +1,19 @@
+{
+  "files": {
+    "src/cpu.c": "67e2107b2379f20a75e88850f09ef07baa88613a8b0f318b58d3bf3f5f8576c8",
+    "src/cpuq.c": "edfd25229ef41f9a7be3297c489fb1dbdc88059ef2dc9d381a8748bf73b28b63",
+    "src/cpuq.h": "89b68b40b9447f145dff175c47dc0c5e2da57bc16aa4529fd47f7dc182bff719",
+    "src/q2lut.c": "30bca9f6bd49df23e29b80a1333ec8ef9008cb9f4d83c326e070189e48d2067b",
+    "src/q2lut.h": "9c1a673a6e3f39429169484b35d8d08cd0145756dd8106c89f396c61e925f733",
+    "src/q2lut_impl.h": "27204d0891b22aa8cc96912d00a72eedf6b5edc38bb9f60f0fcf804b182efb2f",
+    "bench/experimental/q2_lut.c": "c0dd00e97c15d7f06903515a5a90bf1f7ef632d8942105afc6754d76edad319b",
+    "bench/experimental/q2_lut_check.c": "806cfaee3508030426ded968f659d4790e121a99b4dbce0f7f3cb342514632b3",
+    "bench/experimental/q2_lut_model.py": "40a226f95fd7870e5d36567f564496d26d092199c4c1e2e69b446c0ab9752a2b"
+  },
+  "baseline_eval_sha256": "4204a893121c67be33fe92f62708b5e141e410838834e0700011f9bbf48f1ae8",
+  "prototype_eval_sha256": "56222dbd51a8b7087ea82ea0f65261a876d771568eca387a505d787fe1b47df4",
+  "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+  "local_pi_source_match": true,
+  "prototype_source_commit": "ad9973f",
+  "baseline_source_commit": "dfd72cb"
+}

@@ -1,0 +1,811 @@
+From ad9973f2abfc355dd25c1f3fa01a1688675d4b19 Mon Sep 17 00:00:00 2001
+From: Michael Li <michaelli2005li@gmail.com>
+Date: Mon, 2 Nov 2026 20:55:14 -0800
+Subject: [PATCH] experiment: prototype Q2_K activation lookup kernels in four-
+ and sixteen-row layouts
+
+---
+ bench/experimental/q2_lut.c        |  95 +++++++++
+ bench/experimental/q2_lut_check.c  |  58 ++++++
+ bench/experimental/q2_lut_model.py | 125 ++++++++++++
+ src/cpu.c                          |   7 +-
+ src/cpuq.c                         |   3 +
+ src/cpuq.h                         |   2 +
+ src/q2lut.c                        |  56 +++++
+ src/q2lut.h                        |   8 +
+ src/q2lut_impl.h                   | 315 +++++++++++++++++++++++++++++
+ 9 files changed, 668 insertions(+), 1 deletion(-)
+ create mode 100644 bench/experimental/q2_lut.c
+ create mode 100644 bench/experimental/q2_lut_check.c
+ create mode 100644 bench/experimental/q2_lut_model.py
+ create mode 100644 src/q2lut.c
+ create mode 100644 src/q2lut.h
+ create mode 100644 src/q2lut_impl.h
+
+diff --git a/bench/experimental/q2_lut.c b/bench/experimental/q2_lut.c
+new file mode 100644
+index 0000000..d883930
+--- /dev/null
++++ b/bench/experimental/q2_lut.c
+@@ -0,0 +1,95 @@
++// Real-Q2_K microbenchmark of experimental activation subset-sum LUT kernels.
++#include "q2lut_impl.h"
++int main(int argc, char **argv) {
++  if (argc < 2)
++    return 1;
++  tp_init(4);
++  gguf_ctx *g = gguf_open(argv[1]);
++  if (!g)
++    return 1;
++  if (argc > 2 && !strcmp(argv[2], "--list")) {
++    for (size_t i = 0; i < g->n_tensors; i++) {
++      const gguf_tensor *t = &g->tensors[i];
++      if (t->type == GGML_Q2_K && t->n_dims == 2)
++        printf("%s,%llu,%llu,%zu\n", t->name, (unsigned long long)t->dims[1],
++               (unsigned long long)t->dims[0], t->nbytes);
++    }
++    return 0;
++  }
++  const gguf_tensor *tensor = NULL;
++  for (size_t i = 0; i < g->n_tensors; i++) {
++    const gguf_tensor *t = &g->tensors[i];
++    if (t->type == GGML_Q2_K && t->n_dims == 2 &&
++        (argc > 3 ? strstr(t->name, argv[3]) != NULL
++                  : strstr(t->name, "token_embd") == NULL &&
++                        strstr(t->name, "output") == NULL) &&
++        (!tensor || t->nbytes > tensor->nbytes))
++      tensor = t;
++  }
++  if (!tensor)
++    return 2;
++  qmat src = {.type = tensor->type,
++              .rows = tensor->dims[1],
++              .cols = tensor->dims[0],
++              .row_bytes = tensor->dims[0] / 256 * 84,
++              .data = tensor->data};
++  cq_mat *w = cq_from_qmat(&src);
++  lut_mat m = repack(w), m16 = repack16(w);
++  float *x = malloc((size_t)4 * w->cols * sizeof(float)),
++        *out = malloc((size_t)4 * w->rows * sizeof(float)),
++        *ref = malloc((size_t)4 * w->rows * sizeof(float));
++  for (int i = 0; i < 4 * w->cols; i++)
++    x[i] = sinf(i * .13f) + cosf(i * .019f) * .2f;
++  puts("tensor,rows,cols,batch,mode,round,milliseconds,max_error,relative_"
++       "error,bitwise_equal,lut_prep_ms");
++  int reps = argc > 2 ? atoi(argv[2]) : 10;
++  if (reps < 1)
++    return 2;
++  for (int n = 1; n <= 4; n *= 2) {
++    cq_act a = {0};
++    cq_quantize(&a, x, n, w->cols);
++    double start = now();
++    lut_act lut = tables(&a);
++    double prep = (now() - start) * 1000;
++    job j = {w, &a, &m, &lut, out, 0};
++    parallel_for(w->rows, 64, run, &j);
++    memcpy(ref, out, (size_t)n * w->rows * sizeof(float));
++    for (int round = 0; round < 3; round++)
++      for (int k = 0; k < 5; k++) {
++        int modes[5] = {0, 16, 8, 116, 108};
++        j.mode = modes[(round + k) % 5];
++        j.m = j.mode > 100 ? &m16 : &m;
++        parallel_for(w->rows, 64, run, &j);
++        start = now();
++        for (int rep = 0; rep < reps; rep++)
++          parallel_for(w->rows, 64, run, &j);
++        double ms = (now() - start) * 1000 / reps;
++        double err = 0, mx = 0;
++        int same = 1;
++        for (size_t i = 0; i < (size_t)n * w->rows; i++) {
++          err = fmax(err, fabs(out[i] - ref[i]));
++          mx = fmax(mx, fabs(ref[i]));
++          same &= memcmp(out + i, ref + i, 4) == 0;
++        }
++        printf("%s,%d,%d,%d,%d,%d,%.6f,%.8g,%.8g,%d,%.6f\n", tensor->name,
++               w->rows, w->cols, n, j.mode, round, ms, err, mx ? err / mx : 0,
++               same, prep);
++        fflush(stdout);
++        if ((j.mode == 16 || j.mode == 116) && !same) {
++          fprintf(stderr, "exact LUT mismatch\n");
++          return 3;
++        }
++      }
++    free(lut.lo);
++    free(lut.hi);
++    free(lut.q8);
++    free(lut.scale);
++    free(a.q);
++    free(a.s);
++    free(a.sq);
++    free(a.s16);
++    free(a.is16);
++    free(a.nz);
++  }
++  return 0;
++}
+diff --git a/bench/experimental/q2_lut_check.c b/bench/experimental/q2_lut_check.c
+new file mode 100644
+index 0000000..98f92f4
+--- /dev/null
++++ b/bench/experimental/q2_lut_check.c
+@@ -0,0 +1,58 @@
++// Small exactness/safety checks for the isolated Q2_K lookup prototype.
++#include "cpuq.h"
++#include "gguf.h"
++#include "q2lut.h"
++#include "quant.h"
++#include <math.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++int main(void) {
++  enum { R = 7, K = 768, N = 17, RB = K / 256 * 84 };
++  uint8_t packed[R * RB];
++  float x[N * K], ref[N * R], y[N * R];
++  for (int i = 0; i < R * RB; i++)
++    packed[i] = (uint8_t)(rand() % 256);
++  for (int b = 0; b < R * K / 256; b++) {
++    uint16_t d = f32_to_fp16((b % 7) * .013f),
++             mn = f32_to_fp16((b % 5) * .007f);
++    memcpy(packed + b * 84 + 80, &d, 2);
++    memcpy(packed + b * 84 + 82, &mn, 2);
++  }
++  qmat src = {
++      .type = GGML_Q2_K, .rows = R, .cols = K, .row_bytes = RB, .data = packed};
++  cq_mat *normal = cq_from_qmat(&src);
++  cq_act a = {0};
++  const int modes[] = {16, 116};
++  for (int mode = 0; mode < 2; mode++) {
++    cq_mat *w = cq_from_qmat(&src);
++    q2lut_repack(w, modes[mode]);
++    for (int rep = 0; rep < 4; rep++)
++      for (int n = 1; n <= N; n++) {
++        for (int i = 0; i < N * K; i++)
++          x[i] = rep ? ldexpf(sinf(i * .19f), rep * 4 - 8) : 0;
++        cq_quantize(&a, x, n, K);
++        cq_matmul_rows(normal, &a, ref, R, 0, R);
++        q2lut_prepare(&a);
++        cq_matmul_rows(w, &a, y, R, 0, 4);
++        cq_matmul_rows(w, &a, y, R, 4, R);
++        if (memcmp(ref, y, (size_t)n * R * sizeof(float))) {
++          fprintf(stderr, "mismatch rep%d n%d\n", rep, n);
++          return 1;
++        }
++      }
++    cq_free(w);
++  }
++  q2lut_reset(&a);
++  free(a.q);
++  free(a.s);
++  free(a.sq);
++  free(a.s16);
++  free(a.is16);
++  free(a.nz);
++  cq_free(normal);
++  puts("Q2 LUT exact16, four-/sixteen-row tiles: padded rows, partitions, "
++       "batches1..17, zero/scaled "
++       "activations PASS");
++  return 0;
++}
+diff --git a/bench/experimental/q2_lut_model.py b/bench/experimental/q2_lut_model.py
+new file mode 100644
+index 0000000..9886738
+--- /dev/null
++++ b/bench/experimental/q2_lut_model.py
+@@ -0,0 +1,125 @@
++"""Short exact-LUT negative/positive proof on Glimmer, isolated from deployment."""
++
++import fcntl
++import json
++import os
++from pathlib import Path
++import signal
++import subprocess
++import time
++
++root = Path(__file__).resolve().parents[2]
++out = root / "results-tmac"
++out.mkdir(exist_ok=True)
++tasks = out / "probe.jsonl"
++tasks.write_text(
++    json.dumps(
++        {
++            "id": "rainbow",
++            "prompt": "Explain why rainbows have different colors, in two sentences.",
++            "max_tokens": 24,
++        }
++    )
++    + "\n"
++)
++lockpath = Path.home() / ".cache/fleetllm-bench.lock"
++lockpath.parent.mkdir(exist_ok=True)
++metadata = {}
++
++
++def memory():
++    d = {
++        s.split(":")[0]: int(s.split()[1]) * 1024
++        for s in Path("/proc/meminfo").read_text().splitlines()
++    }
++    return d["MemAvailable"], d["SwapTotal"] - d["SwapFree"]
++
++
++with lockpath.open("w") as lock:
++    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
++    for name, build, lut in [
++        ("baseline", "build-baseline", None),
++        ("exact16", "build", "116"),
++    ]:
++        cmd = [
++            str(root / build / "fleet"),
++            "eval",
++            "--model",
++            str(Path.home() / "models/Muse-Glimmer-30B-Q2_K.gguf"),
++            "--backend",
++            "cpu",
++            "--threads",
++            "4",
++            "--budget-gb",
++            "14.8",
++            "--kv-gb",
++            ".25",
++            "--row-budget",
++            "64",
++            "--no-pin",
++            "--tasks",
++            str(tasks),
++        ]
++        env = dict(os.environ)
++        env.pop("FLEET_Q2_LUT", None)
++        if lut:
++            env["FLEET_Q2_LUT"] = lut
++        start = time.monotonic()
++        _, swap0 = memory()
++        peak = 0
++        minimum = 10**20
++        swapgrowth = 0
++        reason = None
++        with (
++            (out / (name + ".jsonl")).open("w") as stdout,
++            (out / (name + ".log")).open("w") as stderr,
++        ):
++            p = subprocess.Popen(
++                cmd, env=env, stdout=stdout, stderr=stderr, start_new_session=True
++            )
++            while p.poll() is None:
++                try:
++                    lines = Path(f"/proc/{p.pid}/status").read_text().splitlines()
++                    rss = next(
++                        int(s.split()[1]) * 1024
++                        for s in lines
++                        if s.startswith("VmRSS:")
++                    )
++                    peak = max(peak, rss)
++                except (FileNotFoundError, StopIteration, ProcessLookupError):
++                    pass
++                available, swap = memory()
++                minimum = min(minimum, available)
++                swapgrowth = max(swapgrowth, swap - swap0)
++                if (
++                    available < 400 * 1024**2
++                    or swapgrowth > 128 * 1024**2
++                    or time.monotonic() - start > 900
++                ):
++                    reason = "memory/swap/time guard"
++                    os.killpg(p.pid, signal.SIGTERM)
++                    break
++                time.sleep(0.5)
++            try:
++                status = p.wait(timeout=15)
++            except subprocess.TimeoutExpired:
++                os.killpg(p.pid, signal.SIGKILL)
++                status = p.wait()
++        metadata[name] = dict(
++            command=cmd,
++            environment={"FLEET_Q2_LUT": lut},
++            returncode=status,
++            stopped=reason,
++            seconds=time.monotonic() - start,
++            peak_rss_bytes=peak,
++            minimum_available_bytes=minimum,
++            peak_swap_delta_bytes=swapgrowth,
++        )
++        (out / "model-run.json").write_text(json.dumps(metadata, indent=2) + "\n")
++        if status or reason:
++            raise RuntimeError(f"{name}: {status} {reason}")
++        print(name, (out / (name + ".jsonl")).read_text(), flush=True)
++    baseline = json.loads((out / "baseline.jsonl").read_text())
++    lut = json.loads((out / "exact16.jsonl").read_text())
++    assert baseline["tokens"] == lut["tokens"], "exact LUT changed greedy output"
++    print("Exact16 full-model tokens identical PASS", flush=True)
+diff --git a/src/cpu.c b/src/cpu.c
+index 904a990..235f59a 100644
+--- a/src/cpu.c
++++ b/src/cpu.c
+@@ -5,6 +5,7 @@
+ // correctness reference for the other paths).
+ #include "backend.h"
+ #include "cpuq.h"
++#include "q2lut.h"
+ #include "quant.h"
+ #include "threadpool.h"
+ #include <math.h>
+@@ -130,6 +131,7 @@ static void matmul(cpu_state *s, const qmat *w, float *y, int ldy) {
+     double t0 = measure ? now_secs() : 0;
+     if (w->gpu) {
+         if (!s->act_ok) { cq_quantize_group(&s->act, s->in, s->in_n, s->in_cols, s->activation_group); s->act.sparse = s->sparse_input; s->act_ok = true; }
++        if (((cq_mat *)w->gpu)->lut_bits) q2lut_prepare(&s->act);
+         cq_job j = { w->gpu, &s->act, y, ldy };
+         parallel_for(w->rows, 64, cq_rows, &j); // contiguous 64-row runs stream better than finer chunks
+     } else {
+@@ -582,6 +584,7 @@ static void cpu_state_free(cpu_state *s) {
+     if (!s) return;
+     float *bufs[] = { s->x, s->h, s->q, s->k, s->v, s->g, s->att, s->o, s->fg, s->fu, s->cs, s->sn, s->hsel };
+     for (size_t i = 0; i < sizeof bufs / sizeof *bufs; i++) free(bufs[i]);
++    q2lut_reset(&s->act);
+     free(s->act.q); free(s->act.s); free(s->act.sq); free(s->act.s16); free(s->act.is16); free(s->act.nz);
+     free(s->att_tasks); free(s->att_first); free(s->part);
+     free(s->capture); free(s->head);
+@@ -637,13 +640,15 @@ static void cpu_repack(model *m) {
+     int count[CQ8 + 1] = { 0 }, kept = 0;
+     float err[CQ8 + 1] = { 0 };
+     for (int i = 0; i < n; i++) {
+-        const cq_mat *c = mats[i]->gpu;
++        cq_mat *c = mats[i]->gpu;
+         if (!c) { kept++; continue; }
+         src += qmat_bytes(mats[i]);
+         dst += cq_bytes(c);
+         count[c->kind]++;
+         float e = cq_check(mats[i], c, 4);
+         if (e > err[c->kind]) err[c->kind] = e;
++        const char *lut = getenv("FLEET_Q2_LUT");
++        if (lut && c->kind == CQ2K) q2lut_repack(c, atoi(lut));
+     }
+     fprintf(stderr, "[cpu] %s, %d threads; weights %.2f GB -> %.2f GB:", cq_isa(), tp_threads(), src / 1e9, dst / 1e9);
+     for (int k = 0; k <= CQ8; k++) if (count[k]) fprintf(stderr, " %d %s (err %.1e)", count[k], cq_kind_name(k), err[k]);
+diff --git a/src/cpuq.c b/src/cpuq.c
+index 23d9bce..e9dd873 100644
+--- a/src/cpuq.c
++++ b/src/cpuq.c
+@@ -1,4 +1,5 @@
+ #include "cpuq.h"
++#include "q2lut.h"
+ #include "gguf.h"
+ #include "quant.h"
+ #include "threadpool.h"
+@@ -394,6 +395,7 @@ static void quant_blocks(void *ctx, int b0, int b1) {
+ }
+ 
+ void cq_quantize_group(cq_act *a, const float *x, int n, int cols, int group) {
++    q2lut_reset(a);
+     a->group = group == 256 && cols % 256 == 0 ? 256 : CQ_BLOCK;
+     size_t need = (size_t)n * cols;
+     if (need > a->cap) {
+@@ -660,6 +662,7 @@ static inline __attribute__((always_inline)) void mm_dispatch(const cq_mat *w, c
+ }
+ 
+ void cq_matmul_rows(const cq_mat *w, const cq_act *a, float *y, int ldy, int r0, int r1) {
++    if (w->lut_bits) { q2lut_rows(w, a, y, ldy, r0, r1); return; }
+     if (a->group == 256) {
+         switch (w->kind) {
+ #define SUPER(K) case K: mm_super_dispatch(w, a, y, ldy, r0, r1, K); return
+diff --git a/src/cpuq.h b/src/cpuq.h
+index e127007..fa881ad 100644
+--- a/src/cpuq.h
++++ b/src/cpuq.h
+@@ -31,6 +31,7 @@ enum { CQ4, CQ4S, CQ4K, CQ6K, CQ2K, CQ3K, CQ8 };
+ // [row / 4][block][row % 4]; their code bytes are interleaved 4 at a time
+ // across the 4 rows (see code_at in cpuq.c).
+ typedef struct {
++    int lut_bits; // experimental Q2-only LUT: 8/16, or 108/116 for sixteen-row tiles
+     int kind, rows, cols; // cols % CQ_BLOCK == 0 (% 256 for K-quants)
+     uint8_t *codes;       // 4-bit kinds: 16 bytes per block (byte j = code[j] | code[j + 16] << 4)
+                           // CQ6K: those 16 bytes of low 4 bits, then 8 bytes of high 2 bits
+@@ -62,6 +63,7 @@ typedef struct {
+     int16_t *is16;           // raw 16-value sums for integer superblock kernels
+     uint8_t *nz;             // nonzero-code flag per 32 values
+     size_t cap;
++    void *lut_ctx; // experimental activation lookup tables, invalidated by quantization
+     const float *src;
+ } cq_act;
+ void cq_quantize(cq_act *a, const float *x, int n, int cols);
+diff --git a/src/q2lut.c b/src/q2lut.c
+new file mode 100644
+index 0000000..7d29a0f
+--- /dev/null
++++ b/src/q2lut.c
+@@ -0,0 +1,56 @@
++#include "q2lut.h"
++#include "q2lut_impl.h"
++
++void q2lut_repack(cq_mat *w, int bits) {
++#if !defined(__aarch64__)
++  fprintf(stderr, "Q2 LUT prototype requires AArch64 NEON\n");
++  abort();
++#endif
++  if (w->kind != CQ2K ||
++      (bits != 16 && bits != 8 && bits != 116 && bits != 108))
++    return;
++  lut_mat m = bits > 100 ? repack16(w) : repack(w);
++  free(w->codes);
++  w->codes = m.codes;
++  w->lut_bits = bits;
++}
++void q2lut_reset(cq_act *a) {
++  lut_act *p = a->lut_ctx;
++  if (!p)
++    return;
++  free(p->lo);
++  free(p->hi);
++  free(p->q8);
++  free(p->scale);
++  free(p);
++  a->lut_ctx = NULL;
++}
++void q2lut_prepare(cq_act *a) {
++  if (a->lut_ctx)
++    return;
++  lut_act *p = malloc(sizeof *p);
++  *p = tables(a);
++  a->lut_ctx = p;
++}
++void q2lut_rows(const cq_mat *w, const cq_act *a, float *y, int ldy, int r0,
++                int r1) {
++  if (!a->lut_ctx || ldy != w->rows) {
++    fprintf(stderr, "q2 LUT prototype needs prepared activations and dense "
++                    "output stride\n");
++    abort();
++  }
++#if defined(__aarch64__)
++  lut_mat m = {w, w->codes};
++  job j = {w, a, &m, a->lut_ctx, y, w->lut_bits};
++  if (w->lut_bits == 116)
++    lut_run16(&j, r0, r1, 16);
++  else if (w->lut_bits == 108)
++    lut_run16(&j, r0, r1, 8);
++  else if (w->lut_bits == 16)
++    lut_run(&j, r0, r1, 16);
++  else
++    lut_run(&j, r0, r1, 8);
++#else
++  abort();
++#endif
++}
+diff --git a/src/q2lut.h b/src/q2lut.h
+new file mode 100644
+index 0000000..e573181
+--- /dev/null
++++ b/src/q2lut.h
+@@ -0,0 +1,8 @@
++// Experimental Q2_K-only T-MAC-inspired dispatch. Not an upstream T-MAC port.
++#pragma once
++#include "cpuq.h"
++void q2lut_repack(cq_mat *m, int bits);
++void q2lut_prepare(cq_act *a);
++void q2lut_reset(cq_act *a);
++void q2lut_rows(const cq_mat *w, const cq_act *a, float *y, int ldy, int r0,
++                int r1);
+diff --git a/src/q2lut_impl.h b/src/q2lut_impl.h
+new file mode 100644
+index 0000000..2d4390d
+--- /dev/null
++++ b/src/q2lut_impl.h
+@@ -0,0 +1,315 @@
++// T-MAC-inspired four-activation subset-sum tables for Glimmer's actual Q2_K.
++// This prototype is independent code, not an integration of Microsoft's T-MAC.
++// Exact int16 LUTs retain Fleet's quantized activation arithmetic. Optional
++// int8 LUTs round table entries; both retain Q2_K's 16-value scale/min layout.
++// cc -O3 -mcpu=native -Isrc bench/experimental/q2_lut.c build/libfleetllm.a
++// -lpthread -lm -o build/q2-lut
++#include "cpuq.h"
++#include "quant.h"
++#include "threadpool.h"
++#if defined(__aarch64__)
++#include <arm_neon.h>
++#endif
++#include <math.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++
++typedef struct {
++  const cq_mat *w;
++  uint8_t *codes;
++} lut_mat;
++typedef struct {
++  const cq_act *a;
++  uint8_t *lo, *hi;
++  int8_t *q8;
++  float *scale;
++} lut_act;
++
++static double now(void) {
++  struct timespec ts;
++  clock_gettime(CLOCK_MONOTONIC, &ts);
++  return ts.tv_sec + ts.tv_nsec * 1e-9;
++}
++static lut_mat repack(const cq_mat *w) {
++  lut_mat m = {w, calloc((size_t)((w->rows + 3) & ~3) * (w->cols / 32), 8)};
++  int G = w->cols / 32;
++  for (int r = 0; r < w->rows; r++)
++    for (int g = 0; g < G; g++) {
++      const uint8_t *c = w->codes + ((size_t)(r / 4) * G + g) * 32;
++      uint8_t *out = m.codes + ((size_t)(r / 4) * G + g) * 32;
++      for (int s = 0; s < 8; s++) {
++        int planes[2] = {0, 0};
++        for (int k = 0; k < 4; k++) {
++          int j = s * 4 + k, b = j % 8;
++          int code =
++              (c[(b / 4) * 16 + (r % 4) * 4 + b % 4] >> (2 * (j / 8))) & 3;
++          for (int bit = 0; bit < 2; bit++)
++            planes[bit] |= ((code >> bit) & 1) << k;
++        }
++        out[s * 4 + r % 4] = planes[0] | planes[1] << 4;
++      }
++    }
++  return m;
++}
++// Sixteen output rows per lookup: every activation table serves all NEON lanes.
++static lut_mat repack16(const cq_mat *w) {
++  lut_mat m = {w, calloc((size_t)((w->rows + 15) & ~15) * (w->cols / 32), 8)};
++  int G = w->cols / 32;
++  for (int r = 0; r < w->rows; r++)
++    for (int g = 0; g < G; g++) {
++      const uint8_t *c = w->codes + ((size_t)(r / 4) * G + g) * 32;
++      uint8_t *out = m.codes + ((size_t)(r / 16) * G + g) * 128;
++      for (int sub = 0; sub < 8; sub++) {
++        int planes[2] = {0, 0};
++        for (int k = 0; k < 4; k++) {
++          int j = sub * 4 + k, b = j % 8;
++          int code =
++              (c[(b / 4) * 16 + (r % 4) * 4 + b % 4] >> (2 * (j / 8))) & 3;
++          for (int bit = 0; bit < 2; bit++)
++            planes[bit] |= ((code >> bit) & 1) << k;
++        }
++        out[sub * 16 + r % 16] = planes[0] | planes[1] << 4;
++      }
++    }
++  return m;
++}
++static lut_act tables(const cq_act *a) {
++  size_t nb = (size_t)a->n * a->cols / 32;
++  lut_act t = {a, malloc(nb * 128), malloc(nb * 128), malloc(nb * 128),
++               malloc(nb * sizeof(float))};
++  for (size_t b = 0; b < nb; b++) {
++    int sums[128], mx = 0;
++    for (int g = 0; g < 8; g++)
++      for (int idx = 0; idx < 16; idx++) {
++        int sum = 0;
++        for (int k = 0; k < 4; k++)
++          if (idx & (1 << k))
++            sum += a->q[b * 32 + g * 4 + k];
++        sums[g * 16 + idx] = sum;
++        mx = mx > abs(sum) ? mx : abs(sum);
++      }
++    float scale = mx > 0 ? (float)mx / 127.f : 1;
++    t.scale[b] = scale;
++    for (int i = 0; i < 128; i++) {
++      t.lo[b * 128 + i] = (uint8_t)sums[i];
++      t.hi[b * 128 + i] = (uint8_t)(sums[i] >> 8);
++      t.q8[b * 128 + i] = (int8_t)lrintf(sums[i] / scale);
++    }
++  }
++  return t;
++}
++#if defined(__aarch64__)
++static inline int16x8_t join(uint8x8_t lo, uint8x8_t hi) {
++  return vreinterpretq_s16_u16(vorrq_u16(vmovl_u8(lo), vshll_n_u8(hi, 8)));
++}
++static inline int32x4_t dot16(const uint8_t *lo, const uint8_t *hi,
++                              uint8x16_t codes) {
++  static const uint8_t off[16] = {0,  0,  0,  0,  16, 16, 16, 16,
++                                  32, 32, 32, 32, 48, 48, 48, 48};
++  uint8x16_t offset = vld1q_u8(off);
++  uint8x16_t ix0 = vorrq_u8(vandq_u8(codes, vdupq_n_u8(15)), offset);
++  uint8x16_t ix1 = vorrq_u8(vshrq_n_u8(codes, 4), offset);
++  uint8x16x4_t tl = vld1q_u8_x4(lo), th = vld1q_u8_x4(hi);
++  uint8x16_t l0 = vqtbl4q_u8(tl, ix0), h0 = vqtbl4q_u8(th, ix0);
++  uint8x16_t l1 = vqtbl4q_u8(tl, ix1), h1 = vqtbl4q_u8(th, ix1);
++  int16x8_t s0 =
++      vaddq_s16(join(vget_low_u8(l0), vget_low_u8(h0)),
++                vshlq_n_s16(join(vget_low_u8(l1), vget_low_u8(h1)), 1));
++  int16x8_t s1 =
++      vaddq_s16(join(vget_high_u8(l0), vget_high_u8(h0)),
++                vshlq_n_s16(join(vget_high_u8(l1), vget_high_u8(h1)), 1));
++  int16x8_t s = vaddq_s16(s0, s1);
++  return vmovl_s16(vadd_s16(vget_low_s16(s), vget_high_s16(s)));
++}
++static inline int32x4_t dot8(const int8_t *q, uint8x16_t codes) {
++  static const uint8_t off[16] = {0,  0,  0,  0,  16, 16, 16, 16,
++                                  32, 32, 32, 32, 48, 48, 48, 48};
++  uint8x16_t offset = vld1q_u8(off);
++  uint8x16_t ix0 = vorrq_u8(vandq_u8(codes, vdupq_n_u8(15)), offset);
++  uint8x16_t ix1 = vorrq_u8(vshrq_n_u8(codes, 4), offset);
++  uint8x16x4_t table = vld1q_u8_x4((const uint8_t *)q);
++  int8x16_t v0 = vreinterpretq_s8_u8(vqtbl4q_u8(table, ix0)),
++            v1 = vreinterpretq_s8_u8(vqtbl4q_u8(table, ix1));
++  int16x8_t s0 =
++      vaddq_s16(vmovl_s8(vget_low_s8(v0)), vshll_n_s8(vget_low_s8(v1), 1));
++  int16x8_t s1 =
++      vaddq_s16(vmovl_s8(vget_high_s8(v0)), vshll_n_s8(vget_high_s8(v1), 1));
++  int16x8_t s = vaddq_s16(s0, s1);
++  return vmovl_s16(vadd_s16(vget_low_s16(s), vget_high_s16(s)));
++}
++typedef struct {
++  const cq_mat *w;
++  const cq_act *a;
++  const lut_mat *m;
++  const lut_act *lut;
++  float *out;
++  int mode;
++} job;
++static inline __attribute__((always_inline)) void
++lut_run(job *j, int r0, int r1, const int mode) {
++  const cq_mat *w = j->w;
++  const cq_act *a = j->a;
++  const lut_act *lut = j->lut;
++  int G = w->cols / 32;
++  for (int rg = r0 / 4; rg * 4 < r1; rg++)
++    for (int t = 0; t < a->n; t++) {
++      float32x4_t acc = vdupq_n_f32(0), d = acc, dm = acc;
++      for (int g = 0; g < G; g++) {
++        if (!(g & 7)) {
++          const uint16_t *s = w->super + ((size_t)rg * (G / 8) + g / 8) * 8;
++          d = vcvt_f32_f16(vreinterpret_f16_u16(vld1_u16(s)));
++          dm = vnegq_f32(vcvt_f32_f16(vreinterpret_f16_u16(vld1_u16(s + 4))));
++        }
++        const uint8_t *sub = w->sub + ((size_t)rg * G + g) * 8;
++        uint8x8_t sc = vld1_u8(sub);
++        float32x4_t sl =
++            vmulq_f32(d, vcvtq_f32_u32(vmovl_u16(vget_low_u16(
++                             vmovl_u8(vand_u8(sc, vdup_n_u8(15)))))));
++        float32x4_t sh =
++            vmulq_f32(d, vcvtq_f32_u32(vmovl_u16(vget_high_u16(
++                             vmovl_u8(vand_u8(sc, vdup_n_u8(15)))))));
++        float32x4_t bl = vmulq_f32(
++            dm,
++            vcvtq_f32_u32(vmovl_u16(vget_low_u16(vmovl_u8(vshr_n_u8(sc, 4))))));
++        float32x4_t bh = vmulq_f32(dm, vcvtq_f32_u32(vmovl_u16(vget_high_u16(
++                                           vmovl_u8(vshr_n_u8(sc, 4))))));
++        size_t b = (size_t)t * G + g;
++        const uint8_t *c = j->m->codes + ((size_t)rg * G + g) * 32;
++        int32x4_t dl, dh;
++        float scale = a->s[b];
++        if (mode == 16) {
++          dl = dot16(lut->lo + b * 128, lut->hi + b * 128, vld1q_u8(c));
++          dh = dot16(lut->lo + b * 128 + 64, lut->hi + b * 128 + 64,
++                     vld1q_u8(c + 16));
++        } else {
++          dl = dot8(lut->q8 + b * 128, vld1q_u8(c));
++          dh = dot8(lut->q8 + b * 128 + 64, vld1q_u8(c + 16));
++          scale *= lut->scale[b];
++        }
++        acc = vfmaq_n_f32(
++            acc,
++            vfmaq_f32(vmulq_f32(vcvtq_f32_s32(dl), sl), vcvtq_f32_s32(dh), sh),
++            scale);
++        acc = vfmaq_n_f32(acc, bl, a->s16[b * 2]);
++        acc = vfmaq_n_f32(acc, bh, a->s16[b * 2 + 1]);
++      }
++      float z[4];
++      vst1q_f32(z, acc);
++      for (int k = 0; k < 4 && rg * 4 + k < r1; k++)
++        j->out[(size_t)t * w->rows + rg * 4 + k] = z[k];
++    }
++}
++// Exact 16-row lookup, with four-row metadata vectors preserving float order.
++static inline __attribute__((always_inline)) void
++lut_run16(job *j, int r0, int r1, const int mode) {
++  const cq_mat *w = j->w;
++  const cq_act *a = j->a;
++  const lut_act *lut = j->lut;
++  int G = w->cols / 32;
++  for (int rg = r0 / 16; rg * 16 < r1; rg++)
++    for (int t = 0; t < a->n; t++) {
++      float32x4_t acc[4], d[4], dm[4];
++      for (int v = 0; v < 4; v++)
++        acc[v] = d[v] = dm[v] = vdupq_n_f32(0);
++      for (int g = 0; g < G; g++) {
++        size_t b = (size_t)t * G + g;
++        const uint8_t *c = j->m->codes + ((size_t)rg * G + g) * 128;
++        int32x4_t dots[2][4];
++        for (int half = 0; half < 2; half++) {
++          int16x8_t sum0 = vdupq_n_s16(0), sum1 = sum0;
++          for (int k = 0; k < 4; k++) {
++            int sub = half * 4 + k;
++            uint8x16_t codes = vld1q_u8(c + sub * 16);
++            uint8x16_t ix0 = vandq_u8(codes, vdupq_n_u8(15)),
++                       ix1 = vshrq_n_u8(codes, 4);
++            int16x8_t s0, s1;
++            if (mode == 16) {
++              uint8x16_t lo = vld1q_u8(lut->lo + b * 128 + sub * 16),
++                         hi = vld1q_u8(lut->hi + b * 128 + sub * 16);
++              uint8x16_t l0 = vqtbl1q_u8(lo, ix0), h0 = vqtbl1q_u8(hi, ix0);
++              uint8x16_t l1 = vqtbl1q_u8(lo, ix1), h1 = vqtbl1q_u8(hi, ix1);
++              s0 = vaddq_s16(
++                  join(vget_low_u8(l0), vget_low_u8(h0)),
++                  vshlq_n_s16(join(vget_low_u8(l1), vget_low_u8(h1)), 1));
++              s1 = vaddq_s16(
++                  join(vget_high_u8(l0), vget_high_u8(h0)),
++                  vshlq_n_s16(join(vget_high_u8(l1), vget_high_u8(h1)), 1));
++            } else {
++              uint8x16_t table =
++                  vld1q_u8((const uint8_t *)lut->q8 + b * 128 + sub * 16);
++              int8x16_t v0 = vreinterpretq_s8_u8(vqtbl1q_u8(table, ix0)),
++                        v1 = vreinterpretq_s8_u8(vqtbl1q_u8(table, ix1));
++              s0 = vaddq_s16(vmovl_s8(vget_low_s8(v0)),
++                             vshll_n_s8(vget_low_s8(v1), 1));
++              s1 = vaddq_s16(vmovl_s8(vget_high_s8(v0)),
++                             vshll_n_s8(vget_high_s8(v1), 1));
++            }
++            sum0 = vaddq_s16(sum0, s0);
++            sum1 = vaddq_s16(sum1, s1);
++          }
++          dots[half][0] = vmovl_s16(vget_low_s16(sum0));
++          dots[half][1] = vmovl_s16(vget_high_s16(sum0));
++          dots[half][2] = vmovl_s16(vget_low_s16(sum1));
++          dots[half][3] = vmovl_s16(vget_high_s16(sum1));
++        }
++        for (int v = 0; v < 4; v++) {
++          int oldrg = rg * 4 + v;
++          if (oldrg * 4 >= w->rows)
++            break;
++          if (!(g & 7)) {
++            const uint16_t *s =
++                w->super + ((size_t)oldrg * (G / 8) + g / 8) * 8;
++            d[v] = vcvt_f32_f16(vreinterpret_f16_u16(vld1_u16(s)));
++            dm[v] =
++                vnegq_f32(vcvt_f32_f16(vreinterpret_f16_u16(vld1_u16(s + 4))));
++          }
++          const uint8_t *sub = w->sub + ((size_t)oldrg * G + g) * 8;
++          uint8x8_t sc = vld1_u8(sub);
++          float32x4_t sl =
++              vmulq_f32(d[v], vcvtq_f32_u32(vmovl_u16(vget_low_u16(
++                                  vmovl_u8(vand_u8(sc, vdup_n_u8(15)))))));
++          float32x4_t sh =
++              vmulq_f32(d[v], vcvtq_f32_u32(vmovl_u16(vget_high_u16(
++                                  vmovl_u8(vand_u8(sc, vdup_n_u8(15)))))));
++          float32x4_t bl =
++              vmulq_f32(dm[v], vcvtq_f32_u32(vmovl_u16(
++                                   vget_low_u16(vmovl_u8(vshr_n_u8(sc, 4))))));
++          float32x4_t bh =
++              vmulq_f32(dm[v], vcvtq_f32_u32(vmovl_u16(
++                                   vget_high_u16(vmovl_u8(vshr_n_u8(sc, 4))))));
++          float scale = a->s[b] * (mode == 8 ? lut->scale[b] : 1);
++          acc[v] =
++              vfmaq_n_f32(acc[v],
++                          vfmaq_f32(vmulq_f32(vcvtq_f32_s32(dots[0][v]), sl),
++                                    vcvtq_f32_s32(dots[1][v]), sh),
++                          scale);
++          acc[v] = vfmaq_n_f32(acc[v], bl, a->s16[b * 2]);
++          acc[v] = vfmaq_n_f32(acc[v], bh, a->s16[b * 2 + 1]);
++        }
++      }
++      for (int v = 0; v < 4; v++) {
++        float z[4];
++        vst1q_f32(z, acc[v]);
++        for (int k = 0; k < 4 && rg * 16 + v * 4 + k < r1; k++)
++          if (rg * 16 + v * 4 + k >= r0)
++            j->out[(size_t)t * w->rows + rg * 16 + v * 4 + k] = z[k];
++      }
++    }
++}
++static void run(void *v, int r0, int r1) {
++  job *j = v;
++  if (!j->mode)
++    cq_matmul_rows(j->w, j->a, j->out, j->w->rows, r0, r1);
++  else if (j->mode == 116)
++    lut_run16(j, r0, r1, 16);
++  else if (j->mode == 108)
++    lut_run16(j, r0, r1, 8);
++  else if (j->mode == 16)
++    lut_run(j, r0, r1, 16);
++  else
++    lut_run(j, r0, r1, 8);
++}
++
++#endif // __aarch64__: lookup intrinsics are experimental ARM-only kernels
+-- 
+2.53.0
+

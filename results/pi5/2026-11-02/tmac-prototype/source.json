@@ -1,0 +1,16 @@
+{
+  "reviewed_repository": "https://github.com/microsoft/T-MAC",
+  "reviewed_commit": "7042f8f73330bd083bc1e4bc5ccb3f88a4904aee",
+  "reviewed_files": [
+    "python/t_mac/intrins/tbl.cc",
+    "python/t_mac/intrins/lut_ctor.cc",
+    "python/t_mac/ops/qgemm.py",
+    "README.md"
+  ],
+  "relationship": "Independent subset-sum LUT prototype inspired by T-MAC; not an integration or performance evaluation of the upstream generated runtime.",
+  "weight_format": "Original GGUF Q2_K 16-value scales/mins preserved; bitplanes repacked without expanding code storage.",
+  "activation_precision": "Exact16 uses existing int8 activations and exact int16 LUT entries; approximate8 additionally rounds subset sums to int8 with a separate scale per32 input values.",
+  "baseline_commit": "dfd72cb",
+  "prototype_commit": "ad9973f",
+  "reproducible_source_archive": "prototype.patch"
+}

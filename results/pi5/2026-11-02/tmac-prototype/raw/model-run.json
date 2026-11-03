@@ -1,0 +1,62 @@
+{
+  "baseline": {
+    "command": [
+      "/home/mli5/fleetllm-experiments/tmac/build-baseline/fleet",
+      "eval",
+      "--model",
+      "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+      "--backend",
+      "cpu",
+      "--threads",
+      "4",
+      "--budget-gb",
+      "14.8",
+      "--kv-gb",
+      ".25",
+      "--row-budget",
+      "64",
+      "--no-pin",
+      "--tasks",
+      "/home/mli5/fleetllm-experiments/tmac/results-tmac/probe.jsonl"
+    ],
+    "environment": {
+      "FLEET_Q2_LUT": null
+    },
+    "returncode": 0,
+    "stopped": null,
+    "seconds": 68.12102788799893,
+    "peak_rss_bytes": 11853807616,
+    "minimum_available_bytes": 5102764032,
+    "peak_swap_delta_bytes": 0
+  },
+  "exact16": {
+    "command": [
+      "/home/mli5/fleetllm-experiments/tmac/build/fleet",
+      "eval",
+      "--model",
+      "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+      "--backend",
+      "cpu",
+      "--threads",
+      "4",
+      "--budget-gb",
+      "14.8",
+      "--kv-gb",
+      ".25",
+      "--row-budget",
+      "64",
+      "--no-pin",
+      "--tasks",
+      "/home/mli5/fleetllm-experiments/tmac/results-tmac/probe.jsonl"
+    ],
+    "environment": {
+      "FLEET_Q2_LUT": "116"
+    },
+    "returncode": 0,
+    "stopped": null,
+    "seconds": 132.19345280900052,
+    "peak_rss_bytes": 11764056064,
+    "minimum_available_bytes": 5136613376,
+    "peak_swap_delta_bytes": 0
+  }
+}

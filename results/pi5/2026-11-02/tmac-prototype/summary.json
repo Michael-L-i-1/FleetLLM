@@ -1,0 +1,194 @@
+{
+  "decision": "reject this prototype; retain measurements and archived patch, do not merge kernel into production",
+  "scope": "Independent T-MAC-inspired Q2_K subset-sum LUT prototype, not upstream runtime evaluation",
+  "baseline_commit": "dfd72cb",
+  "prototype_commit": "ad9973f",
+  "micro": {
+    "decoder": {
+      "tensor": "blk.0.ffn_gate.weight",
+      "rows": 19968,
+      "cols": 6656,
+      "batches": {
+        "1": {
+          "median_ms": {
+            "0": 4.126978,
+            "16": 6.749263,
+            "8": 4.577597,
+            "116": 5.543262,
+            "108": 4.023208
+          },
+          "speed_vs_native": {
+            "0": 1.0,
+            "16": 0.6114709117128789,
+            "8": 0.901559923252309,
+            "116": 0.7445035071407413,
+            "108": 1.0257928498849673
+          }
+        },
+        "2": {
+          "median_ms": {
+            "0": 5.654578,
+            "16": 14.760746,
+            "8": 8.471874,
+            "116": 10.514887,
+            "108": 7.067443
+          },
+          "speed_vs_native": {
+            "0": 1.0,
+            "16": 0.3830821287758762,
+            "8": 0.6674530334138586,
+            "116": 0.5377687843911209,
+            "108": 0.8000882355895902
+          }
+        },
+        "4": {
+          "median_ms": {
+            "0": 8.239288,
+            "16": 26.577749,
+            "8": 17.083393,
+            "116": 20.63784,
+            "108": 13.7711
+          },
+          "speed_vs_native": {
+            "0": 1.0,
+            "16": 0.31000699118649966,
+            "8": 0.48229810085151115,
+            "116": 0.39923209017998007,
+            "108": 0.598302822577717
+          }
+        }
+      }
+    },
+    "attn-gate": {
+      "tensor": "blk.0.attn_gate.weight",
+      "rows": 4096,
+      "cols": 6656,
+      "batches": {
+        "1": {
+          "median_ms": {
+            "0": 0.798527,
+            "16": 1.42726,
+            "8": 0.932181,
+            "116": 1.148028,
+            "108": 0.798142
+          },
+          "speed_vs_native": {
+            "0": 1.0,
+            "16": 0.5594825049395344,
+            "8": 0.8566222654184111,
+            "116": 0.6955640454762427,
+            "108": 1.0004823703050334
+          }
+        },
+        "2": {
+          "median_ms": {
+            "0": 1.170806,
+            "16": 2.716407,
+            "8": 1.743211,
+            "116": 2.173056,
+            "108": 1.455012
+          },
+          "speed_vs_native": {
+            "0": 1.0,
+            "16": 0.4310127311555301,
+            "8": 0.6716375699786199,
+            "116": 0.5387831698768923,
+            "108": 0.8046710267681642
+          }
+        },
+        "4": {
+          "median_ms": {
+            "0": 1.715327,
+            "16": 5.509263,
+            "8": 3.552116,
+            "116": 4.261533,
+            "108": 2.902377
+          },
+          "speed_vs_native": {
+            "0": 1.0,
+            "16": 0.31135326086265985,
+            "8": 0.48290286691087797,
+            "116": 0.4025140718140632,
+            "108": 0.5910076464911347
+          }
+        }
+      }
+    }
+  },
+  "full_model": {
+    "baseline_tokens_per_second": 0.959526,
+    "exact16row_tokens_per_second": 0.801545,
+    "relative_speed": 0.8353551649460254,
+    "baseline_prefill_seconds": 19.519355,
+    "exact16row_prefill_seconds": 48.112109,
+    "generated_tokens": 24,
+    "input_tokens": 61,
+    "tokens_identical": true,
+    "model": "Muse-Glimmer-30B-Q2_K.gguf",
+    "threads": 4,
+    "metadata": {
+      "baseline": {
+        "command": [
+          "/home/mli5/fleetllm-experiments/tmac/build-baseline/fleet",
+          "eval",
+          "--model",
+          "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+          "--backend",
+          "cpu",
+          "--threads",
+          "4",
+          "--budget-gb",
+          "14.8",
+          "--kv-gb",
+          ".25",
+          "--row-budget",
+          "64",
+          "--no-pin",
+          "--tasks",
+          "/home/mli5/fleetllm-experiments/tmac/results-tmac/probe.jsonl"
+        ],
+        "environment": {
+          "FLEET_Q2_LUT": null
+        },
+        "returncode": 0,
+        "stopped": null,
+        "seconds": 68.12102788799893,
+        "peak_rss_bytes": 11853807616,
+        "minimum_available_bytes": 5102764032,
+        "peak_swap_delta_bytes": 0
+      },
+      "exact16": {
+        "command": [
+          "/home/mli5/fleetllm-experiments/tmac/build/fleet",
+          "eval",
+          "--model",
+          "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+          "--backend",
+          "cpu",
+          "--threads",
+          "4",
+          "--budget-gb",
+          "14.8",
+          "--kv-gb",
+          ".25",
+          "--row-budget",
+          "64",
+          "--no-pin",
+          "--tasks",
+          "/home/mli5/fleetllm-experiments/tmac/results-tmac/probe.jsonl"
+        ],
+        "environment": {
+          "FLEET_Q2_LUT": "116"
+        },
+        "returncode": 0,
+        "stopped": null,
+        "seconds": 132.19345280900052,
+        "peak_rss_bytes": 11764056064,
+        "minimum_available_bytes": 5136613376,
+        "peak_swap_delta_bytes": 0
+      }
+    },
+    "decode_throughput_drop_percent": 16.464483505397464,
+    "decode_time_increase_percent": 19.70964480083943
+  }
+}

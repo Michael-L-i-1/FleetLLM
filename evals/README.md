@@ -30,3 +30,46 @@ Notes:
   simple-evals' own sampler default is 0.5.
 - The data comes from OpenAI's public copy of GPQA Diamond
   (`openaipublic.blob.core.windows.net/simple-evals/gpqa_diamond.csv`).
+
+## Observable Pi pilots
+
+Run the evaluation client on the Mac and connect it to the Pi's localhost server
+through SSH forwarding. Use explicit concurrency, reasoning and KV settings;
+the default Pi demo server is direct-answer and allows only one active request.
+For example, with the Pi server forwarded to local port 18096:
+
+```sh
+evals/.venv/bin/python evals/gpqa.py \
+  --base-url http://127.0.0.1:18096/v1 --model pi-gpqa-glimmer \
+  --workers 4 --num-examples 4 --repeats 1 --temperature 0 \
+  --max-tokens 1024 --stream --reasoning-effort low \
+  --request-timeout 5400 --label pi-pilot
+```
+
+The Pi pilot server uses the installed Muse-Glimmer-30B Q2_K model, four CPU
+threads, FP16 KV 1 GB, default activation precision, prefix sharing and verified
+prompt lookup. No pruning or learned drafter is required. Four concurrent
+questions are independent evaluation requests, not a multi-agent debate.
+
+In addition to the existing JSON/HTML report, the wrapper writes
+`<label>.manifest.json` and append-only `<label>.events.jsonl`. Events identify
+questions and record starts, first visible output, first answer output,
+five-second character-count progress, completed responses/usage/finish reasons,
+and grades. Progress characters and stream chunks are **not token counts**.
+Final token totals come from the server's usage report, including generated
+reasoning. Only final answer content is passed to the pinned evaluator's grader.
+The prompts and grading code in `third_party/simple_evals` remain unchanged.
+
+`--reasoning-effort` requires `--stream`. Streaming uses a finite HTTP timeout
+and no automatic request retries, avoiding accidental duplicate long Pi jobs.
+The existing non-streaming sampler remains available. The event stream can feed
+a future viewer tab; this change does not alter `scripts/pimon.py`.
+
+Validate the streaming adapter without a model or dataset download:
+
+```sh
+evals/.venv/bin/python scripts/gpqa_streamcheck.py
+```
+
+The local fixture checks four concurrent responses, reasoning/final separation,
+official final-only grading, usage, truncation and stable question IDs.

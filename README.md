@@ -127,6 +127,8 @@ and rejected pruning experiments. [Quality controls](docs/pi-tuning.md) are
 explicit and composable: default CPU arithmetic keeps all layers/features;
 pruning and coarser activations are opt-in. The optional Qwen3-8B launcher is a
 separate model choice, while Glimmer remains available unchanged.
+The [isolated follow-up experiments](results/pi5/2026-11-02/followup/README.md)
+record additional kernel/drafter trials and direct-answer quality checks.
 
 ## Roadmap
 

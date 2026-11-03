@@ -46,6 +46,12 @@ def check(row, spec):
             return text == expected
         if spec["kind"] == "json":
             return json.loads(text) == spec["value"]
+        if spec["kind"] == "json_fields":
+            value = json.loads(text)
+            return isinstance(value, dict) and all(
+                key in value and value[key] == expected
+                for key, expected in spec["value"].items()
+            )
         if spec["kind"] == "python_ast":
             norm = spec.get("ignore_annotations_and_docstrings", False)
             return python_ast(text, norm) == python_ast(spec["value"], norm)

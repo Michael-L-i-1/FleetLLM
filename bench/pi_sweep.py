@@ -7,6 +7,7 @@ one model and evaluates fresh sequences so prefix caching cannot bias timings.
 import argparse
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -67,42 +68,58 @@ def memory():
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--profiles", nargs="+", choices=PROFILES, default=["exact"])
+    root = Path(__file__).resolve().parents[1]
     p.add_argument(
-        "--tasks", type=Path, default=Path.home() / "fleetllm/bench/pi-quality.jsonl"
+        "--binary",
+        type=Path,
+        default=root / "build/fleet",
+        help="Fleet dispatcher from this checkout or an isolated comparison build",
     )
+    p.add_argument("--profiles", nargs="+", choices=PROFILES, default=["exact"])
+    p.add_argument("--tasks", type=Path, default=root / "bench/pi-quality.jsonl")
     p.add_argument("--output", type=Path, required=True)
     p.add_argument(
         "--model", type=Path, default=Path.home() / "models/Muse-Glimmer-30B-Q2_K.gguf"
     )
     p.add_argument("--ppl", action="store_true")
     p.add_argument("--ppl-tokens", type=int, default=192)
+    p.add_argument("--threads", type=int, default=4)
+    p.add_argument("--row-budget", type=int, default=64)
+    p.add_argument("--kv-gb", type=float, default=0.25)
     args = p.parse_args()
+    if (
+        args.threads < 1
+        or args.row_budget < 1
+        or not math.isfinite(args.kv_gb)
+        or args.kv_gb <= 0
+    ):
+        p.error("threads, row budget and KV budget must be positive")
+    args.binary = args.binary.expanduser().resolve()
+    args.tasks = args.tasks.expanduser().resolve()
     args.output.mkdir(parents=True, exist_ok=True)
     lockpath = Path.home() / ".cache/fleetllm-bench.lock"
     lockpath.parent.mkdir(exist_ok=True)
     with lockpath.open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        root = Path.home() / "fleetllm"
         base = [
             "--model",
             str(args.model),
             "--backend",
             "cpu",
             "--threads",
-            "4",
+            str(args.threads),
             "--budget-gb",
             "14.8",
             "--kv-gb",
-            ".25",
+            str(args.kv_gb),
             "--row-budget",
-            "64",
+            str(args.row_budget),
             "--no-pin",
         ]
         results = {}
         for name in args.profiles:
             command = [
-                str(root / "build/fleet"),
+                str(args.binary),
                 "ppl" if args.ppl else "eval",
                 *base,
                 *PROFILES[name],

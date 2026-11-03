@@ -1,0 +1,14 @@
+{
+  "results/pi5/2026-11-02/followup/glimmer-reasoning/exact.jsonl": {
+    "checks": {
+      "bayes": true,
+      "collision": false,
+      "buffer": false
+    },
+    "decode_rates": {
+      "bayes": 0.959437,
+      "collision": 0.958552,
+      "buffer": 0.95897
+    }
+  }
+}

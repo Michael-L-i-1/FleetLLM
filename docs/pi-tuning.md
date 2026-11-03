@@ -67,6 +67,8 @@ python3 bench/pi_sweep.py --profiles exact --output ~/my-baseline
 python3 bench/pi_sweep.py --profiles ngram7 --tasks bench/pi-edit.jsonl --output ~/my-edit-test
 python3 bench/pi_sweep.py --profiles exact group256 --ppl --output ~/my-ppl-test
 python3 bench/check_pi_quality.py ~/my-baseline ~/my-edit-test
+# Compare a worktree build while keeping the same model, tasks and runtime settings:
+python3 bench/pi_sweep.py --binary ~/fleetllm-experiments/example/build/fleet --profiles exact --output ~/my-worktree-test
 ```
 
 `fleet eval --tasks tasks.jsonl` loads a model once, uses fresh sequences, and
@@ -81,12 +83,24 @@ lock, memory/swap guard and saved commands. The underlying `fleet eval` command
 is backend/model independent. The default inference binary has no new runtime
 package dependencies.
 
+The sweep uses tasks relative to its own checkout; `--binary` can select an
+isolated build. `--threads`, `--row-budget` and `--kv-gb` make hardware settings
+explicit in saved commands. Serialize compilation as well as inference during
+timing runs, so work in another worktree cannot compete for the Pi's cores.
+`bench/pi-reasoning.jsonl` adds three self-written science/probability questions
+with short explanations. Its `json_fields` checks grade the answer field only;
+the explanation still needs review. This is a smoke test, not GPQA.
+
 `bench/cpu_kernels.c` optionally loads the existing ggml CPU shared library to
 compare identical weight matrices. This is a development benchmark dependency
 only. Its multi-row ggml baseline repeats row-dot calls; it is **not** a
 comparison against every optimized llama.cpp batched kernel. Microbenchmarks
 exclude model loading and activation preparation; full task timings include
 per-token work. Prefer full-model results when choosing a preset.
+The original largest-matrix selector can choose `token_embd.weight` for Q2_K;
+that tests a dense operation on real weights, whereas inference uses embedding
+row lookups. Follow-up kernel experiments must also select streamed decoder
+matrices and confirm any improvement end to end.
 
 T-MAC lookup kernels, trained early-exit models and full TEAL-style sparsity
 remain separate research directions. The present experiment does not implement

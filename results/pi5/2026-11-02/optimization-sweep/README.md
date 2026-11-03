@@ -116,6 +116,11 @@ tests measured roughly 6% for one row and 17–23% for verification batches;
 whole-model ordinary Glimmer improved only modestly, from the previous ~0.93
 to ~0.96. Multi-row ggml microbenchmarks repeat its row-dot function; they do
 not represent all optimized llama.cpp batched GEMM kernels.
+The largest Q2 matrix selected by that original microbenchmark is
+`token_embd.weight`: its dense multiplication is a synthetic operation on real
+weights, not the embedding row-lookup path used in inference. Follow-up kernel
+screens additionally select streamed decoder matrices. The full-model rates
+above are unaffected by this microbenchmark limitation.
 
 An optional 256-value activation scale uses integer superblock accumulation.
 Default scales stay at 32. Speculation and approximation controls are shared

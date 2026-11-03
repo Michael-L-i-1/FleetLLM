@@ -1,0 +1,27 @@
+{
+  "baseline_commit": "dfd72cb",
+  "hardware": "same Pi 5 / four Cortex-A76 / 16GB / NVMe",
+  "unchanged_deployment": "~/fleetllm; ~/run-demo and ~/serve-demo",
+  "experiments": {
+    "tmac": {
+      "branch": "experiment/pi-tmac",
+      "worktree": "../constrained-inference-tmac",
+      "focus": "activation subset-sum lookup over bitplane low-bit weights",
+      "acceptance": "native correctness plus repeated actual-matrix and full-model measurements; delete branch if no useful improvement, retain report"
+    },
+    "cpu_tuning": {
+      "branch": "experiment/pi-cpu-tuning",
+      "worktree": "../constrained-inference-cpu-tuning",
+      "focus": "exact weight-stream prefetch/task grain",
+      "acceptance": "bitwise output checks and repeatable full-model improvement"
+    },
+    "draft_tuning": {
+      "branch": "experiment/pi-draft-tuning",
+      "worktree": "../constrained-inference-draft-tuning",
+      "focus": "reduce learned drafter output projection using previous target scores",
+      "acceptance": "full target verification, token equality and net wall-clock gain"
+    }
+  },
+  "quality": "No default pruning or target precision reduction. Self-written three-question reasoning checks supplement existing seven-task smoke set; no GPQA accuracy claim.",
+  "measurement": "Serialize builds and benchmarks on Pi; use exclusive ~/.cache/fleetllm-bench.lock. Keep loading/prefill separate from decode and retain total request timing."
+}

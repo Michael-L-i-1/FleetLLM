@@ -1,0 +1,426 @@
+[
+  {
+    "tensor": "blk.0.ffn_gate.weight",
+    "kind": "2-bit (Q2_K)",
+    "batch": 1,
+    "baseline_ms": 4.137927,
+    "variants": {
+      "baseline": {
+        "median_ms": 4.137927,
+        "samples": 5,
+        "speedup": 1.0
+      },
+      "grain16": {
+        "median_ms": 4.183779,
+        "samples": 5,
+        "speedup": 0.9890405301044821
+      },
+      "grain32": {
+        "median_ms": 4.195408,
+        "samples": 5,
+        "speedup": 0.9862990679333216
+      },
+      "grain128": {
+        "median_ms": 4.211945,
+        "samples": 5,
+        "speedup": 0.9824266461219223
+      },
+      "grain256": {
+        "median_ms": 4.372111,
+        "samples": 5,
+        "speedup": 0.9464368585335551
+      },
+      "grain512": {
+        "median_ms": 4.226389,
+        "samples": 5,
+        "speedup": 0.9790691296991356
+      },
+      "grain1024": {
+        "median_ms": 4.335796,
+        "samples": 5,
+        "speedup": 0.9543638584472148
+      },
+      "grain4096": {
+        "median_ms": 6.030493,
+        "samples": 5,
+        "speedup": 0.6861672835040187
+      },
+      "static4": {
+        "median_ms": 4.255519,
+        "samples": 5,
+        "speedup": 0.972367177775496
+      }
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_gate.weight",
+    "kind": "2-bit (Q2_K)",
+    "batch": 4,
+    "baseline_ms": 8.229076,
+    "variants": {
+      "baseline": {
+        "median_ms": 8.229076,
+        "samples": 5,
+        "speedup": 1.0
+      },
+      "grain16": {
+        "median_ms": 8.381168,
+        "samples": 5,
+        "speedup": 0.9818531259604865
+      },
+      "grain32": {
+        "median_ms": 8.270687,
+        "samples": 5,
+        "speedup": 0.994968858088814
+      },
+      "grain128": {
+        "median_ms": 8.206261,
+        "samples": 5,
+        "speedup": 1.0027801942931134
+      },
+      "grain256": {
+        "median_ms": 8.389538,
+        "samples": 5,
+        "speedup": 0.9808735594260374
+      },
+      "grain512": {
+        "median_ms": 8.401316,
+        "samples": 5,
+        "speedup": 0.9794984500047373
+      },
+      "grain1024": {
+        "median_ms": 8.412835,
+        "samples": 5,
+        "speedup": 0.978157303691324
+      },
+      "grain4096": {
+        "median_ms": 12.53315,
+        "samples": 5,
+        "speedup": 0.6565848170651433
+      },
+      "static4": {
+        "median_ms": 8.18554,
+        "samples": 5,
+        "speedup": 1.0053186472731181
+      }
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_down.weight",
+    "kind": "3-bit (Q3_K)",
+    "batch": 1,
+    "baseline_ms": 5.640124,
+    "variants": {
+      "baseline": {
+        "median_ms": 5.640124,
+        "samples": 5,
+        "speedup": 1.0
+      },
+      "grain16": {
+        "median_ms": 5.490458,
+        "samples": 5,
+        "speedup": 1.0272592923941863
+      },
+      "grain32": {
+        "median_ms": 5.541458,
+        "samples": 5,
+        "speedup": 1.0178050614116356
+      },
+      "grain128": {
+        "median_ms": 5.693549,
+        "samples": 5,
+        "speedup": 0.9906165732480743
+      },
+      "grain256": {
+        "median_ms": 5.853253,
+        "samples": 5,
+        "speedup": 0.96358793990282
+      },
+      "grain512": {
+        "median_ms": 6.607879,
+        "samples": 5,
+        "speedup": 0.8535452904025634
+      },
+      "grain1024": {
+        "median_ms": 6.406047,
+        "samples": 5,
+        "speedup": 0.8804374991316798
+      },
+      "grain4096": {
+        "median_ms": 11.765746,
+        "samples": 5,
+        "speedup": 0.4793681590610574
+      },
+      "static4": {
+        "median_ms": 5.788919,
+        "samples": 5,
+        "speedup": 0.9742965828335135
+      }
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_down.weight",
+    "kind": "3-bit (Q3_K)",
+    "batch": 4,
+    "baseline_ms": 8.693741,
+    "variants": {
+      "baseline": {
+        "median_ms": 8.693741,
+        "samples": 5,
+        "speedup": 1.0
+      },
+      "grain16": {
+        "median_ms": 8.743481,
+        "samples": 5,
+        "speedup": 0.9943111902456242
+      },
+      "grain32": {
+        "median_ms": 8.73474,
+        "samples": 5,
+        "speedup": 0.9953062140372809
+      },
+      "grain128": {
+        "median_ms": 8.677167,
+        "samples": 5,
+        "speedup": 1.0019100704181443
+      },
+      "grain256": {
+        "median_ms": 9.314961,
+        "samples": 5,
+        "speedup": 0.9333094362928626
+      },
+      "grain512": {
+        "median_ms": 10.605936,
+        "samples": 5,
+        "speedup": 0.8197052103652143
+      },
+      "grain1024": {
+        "median_ms": 10.592363,
+        "samples": 5,
+        "speedup": 0.8207555764469173
+      },
+      "grain4096": {
+        "median_ms": 20.949929,
+        "samples": 5,
+        "speedup": 0.41497711042362
+      },
+      "static4": {
+        "median_ms": 8.712241,
+        "samples": 5,
+        "speedup": 0.9978765509356317
+      }
+    }
+  },
+  {
+    "tensor": "blk.0.attn_v.weight",
+    "kind": "4-bit (Q4_K)",
+    "batch": 1,
+    "baseline_ms": 0.030352,
+    "variants": {
+      "baseline": {
+        "median_ms": 0.030352,
+        "samples": 5,
+        "speedup": 1.0
+      },
+      "grain16": {
+        "median_ms": 0.030759,
+        "samples": 5,
+        "speedup": 0.9867681003933808
+      },
+      "grain32": {
+        "median_ms": 0.030389,
+        "samples": 5,
+        "speedup": 0.9987824541774984
+      },
+      "grain128": {
+        "median_ms": 0.059111,
+        "samples": 5,
+        "speedup": 0.5134746493884388
+      },
+      "grain256": {
+        "median_ms": 0.117092,
+        "samples": 5,
+        "speedup": 0.2592149762579852
+      },
+      "grain512": {
+        "median_ms": 0.117018,
+        "samples": 5,
+        "speedup": 0.25937889897280764
+      },
+      "grain1024": {
+        "median_ms": 0.117018,
+        "samples": 5,
+        "speedup": 0.25937889897280764
+      },
+      "grain4096": {
+        "median_ms": 0.117129,
+        "samples": 5,
+        "speedup": 0.2591330925731459
+      },
+      "static4": {
+        "median_ms": 0.034351,
+        "samples": 5,
+        "speedup": 0.8835841751331839
+      }
+    }
+  },
+  {
+    "tensor": "blk.0.attn_v.weight",
+    "kind": "4-bit (Q4_K)",
+    "batch": 4,
+    "baseline_ms": 0.084148,
+    "variants": {
+      "baseline": {
+        "median_ms": 0.084148,
+        "samples": 5,
+        "speedup": 1.0
+      },
+      "grain16": {
+        "median_ms": 0.084518,
+        "samples": 5,
+        "speedup": 0.9956222343169503
+      },
+      "grain32": {
+        "median_ms": 0.08437,
+        "samples": 5,
+        "speedup": 0.9973687329619533
+      },
+      "grain128": {
+        "median_ms": 0.166555,
+        "samples": 5,
+        "speedup": 0.5052265017561766
+      },
+      "grain256": {
+        "median_ms": 0.331888,
+        "samples": 5,
+        "speedup": 0.2535433640264185
+      },
+      "grain512": {
+        "median_ms": 0.331943,
+        "samples": 5,
+        "speedup": 0.25350135414815195
+      },
+      "grain1024": {
+        "median_ms": 0.331869,
+        "samples": 5,
+        "speedup": 0.2535578797658112
+      },
+      "grain4096": {
+        "median_ms": 0.331758,
+        "samples": 5,
+        "speedup": 0.25364271547332695
+      },
+      "static4": {
+        "median_ms": 0.088814,
+        "samples": 5,
+        "speedup": 0.9474632377778278
+      }
+    }
+  },
+  {
+    "tensor": "output.weight",
+    "kind": "6-bit (Q6_K)",
+    "batch": 1,
+    "baseline_ms": 98.021804,
+    "variants": {
+      "baseline": {
+        "median_ms": 98.021804,
+        "samples": 5,
+        "speedup": 1.0
+      },
+      "grain16": {
+        "median_ms": 94.623467,
+        "samples": 5,
+        "speedup": 1.0359143149975683
+      },
+      "grain32": {
+        "median_ms": 102.39099,
+        "samples": 5,
+        "speedup": 0.9573284133691842
+      },
+      "grain128": {
+        "median_ms": 98.093934,
+        "samples": 5,
+        "speedup": 0.9992646843993431
+      },
+      "grain256": {
+        "median_ms": 99.115558,
+        "samples": 5,
+        "speedup": 0.98896486059232
+      },
+      "grain512": {
+        "median_ms": 98.995262,
+        "samples": 5,
+        "speedup": 0.9901666202974442
+      },
+      "grain1024": {
+        "median_ms": 98.591098,
+        "samples": 5,
+        "speedup": 0.9942257058542953
+      },
+      "grain4096": {
+        "median_ms": 98.842911,
+        "samples": 5,
+        "speedup": 0.991692808399785
+      },
+      "static4": {
+        "median_ms": 98.786134,
+        "samples": 5,
+        "speedup": 0.9922627805234285
+      }
+    }
+  },
+  {
+    "tensor": "output.weight",
+    "kind": "6-bit (Q6_K)",
+    "batch": 4,
+    "baseline_ms": 98.054267,
+    "variants": {
+      "baseline": {
+        "median_ms": 98.054267,
+        "samples": 5,
+        "speedup": 1.0
+      },
+      "grain16": {
+        "median_ms": 97.834379,
+        "samples": 5,
+        "speedup": 1.0022475534903736
+      },
+      "grain32": {
+        "median_ms": 103.599651,
+        "samples": 5,
+        "speedup": 0.9464729470951596
+      },
+      "grain128": {
+        "median_ms": 98.368488,
+        "samples": 5,
+        "speedup": 0.9968056741911088
+      },
+      "grain256": {
+        "median_ms": 98.446451,
+        "samples": 5,
+        "speedup": 0.996016270815085
+      },
+      "grain512": {
+        "median_ms": 98.906153,
+        "samples": 5,
+        "speedup": 0.9913869261500848
+      },
+      "grain1024": {
+        "median_ms": 99.038874,
+        "samples": 5,
+        "speedup": 0.9900583784908539
+      },
+      "grain4096": {
+        "median_ms": 101.661826,
+        "samples": 5,
+        "speedup": 0.9645141235216451
+      },
+      "static4": {
+        "median_ms": 98.611876,
+        "samples": 5,
+        "speedup": 0.9943454173815738
+      }
+    }
+  }
+]

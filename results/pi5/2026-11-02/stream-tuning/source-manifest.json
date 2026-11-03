@@ -1,0 +1,20 @@
+{
+  "base_commit": "dfd72cb95e113fbad3baf5c83bbcc227961ffba7",
+  "production_source_unchanged": true,
+  "files": {
+    "src/cpuq.c": "e59116315e29a38f00e5434684da6622006fd315e5b02b39ac9b7ec6d921df5d",
+    "src/cpuq.h": "f124323615b37d130fe47c2d9285f1e898ee453b41f00e35383a76e9e484fd6c",
+    "src/threadpool.c": "593dc8c6c4313452ec3ead99f6dd42d584a9ec80ed7fa6f6bfb219005aa381be",
+    "src/threadpool.h": "3c5114c1226a036cc544ced2fc0d89d129aa1229a492e7d90ce9f42beb5d597b",
+    "bench/experiments/pi-stream/build.py": "5fba865f18c496ec9db8798a9c3f1c2a9340e06dc4863457e07c16c1e213639e",
+    "bench/experiments/pi-stream/measure.c": "17433b4a2b6bb616aaabf3c513361d3cfa05a4d12aa7c9961a011e189207a5cf",
+    "bench/experiments/pi-stream/analyze.py": "b8160a58bd628281fba564f359ed83c6cf2e259837c23e534024e730665fec78"
+  },
+  "bitwise_equal_checks": {
+    "glimmer": 360,
+    "decoder-prefetch": 360,
+    "decoder-grain": 360
+  },
+  "total_bitwise_equal_checks": 1080,
+  "note": "Hashes identify final reproducible sources; the measure.c signedness warning was cleaned up after measurement. The first screen predates decoder/grain selection; generated prefetch kernels retain the same arithmetic and injection algorithm."
+}

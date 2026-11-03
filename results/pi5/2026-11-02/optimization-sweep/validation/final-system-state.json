@@ -1,0 +1,12 @@
+{
+  "active_inference_processes": [],
+  "temperature": "temp=45.0'C",
+  "throttle": "throttled=0x0",
+  "meminfo": {
+    "MemTotal": "16607536 kB",
+    "MemAvailable": "16166240 kB",
+    "SwapTotal": "2097136 kB",
+    "SwapFree": "2061632 kB"
+  },
+  "governor": "ondemand"
+}

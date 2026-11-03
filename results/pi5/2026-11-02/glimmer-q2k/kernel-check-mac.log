@@ -1,0 +1,5 @@
+make: `build/libfleetllm.a' is up to date.
+quantization: scalar bitwise, four rounding modes, zero/ties/wide exponents PASS
+Q2_K: exact repack, original packed size, independent dense dequantized matmul PASS
+Q3_K: exact repack, compact 3-bit storage, independent dense dequantized matmul PASS
+all seven formats: row partitions, batch sizes 1..17, scalar tolerance, padded rows PASS

@@ -1,0 +1,30 @@
+{
+  "plain-t4": {
+    "command": [
+      "/home/mli5/fleetllm/build/fleet-generate",
+      "--model",
+      "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+      "--prompt",
+      "Explain how a rainbow forms, step by step. Discuss sunlight, refraction, internal reflection, and why the colors separate. Give a detailed explanation in plain English.",
+      "--n",
+      "32",
+      "--temp",
+      "0",
+      "--budget-gb",
+      "14.8",
+      "--kv-gb",
+      ".25",
+      "--row-budget",
+      "64",
+      "--no-pin",
+      "--threads",
+      "4"
+    ],
+    "seconds": 14.230764967999676,
+    "returncode": -15,
+    "stopped": "memory pressure or timeout",
+    "peak_rss_bytes": 7383171072,
+    "minimum_available_bytes": 9133146112,
+    "peak_swap_delta_bytes": 162938880
+  }
+}

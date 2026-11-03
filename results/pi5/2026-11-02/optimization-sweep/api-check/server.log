@@ -1,0 +1,5 @@
+[cpu] neon+dotprod, 4 threads; weights 4.67 GB -> 4.78 GB: 216 4-bit (Q4_K) (err 0.0e+00) 37 6-bit (Q6_K) (err 0.0e+00)
+[load] 10.6s qwen3 /home/mli5/models/Qwen3-8B-Q4_K_M.gguf, 36 layers, weights 4.67 GB (pinned 0.00), KV 0.25 GB (105 full + 0 swa pages), backend cpu
+[serve] listening on http://127.0.0.1:18095/v1 (model "pi-demo")
+[serve] chatcmpl-1: 23 prompt + 6 generated tokens, first token 1.92s, total 4.13s, stop
+[serve] chatcmpl-2: 23 prompt + 6 generated tokens, first token 0.44s, total 2.66s, stop

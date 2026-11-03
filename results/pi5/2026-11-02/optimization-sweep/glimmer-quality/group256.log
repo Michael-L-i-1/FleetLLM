@@ -1,0 +1,10 @@
+[cpu] neon+dotprod, 4 threads; weights 10.58 GB -> 10.79 GB: 52 4-bit (Q4_K) (err 0.0e+00) 27 6-bit (Q6_K) (err 0.0e+00) 234 2-bit (Q2_K) (err 0.0e+00) 104 3-bit (Q3_K) (err 0.0e+00)
+[precision] CPU activation group 256 (default 32); changes rounding
+[load] 24.0s muse-glimmer /home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf, 52 layers, weights 10.58 GB (pinned 0.00), KV 0.25 GB (294 full + 293 swa pages), backend cpu
+[eval] rainbow: 32 tokens, 0.97 tok/s
+[eval] arithmetic: 2 tokens, 0.98 tok/s
+[eval] fact: 2 tokens, 0.97 tok/s
+[eval] json: 22 tokens, 0.97 tok/s
+[eval] python: 13 tokens, 0.97 tok/s
+[eval] instruction: 2 tokens, 0.98 tok/s
+[eval] edit: 66 tokens, 0.97 tok/s

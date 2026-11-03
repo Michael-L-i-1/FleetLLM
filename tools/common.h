@@ -73,6 +73,28 @@ static runtime load_runtime(int argc, char **argv) {
     if (budget < streamed + reserve + (64u << 20)) { fprintf(stderr, "budget %.1f GB too small for %.2f GB of weights\n", budget_gb, streamed / 1e9); exit(1); }
     // --device auto|cpu|cpu-ref|metal (--backend: older spelling); auto = metal when built with it
     rt.be = backend_create(arg_str(argc, argv, "--device", arg_str(argc, argv, "--backend", "auto")), rt.m);
+    int group = 32;
+    const char *gp = arg_str(argc, argv, "--activation-group", NULL);
+    if (gp) {
+        char *end; long value = strtol(gp, &end, 10);
+        if (end == gp || *end || (value != 32 && value != 256)) {
+            fprintf(stderr, "--activation-group must be 32 or 256\n"); exit(1);
+        }
+        group = (int)value;
+    }
+    if (group != 32 && !cpu_backend_activation_group(rt.be, group)) {
+        fprintf(stderr, "--activation-group must be 32 or 256; CPU backend required\n"); exit(1);
+    }
+    float sparsity = 0;
+    const char *sp = arg_str(argc, argv, "--ffn-sparsity", NULL);
+    if (sp) {
+        char *end; sparsity = strtof(sp, &end);
+        if (end == sp || *end) { fprintf(stderr, "invalid --ffn-sparsity value\n"); exit(1); }
+    }
+    const char *skip = arg_str(argc, argv, "--skip-layers", NULL);
+    if ((sparsity != 0 || skip) && !cpu_backend_approximate(rt.be, rt.m, sparsity, skip)) {
+        fprintf(stderr, "invalid CPU approximation: --ffn-sparsity must be in [0,1), --skip-layers must name valid layers; CPU backend required\n"); exit(1);
+    }
     size_t pinned = arg_flag(argc, argv, "--no-pin") ? 0 : model_pin(rt.m);
     size_t kv = budget - streamed - reserve;
     double kv_gb = arg_num(argc, argv, "--kv-gb", 0); // cap the KV pool (it otherwise takes the rest of the budget)
@@ -82,6 +104,9 @@ static runtime load_runtime(int argc, char **argv) {
     }
     rt.e = engine_new(rt.m, rt.be, rt.tok, kv);
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
+    int spec_k = (int)arg_num(argc, argv, "--spec-k", 0);
+    if (spec_k < 0 || spec_k > 31) { fprintf(stderr, "--spec-k must be 0..31\n"); exit(1); }
+    rt.e->spec_k = spec_k;
     rt.e->spec_rows = (int)arg_num(argc, argv, "--spec-rows", 32);
     if (arg_flag(argc, argv, "--ngram")) engine_set_ngram(rt.e, true); // drafts from repeated text (model-free)
     if (arg_flag(argc, argv, "--reuse-spans")) // move KV of text other sequences already hold (lossy, see spans.h)

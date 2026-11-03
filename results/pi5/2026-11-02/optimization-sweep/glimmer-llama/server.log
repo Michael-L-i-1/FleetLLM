@@ -1,0 +1,25 @@
+warning: no usable GPU found, --gpu-layers option will be ignored
+warning: one possible reason is that llama.cpp was compiled without GPU support
+warning: consult docs/build.md for compilation instructions
+0.00.002.361 I srv  llama_server: initializing ...
+0.00.002.381 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.002.571 W srv  server_setup: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.003.888 I srv    load_model: loading model '/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf'
+0.01.197.943 W load: setting token '<|message|>' (200023) attribute to USER_DEFINED (16), old attributes: 8
+0.01.207.603 W load: setting token '<|start|>' (200022) attribute to USER_DEFINED (16), old attributes: 8
+0.28.465.557 I cmn          init: llama threadpool init, n_threads = 4
+0.30.335.741 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 512, kv_unified = 'false'
+0.30.335.825 W srv          init: --cache-idle-slots requires --cache-ram, disabling
+0.30.347.378 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+0.30.347.439 I srv  server_run_i: model loaded
+0.30.347.446 I srv  server_on_li: listening on http://127.0.0.1:18094
+0.30.361.781 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.30.361.810 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.25.341.845 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =     76, progress = 0.95, t =  54.98 s / 1.38 tokens per second
+1.58.231.387 I slot print_timing: id  0 | task 0 | prompt eval time =   58068.77 ms /    80 tokens (  725.86 ms per token,     1.38 tokens per second)
+1.58.231.394 I slot print_timing: id  0 | task 0 |        eval time =   29800.77 ms /    32 tokens (  961.32 ms per token,     1.04 tokens per second)
+1.58.231.395 I slot print_timing: id  0 | task 0 |       total time =   87869.53 ms /   112 tokens
+1.58.231.400 I slot print_timing: id  0 | task 0 |    graphs reused =         30
+1.58.231.400 I slot print_timing: id  0 | task 0 |   graph reallocs =          0    /     0        (same size) / (changed size)
+1.58.231.965 I slot      release: id  0 | task 0 | stop processing: n_tokens = 111, truncated = 0
+1.58.235.265 I srv    operator(): operator(): cleaning up before exit...

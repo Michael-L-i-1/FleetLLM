@@ -1,0 +1,145 @@
+{
+  "scope": "Single-agent, four CPU threads, greedy, short prompts; decode excludes model load and first-token/prefill time.",
+  "rates": {
+    "depth15/ngram15.jsonl": {
+      "edit": 2.308168
+    },
+    "edit-quality/group256-ngram7.jsonl": {
+      "rainbow": 0.971886,
+      "edit": 2.386142
+    },
+    "edit-quality/ngram7.jsonl": {
+      "rainbow": 0.961753,
+      "edit": 2.202077
+    },
+    "fast-draft/group256-draft2.jsonl": {
+      "rainbow": 1.253071
+    },
+    "glimmer-quality/exact.jsonl": {
+      "rainbow": 0.961207,
+      "arithmetic": 0.964871,
+      "fact": 0.965825,
+      "json": 0.961508,
+      "python": 0.962198,
+      "instruction": 0.965381,
+      "edit": 0.959062
+    },
+    "glimmer-quality/group256.jsonl": {
+      "rainbow": 0.972823,
+      "arithmetic": 0.977493,
+      "fact": 0.973792,
+      "json": 0.973336,
+      "python": 0.973005,
+      "instruction": 0.97806,
+      "edit": 0.970075
+    },
+    "qwen-final/exact.jsonl": {
+      "rainbow": 2.249527,
+      "physics_complete": 2.246776
+    },
+    "qwen-ngram/ngram7.jsonl": {
+      "rainbow": 2.24554,
+      "arithmetic": 2.251261,
+      "fact": 2.265702,
+      "json": 2.240409,
+      "python": 2.461767,
+      "instruction": 2.272165,
+      "edit": 7.269896
+    },
+    "qwen-quality/exact.jsonl": {
+      "rainbow": 2.250799,
+      "arithmetic": 2.262867,
+      "fact": 2.257847,
+      "json": 2.255623,
+      "python": 2.252453,
+      "instruction": 2.275191,
+      "edit": 2.246996
+    },
+    "screen/draft2.jsonl": {
+      "rainbow": 1.061846
+    },
+    "screen/exact.jsonl": {
+      "rainbow": 0.961332
+    },
+    "screen/skip-half-diagnostic.jsonl": {
+      "rainbow": 1.699175
+    },
+    "screen/skip4.jsonl": {
+      "rainbow": 1.034098
+    },
+    "screen/skip8.jsonl": {
+      "rainbow": 1.122719
+    },
+    "screen/sparse25.jsonl": {
+      "rainbow": 0.961362
+    },
+    "screen/sparse50.jsonl": {
+      "rainbow": 0.96574
+    }
+  },
+  "token_identity": {
+    "edit-quality/ngram7.jsonl": {
+      "target": "glimmer-quality/exact.jsonl",
+      "checks": {
+        "rainbow": true,
+        "edit": true
+      }
+    },
+    "depth15/ngram15.jsonl": {
+      "target": "glimmer-quality/exact.jsonl",
+      "checks": {
+        "edit": true
+      }
+    },
+    "edit-quality/group256-ngram7.jsonl": {
+      "target": "glimmer-quality/group256.jsonl",
+      "checks": {
+        "rainbow": true,
+        "edit": true
+      }
+    },
+    "fast-draft/group256-draft2.jsonl": {
+      "target": "glimmer-quality/group256.jsonl",
+      "checks": {
+        "rainbow": true
+      }
+    },
+    "qwen-ngram/ngram7.jsonl": {
+      "target": "qwen-quality/exact.jsonl",
+      "checks": {
+        "rainbow": true,
+        "arithmetic": true,
+        "fact": true,
+        "json": true,
+        "python": true,
+        "instruction": true,
+        "edit": true
+      }
+    }
+  },
+  "llama_comparisons": {
+    "qwen": {
+      "llama_tokens_per_second": 2.570004433672165,
+      "fleet_tokens_per_second": 2.249527,
+      "prompt_token_count": 46,
+      "output_token_count": 32,
+      "same_text": false,
+      "caveat": "Identical weight file and input token IDs; activation arithmetic differs. Glimmer Fleet uses optional group256 + DFlash2."
+    },
+    "glimmer": {
+      "llama_tokens_per_second": 1.0402417172766634,
+      "fleet_tokens_per_second": 1.253071,
+      "prompt_token_count": 80,
+      "output_token_count": 32,
+      "same_text": false,
+      "caveat": "Identical weight file and input token IDs; activation arithmetic differs. Glimmer Fleet uses optional group256 + DFlash2."
+    }
+  },
+  "perplexity": {
+    "scored_tokens": 158,
+    "default32": 11.1266,
+    "group256": 11.2235,
+    "increase_percent": 0.8708859849369865,
+    "caveat": "Tiny self-written calibration text, not a general quality bound."
+  }
+}

@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#ifdef __linux__
+#include <fcntl.h>
+#endif
 
 const char *arch_name(arch_t a) {
     switch (a) {
@@ -651,6 +654,17 @@ static model *model_load_dflash(const char *dir, json *j) {
         m->host_q = mmap(NULL, m->host_q_len, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
         m->regions[m->n_regions++] = (mem_region){ m->host_q, m->host_q_len };
         for (int i = 0; i < nq; i++) quantize_into(m, mats[i], &off);
+#ifdef __linux__
+        // Norms were copied into aux; converted weights now live in host_q.
+        // Drop the checkpoint cache before loading/repacking the target, rather
+        // than waiting until the CPU drafter is attached after the target.
+        // Mappings stay readable for any already-quantized source tensors.
+        for (int i = 0; i < m->st->n_files; i++) {
+            const st_file *f = &m->st->files[i];
+            madvise((void *)f->map, f->size, MADV_DONTNEED);
+            posix_fadvise(f->fd, 0, 0, POSIX_FADV_DONTNEED);
+        }
+#endif
     }
     return m;
 }
@@ -663,5 +677,11 @@ void model_drop_host_copies(model *m) {
         const qmat *ls[] = { &l->wq, &l->wk, &l->wv, &l->wo, &l->w_gate, &l->w_up, &l->w_down };
         for (int k = 0; k < 7; k++) if (ls[k]->data && !ls[k]->gpu) all = false;
     }
-    if (all) madvise(m->host_q, m->host_q_len, MADV_FREE); // contents no longer read
+    if (all) { // contents no longer read; release immediately on memory-limited Linux hosts
+#ifdef __linux__
+        madvise(m->host_q, m->host_q_len, MADV_DONTNEED);
+#else
+        madvise(m->host_q, m->host_q_len, MADV_FREE);
+#endif
+    }
 }

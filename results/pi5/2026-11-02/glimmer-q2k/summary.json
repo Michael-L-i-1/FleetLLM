@@ -1,0 +1,97 @@
+{
+  "results": [
+    {
+      "folder": "tuning-target",
+      "case": "plain-t4",
+      "prompt_tokens": 80,
+      "prefill_seconds": 31.0,
+      "decode_tokens": 31,
+      "decode_seconds": 33.44,
+      "decode_tokens_per_second": 0.93,
+      "peak_rss_bytes": 11938807808,
+      "peak_swap_delta_bytes": 0,
+      "seconds": 74.65372731299976
+    },
+    {
+      "folder": "tuning-target",
+      "case": "plain-t3",
+      "prompt_tokens": 80,
+      "prefill_seconds": 41.13,
+      "decode_tokens": 31,
+      "decode_seconds": 38.84,
+      "decode_tokens_per_second": 0.8,
+      "peak_rss_bytes": 11938725888,
+      "peak_swap_delta_bytes": 0,
+      "seconds": 104.6135596439999
+    },
+    {
+      "folder": "tuning-target",
+      "case": "plain-t2",
+      "prompt_tokens": 80,
+      "prefill_seconds": 60.21,
+      "decode_tokens": 31,
+      "decode_seconds": 54.33,
+      "decode_tokens_per_second": 0.57,
+      "peak_rss_bytes": 11938496512,
+      "peak_swap_delta_bytes": 0,
+      "seconds": 139.11815191699952
+    },
+    {
+      "folder": "tuning-draft",
+      "case": "draft-k1",
+      "prompt_tokens": 80,
+      "prefill_seconds": 31.21,
+      "decode_tokens": 31,
+      "decode_seconds": 31.51,
+      "decode_tokens_per_second": 0.98,
+      "peak_rss_bytes": 13893091328,
+      "peak_swap_delta_bytes": 0,
+      "seconds": 95.15701676900062
+    },
+    {
+      "folder": "tuning-draft",
+      "case": "draft-k3",
+      "prompt_tokens": 80,
+      "prefill_seconds": 31.07,
+      "decode_tokens": 31,
+      "decode_seconds": 37.99,
+      "decode_tokens_per_second": 0.82,
+      "peak_rss_bytes": 13893189632,
+      "peak_swap_delta_bytes": 0,
+      "seconds": 106.66951737799991
+    },
+    {
+      "folder": "final",
+      "case": "draft-k2",
+      "prompt_tokens": 80,
+      "prefill_seconds": 31.07,
+      "decode_tokens": 31,
+      "decode_seconds": 31.31,
+      "decode_tokens_per_second": 0.99,
+      "peak_rss_bytes": 13893419008,
+      "peak_swap_delta_bytes": 0,
+      "seconds": 100.15384598000037
+    },
+    {
+      "folder": "final",
+      "case": "plain-t4",
+      "prompt_tokens": 80,
+      "prefill_seconds": 30.85,
+      "decode_tokens": 31,
+      "decode_seconds": 33.31,
+      "decode_tokens_per_second": 0.93,
+      "peak_rss_bytes": 11938430976,
+      "peak_swap_delta_bytes": 0,
+      "seconds": 88.66369146000034
+    }
+  ],
+  "all_successful_generated_texts_identical": true,
+  "llama_cpp": {
+    "request_seconds": 87.43361986200034,
+    "prompt_tokens": 80,
+    "completion_tokens": 32,
+    "prefill_seconds": 58.020127,
+    "decode_tokens_per_second": 1.054207377350028,
+    "generated_text_matches_fleet": true
+  }
+}

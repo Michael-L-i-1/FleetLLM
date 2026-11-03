@@ -70,6 +70,41 @@ target's hidden states (captured after layers 1/13/25/37/49), block rows
 one batched forward and rejected KV is truncated. Drafts per agent shrink as
 more agents decode (`spec_rows` target).
 
+The CPU backend also implements DFlash: it captures the selected target-layer
+residuals, projects their concatenation into fixed context features, and runs
+anchor/mask blocks with bidirectional attention and the draft model's sliding
+window. Draft weights use the existing affine 4-bit CPU tiles; verification,
+rejection rollback, and draft-length scheduling remain in the shared engine.
+`scripts/cpudraftcheck.py` compares the draft hidden states/tokens to an
+independent dense PyTorch reference and exercises acceptance/rejection with
+float32, float16, and int8 KV under address/undefined-behavior sanitizers.
+
+Q2_K and Q3_K use compact CPU tiles and NEON integer dot products, preserving
+the source codes/scales. Q2_K retains its original storage size; Q3_K uses
+116 rather than 110 bytes per 256 weights for simpler per-half scale access.
+On Linux, release each repacked GGUF source range from the mapping and file
+cache immediately to avoid keeping two resident copies during loading.
+Q5 and sub-4-bit affine weights without native tiles retain their original
+format and use row-wise dequantization plus the NEON float dot product, rather
+than expanding to CQ8. See the [Pi Q2_K tests](../results/pi5/2026-11-02/glimmer-q2k/README.md).
+
+## Precision and hardware profiles
+
+CPU target precision defaults to 32-value int8 activation scales and all model
+layers/features. The optional 256-value scale uses integer K-quant superblock
+accumulation; it changes activation rounding. Explicit layer and FFN down-input
+pruning controls are experimental, disabled by default, and validated before
+inference. They change the target's answers. Speculative verification preserves
+the selected target, including any approximation, rather than restoring an
+unmodified model's output.
+
+The engine owns verification and sequence/KV coordination. Pi model paths,
+thread counts and demo choices belong in `scripts/pi-*.sh`, with measured
+tradeoffs in [Pi tuning](pi-tuning.md). Generic `fleet eval` records task outputs
+and token IDs; `bench/pi_sweep.py` owns Linux experiment orchestration, not the
+inference engine. This keeps platform/demo choices separate from reusable
+inference controls and future multi-agent experiments.
+
 ## Source layout
 
 ```
@@ -84,7 +119,7 @@ src/engine.*      sequences, scheduler, prefix sharing, sampling
 src/cpu.c         CPU reference backend
 src/metal/        Metal backend (metal.m) and kernels (kernels.metal; kernels_nax.metal for the
                   M5 neural accelerators; vendored MLX headers in mlx/), embedded at build
-tools/            `fleet` subcommands (serve, generate, bench, ppl, reuse_eval, tokcheck,
+tools/            `fleet` subcommands (serve, generate, eval, bench, ppl, reuse_eval, tokcheck,
                   dequant_dump; built as build/fleet-<name>); tools/fleet/ is the dispatcher
 scripts/          verification scripts, Unicode table generator
 bench/tasks.txt   8 heterogeneous agent tasks used by `fleet bench`

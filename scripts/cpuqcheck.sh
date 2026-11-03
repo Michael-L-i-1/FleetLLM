@@ -4,7 +4,7 @@ set -eu
 cd "$(dirname "$0")/.."
 make build/libfleetllm.a
 set --
-for name in cq_kind_name cq_from_qmat cq_free cq_bytes cq_check cq_quantize cq_isa; do
+for name in cq_kind_name cq_from_qmat cq_free cq_bytes cq_check cq_quantize cq_quantize_group cq_isa; do
     set -- "$@" "-D$name=scalar_$name"
 done
 ${CC:-cc} -O3 -Isrc -U__ARM_FEATURE_DOTPROD "$@" -Dcq_matmul_rows=scalar_matmul -c src/cpuq.c -o build/cpuqcheck-scalar.o

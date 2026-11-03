@@ -1,0 +1,58 @@
+{
+  "exact": {
+    "command": [
+      "/home/mli5/fleetllm/build/fleet",
+      "eval",
+      "--model",
+      "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+      "--backend",
+      "cpu",
+      "--threads",
+      "4",
+      "--budget-gb",
+      "14.8",
+      "--kv-gb",
+      ".25",
+      "--row-budget",
+      "64",
+      "--no-pin",
+      "--tasks",
+      "/home/mli5/fleetllm/bench/pi-quality.jsonl"
+    ],
+    "seconds": 353.77598590100024,
+    "returncode": 0,
+    "stopped": null,
+    "peak_rss_bytes": 11939381248,
+    "minimum_available_bytes": 5072289792,
+    "peak_swap_delta_bytes": 0
+  },
+  "group256": {
+    "command": [
+      "/home/mli5/fleetllm/build/fleet",
+      "eval",
+      "--model",
+      "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+      "--backend",
+      "cpu",
+      "--threads",
+      "4",
+      "--budget-gb",
+      "14.8",
+      "--kv-gb",
+      ".25",
+      "--row-budget",
+      "64",
+      "--no-pin",
+      "--activation-group",
+      "256",
+      "--tasks",
+      "/home/mli5/fleetllm/bench/pi-quality.jsonl"
+    ],
+    "seconds": 336.24216815899854,
+    "returncode": 0,
+    "stopped": null,
+    "peak_rss_bytes": 11938463744,
+    "minimum_available_bytes": 5096783872,
+    "peak_swap_delta_bytes": 0
+  }
+}

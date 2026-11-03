@@ -1,8 +1,8 @@
 // Quantized weights and matmul for the CPU backend.
 //
-// At load, every weight matrix is repacked into a block format with 32 values
-// per block that keeps the source's bits (so decode reads no more bytes than
-// the file holds):
+// At load, supported weight matrices are repacked into 32-value blocks while
+// preserving their quantized codes and scales. Q3_K metadata grows slightly
+// (116 versus 110 bytes per 256 weights); the codes remain three-bit:
 //   CQ4   4-bit codes, value = scale * code + bias (f16 per block). MLX affine
 //         4-bit, GGUF Q4_1.                                             5.0 bits
 //   CQ4S  4-bit codes, value = scale * (code - 8) (f16 per block). Q4_0. 4.5 bits
@@ -10,9 +10,12 @@
 //         block, f16 d, dmin per 256 values. Q4_K.                    4.6 bits
 //   CQ6K  6-bit codes - 32, value = d * sc * code: int8 sc per 16 values, f16 d
 //         per 256. Q6_K.                                              6.6 bits
-//   CQ8   int8 codes, value = scale * code (f16 per block). Q8_0 exactly; any
-//         other format (Q5, Q2/3/5_K, F16, ...) is requantized to it.  8.5 bits
-// Activations are quantized per row to int8 in the same 32-value blocks, and
+//   CQ2K  2-bit codes, separate scale/min per 16 values, Q2_K.          2.625 bits
+//   CQ3K  3-bit codes, signed scales per 16 values, Q3_K.              3.625 bits
+//   CQ8   int8 codes, value = scale * code (f16 per block). Q8_0 exactly;
+//         floating-point formats are requantized to it.                8.5 bits
+// Q5 and sub-4-bit affine retain their original packed representation.
+// Activations use int8 codes with 32-value scales by default (256 opt-in), and
 // block dot products run as int8 dot-product instructions where the CPU has
 // them (ARMv8.2 dotprod: Pi 5, Apple), with a portable scalar fallback.
 #pragma once
@@ -21,25 +24,27 @@
 
 #define CQ_BLOCK 32
 
-enum { CQ4, CQ4S, CQ4K, CQ6K, CQ8 };
+enum { CQ4, CQ4S, CQ4K, CQ6K, CQ2K, CQ3K, CQ8 };
 
 // Blocks are stored by groups of 4 rows (rows padded to a multiple of 4), the
 // 4 rows of a block adjacent, so one load gets a block's 4 scales:
 // [row / 4][block][row % 4]; their code bytes are interleaved 4 at a time
 // across the 4 rows (see code_at in cpuq.c).
 typedef struct {
-    int kind, rows, cols; // cols % CQ_BLOCK == 0 (% 256 for CQ4K, CQ6K)
+    int kind, rows, cols; // cols % CQ_BLOCK == 0 (% 256 for K-quants)
     uint8_t *codes;       // 4-bit kinds: 16 bytes per block (byte j = code[j] | code[j + 16] << 4)
                           // CQ6K: those 16 bytes of low 4 bits, then 8 bytes of high 2 bits
                           //       (layout: put_codes6 in cpuq.c)
                           // CQ8: 32 int8
+                          // CQ2K: 8 bytes of 2-bit codes; CQ3K: 8 low + 4 high-bit bytes
     uint16_t *scale, *bias; // CQ4, CQ4S, CQ8: f16 scale per block; CQ4: f16 bias per block
     uint8_t *sub;         // CQ4K: [sc x 4 rows, mn x 4 rows] per block group;
                           // CQ6K: [int8 sc of values 0-15 x 4, of 16-31 x 4]
-    uint16_t *super;      // CQ4K, CQ6K: [d x 4 rows, dmin x 4 rows] f16 per 256 values
+                          // CQ3K: signed sc per half; CQ2K: sc | min << 4 per half
+    uint16_t *super;      // K-quants: [d x 4 rows, dmin x 4 rows] f16 per 256 values
 } cq_mat;
 
-// Repack w (any qmat format); NULL if cols is not a multiple of CQ_BLOCK.
+// Repack supported w; NULL for unsupported formats or incompatible columns.
 cq_mat *cq_from_qmat(const qmat *w);
 void cq_free(cq_mat *m);
 size_t cq_bytes(const cq_mat *m);
@@ -48,9 +53,20 @@ const char *cq_kind_name(int kind);
 // |reference| (0 for an exact repack; ~1/254 for requantized CQ8).
 float cq_check(const qmat *w, const cq_mat *m, int rows);
 
-// int8 activations: n rows of cols values, per-block scale and scale * sum(codes)
-typedef struct { int n, cols; int8_t *q; float *s, *sq; size_t cap; const float *src; } cq_act;
+// Activations are stored in 32-value chunks regardless of quantization group.
+typedef struct {
+    int n, cols, group;      // actual activation group: 32 or 256
+    bool sparse;            // skip zero chunks (used by explicit FFN pruning)
+    int8_t *q;
+    float *s, *sq, *s16;     // scale, scaled 32-value sum, scaled 16-value sums
+    int16_t *is16;           // raw 16-value sums for integer superblock kernels
+    uint8_t *nz;             // nonzero-code flag per 32 values
+    size_t cap;
+    const float *src;
+} cq_act;
 void cq_quantize(cq_act *a, const float *x, int n, int cols);
+// Group 256 falls back to 32 if cols is not divisible by 256.
+void cq_quantize_group(cq_act *a, const float *x, int n, int cols, int group);
 
 // y[t * ldy + r] = W[r] . x[t] for rows [r0, r1) (r0 a multiple of 4) and all n activation rows.
 void cq_matmul_rows(const cq_mat *w, const cq_act *a, float *y, int ldy, int r0, int r1);

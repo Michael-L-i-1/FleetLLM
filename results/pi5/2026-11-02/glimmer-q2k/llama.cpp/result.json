@@ -1,0 +1,68 @@
+{
+  "command": [
+    "/home/mli5/llama.cpp/build/bin/llama-server",
+    "-m",
+    "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "18092",
+    "-t",
+    "4",
+    "-tb",
+    "4",
+    "-np",
+    "1",
+    "-c",
+    "512",
+    "-ngl",
+    "0",
+    "-cram",
+    "0",
+    "--no-warmup"
+  ],
+  "request": {
+    "model": "glimmer",
+    "prompt": "<|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\n\nReasoning strength: high.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|>Explain how a rainbow forms, step by step. Discuss sunlight, refraction, internal reflection, and why the colors separate. Give a detailed explanation in plain English.<|eot|><|start|>assistant to=user<|message|>",
+    "max_tokens": 32,
+    "temperature": 0,
+    "seed": 42,
+    "stream": false,
+    "cache_prompt": false
+  },
+  "seconds": 87.43361986200034,
+  "response": {
+    "choices": [
+      {
+        "text": "A rainbow is a natural optical phenomenon that occurs when sunlight interacts with water droplets in the atmosphere, such as after rain. The formation of a rainbow involves the processes",
+        "index": 0,
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "created": 1793673431,
+    "model": "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+    "system_fingerprint": "b1-785322d",
+    "object": "text_completion",
+    "usage": {
+      "completion_tokens": 32,
+      "prompt_tokens": 80,
+      "total_tokens": 112,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    },
+    "id": "chatcmpl-MYD9vs3UZGDEa9UMZl0r3N17wJn317Uy",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 80,
+      "prompt_ms": 58020.127,
+      "prompt_per_token_ms": 725.2515875,
+      "prompt_per_second": 1.3788318663969832,
+      "predicted_n": 32,
+      "predicted_ms": 29405.979,
+      "predicted_per_token_ms": 948.5799677419354,
+      "predicted_per_second": 1.054207377350028
+    }
+  }
+}

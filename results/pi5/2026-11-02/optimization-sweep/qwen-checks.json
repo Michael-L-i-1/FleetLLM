@@ -1,0 +1,22 @@
+{
+  "results/pi5/2026-11-02/optimization-sweep/qwen-quality/exact.jsonl": {
+    "checks": {
+      "rainbow": null,
+      "arithmetic": true,
+      "fact": true,
+      "json": true,
+      "python": true,
+      "instruction": true,
+      "edit": true
+    },
+    "decode_rates": {
+      "rainbow": 2.250799,
+      "arithmetic": 2.262867,
+      "fact": 2.257847,
+      "json": 2.255623,
+      "python": 2.252453,
+      "instruction": 2.275191,
+      "edit": 2.246996
+    }
+  }
+}

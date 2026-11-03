@@ -19,7 +19,7 @@ typedef struct {
     int port;
     const char *model_id;  // name reported by /v1/models and in responses
     int default_max_tokens;
-    const char *reasoning; // default reasoning strength (Glimmer)
+    const char *reasoning; // default strength; "none" requests a direct-answer prefix
     int max_active;        // requests decoded at once; the rest wait in a queue
     bool admit;            // admit only what fits in KV memory (default with --swap-gb: the
                            // rest wait with their KV resident or swapped, not recomputed)

@@ -1,0 +1,76 @@
+{
+  "launcher": [
+    "/home/mli5/run-demo",
+    "qwen",
+    "Return JSON only with one key ready set to true.",
+    "--n",
+    "32"
+  ],
+  "server": [
+    "/home/mli5/serve-demo",
+    "qwen",
+    "--port",
+    "18095"
+  ],
+  "request": {
+    "model": "pi-demo",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Return JSON only with one key ready set to true."
+      }
+    ],
+    "reasoning_effort": "none",
+    "temperature": 0,
+    "max_tokens": 32,
+    "stream": false
+  },
+  "response": {
+    "id": "chatcmpl-1",
+    "object": "chat.completion",
+    "created": 1793679825,
+    "model": "pi-demo",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"ready\": true}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 23,
+      "completion_tokens": 6,
+      "total_tokens": 29,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  },
+  "repeated_response": {
+    "id": "chatcmpl-2",
+    "object": "chat.completion",
+    "created": 1793679829,
+    "model": "pi-demo",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"ready\": true}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 23,
+      "completion_tokens": 6,
+      "total_tokens": 29,
+      "prompt_tokens_details": {
+        "cached_tokens": 22
+      }
+    }
+  }
+}

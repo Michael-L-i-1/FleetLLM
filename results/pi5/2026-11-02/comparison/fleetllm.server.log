@@ -1,0 +1,62 @@
+[cpu] neon+dotprod, 4 threads; weights 0.80 GB -> 0.82 GB: 96 4-bit (Q4_K) (err 0.0e+00) 17 6-bit (Q6_K) (err 0.0e+00)
+[load] 0.5s llama /home/mli5/models/Llama-3.2-1B-Instruct-Q4_K_M.gguf, 16 layers, weights 0.80 GB (pinned 0.00), KV 2.00 GB (3814 full + 0 swa pages), backend cpu
+[serve] listening on http://127.0.0.1:18091/v1 (model "llama1b")
+[serve] cmpl-1: 44 prompt + 4 generated tokens, first token 0.52s, total 0.74s, length
+[serve] 1 active | 9.7 tok/s generated | 1 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] cmpl-2: 205 prompt + 128 generated tokens, first token 2.33s, total 11.84s, length
+[serve] 1 active | 10.4 tok/s generated | 2 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] cmpl-3: 205 prompt + 128 generated tokens, first token 2.33s, total 11.83s, length
+[serve] 4 active | 6.6 tok/s generated | 3 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 4 active | 41.8 tok/s generated | 3 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] cmpl-4: 109 prompt + 128 generated tokens, first token 1.24s, total 17.38s, length
+[serve] cmpl-5: 205 prompt + 128 generated tokens, first token 4.16s, total 17.54s, length
+[serve] cmpl-6: 61 prompt + 128 generated tokens, first token 5.61s, total 17.62s, length
+[serve] cmpl-7: 183 prompt + 128 generated tokens, first token 6.44s, total 17.70s, length
+[serve] 4 active | 16.5 tok/s generated | 7 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] cmpl-8: 109 prompt + 128 generated tokens, first token 1.24s, total 17.46s, length
+[serve] cmpl-9: 61 prompt + 128 generated tokens, first token 2.68s, total 17.55s, length
+[serve] cmpl-10: 183 prompt + 128 generated tokens, first token 4.15s, total 17.63s, length
+[serve] cmpl-11: 205 prompt + 128 generated tokens, first token 6.52s, total 17.78s, length
+[serve] 1 active | 41.1 tok/s generated | 11 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 2.2 tok/s generated | 11 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 6.6 tok/s generated | 11 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 39.4 tok/s generated | 11 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 64.6 tok/s generated | 11 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 63.9 tok/s generated | 11 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] cmpl-12: 66 prompt + 128 generated tokens, first token 0.75s, total 53.38s, length
+[serve] cmpl-13: 205 prompt + 128 generated tokens, first token 3.67s, total 53.88s, length
+[serve] cmpl-14: 206 prompt + 128 generated tokens, first token 6.61s, total 54.35s, length
+[serve] cmpl-15: 109 prompt + 128 generated tokens, first token 8.06s, total 54.57s, length
+[serve] cmpl-16: 206 prompt + 128 generated tokens, first token 9.54s, total 54.78s, length
+[serve] cmpl-17: 80 prompt + 128 generated tokens, first token 11.00s, total 54.98s, length
+[serve] cmpl-18: 158 prompt + 128 generated tokens, first token 12.47s, total 55.16s, length
+[serve] cmpl-20: 80 prompt + 128 generated tokens, first token 13.94s, total 55.33s, length
+[serve] cmpl-19: 61 prompt + 128 generated tokens, first token 13.94s, total 55.33s, length
+[serve] cmpl-21: 183 prompt + 128 generated tokens, first token 16.90s, total 55.59s, length
+[serve] cmpl-22: 158 prompt + 128 generated tokens, first token 18.39s, total 55.70s, length
+[serve] cmpl-23: 205 prompt + 128 generated tokens, first token 21.39s, total 55.90s, length
+[serve] cmpl-24: 61 prompt + 128 generated tokens, first token 22.88s, total 55.99s, length
+[serve] cmpl-25: 109 prompt + 128 generated tokens, first token 22.88s, total 55.99s, length
+[serve] cmpl-26: 66 prompt + 128 generated tokens, first token 24.36s, total 56.07s, length
+[serve] cmpl-27: 183 prompt + 128 generated tokens, first token 26.29s, total 56.22s, length
+[serve] 16 active | 25.8 tok/s generated | 27 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 4.7 tok/s generated | 27 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 9.2 tok/s generated | 27 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 65.1 tok/s generated | 27 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] 16 active | 64.2 tok/s generated | 27 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] cmpl-28: 109 prompt + 128 generated tokens, first token 1.45s, total 53.61s, length
+[serve] cmpl-29: 205 prompt + 128 generated tokens, first token 4.37s, total 54.11s, length
+[serve] cmpl-30: 80 prompt + 128 generated tokens, first token 5.82s, total 54.35s, length
+[serve] cmpl-31: 183 prompt + 128 generated tokens, first token 7.29s, total 54.57s, length
+[serve] cmpl-32: 66 prompt + 128 generated tokens, first token 8.75s, total 54.78s, length
+[serve] cmpl-33: 205 prompt + 128 generated tokens, first token 10.23s, total 54.97s, length
+[serve] cmpl-34: 61 prompt + 128 generated tokens, first token 11.68s, total 55.16s, length
+[serve] cmpl-35: 206 prompt + 128 generated tokens, first token 13.19s, total 55.32s, length
+[serve] cmpl-36: 80 prompt + 128 generated tokens, first token 14.71s, total 55.46s, length
+[serve] cmpl-37: 158 prompt + 128 generated tokens, first token 16.20s, total 55.59s, length
+[serve] cmpl-38: 61 prompt + 128 generated tokens, first token 17.68s, total 55.70s, length
+[serve] cmpl-39: 109 prompt + 128 generated tokens, first token 19.17s, total 55.80s, length
+[serve] cmpl-40: 206 prompt + 128 generated tokens, first token 22.16s, total 55.98s, length
+[serve] cmpl-41: 183 prompt + 128 generated tokens, first token 23.67s, total 56.06s, length
+[serve] cmpl-42: 66 prompt + 128 generated tokens, first token 25.16s, total 56.14s, length
+[serve] cmpl-43: 158 prompt + 128 generated tokens, first token 26.28s, total 56.22s, length

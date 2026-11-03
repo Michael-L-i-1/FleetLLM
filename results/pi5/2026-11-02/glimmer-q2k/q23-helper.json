@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/home/mli5/run-glimmer",
+    "What is the capital of France? Answer in one sentence.",
+    "--n",
+    "16"
+  ],
+  "seconds": 38.384004212000036,
+  "returncode": 0,
+  "peak_rss_bytes": 11938889728
+}

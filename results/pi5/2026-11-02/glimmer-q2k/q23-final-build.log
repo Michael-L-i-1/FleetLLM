@@ -1,0 +1,11 @@
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/cpuq.c -o build/cpuq.o
+python3 scripts/gen_unicode.py > src/unicode_data.c
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/unicode_data.c -o build/unicode_data.o
+ar rcs build/libfleetllm.a build/chat.o build/cpu.o build/cpuq.o build/engine.o build/gguf.o build/json.o build/kv.o build/model.o build/ngram.o build/quant.o build/safetensors.o build/sampler.o build/server.o build/spans.o build/threadpool.o build/tokenizer.o build/unicode_data.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/bench.c build/libfleetllm.a -lpthread -lm -o build/fleet-bench
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/dequant_dump.c build/libfleetllm.a -lpthread -lm -o build/fleet-dequant-dump
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/generate.c build/libfleetllm.a -lpthread -lm -o build/fleet-generate
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/ppl.c build/libfleetllm.a -lpthread -lm -o build/fleet-ppl
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/reuse_eval.c build/libfleetllm.a -lpthread -lm -o build/fleet-reuse-eval
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/serve.c build/libfleetllm.a -lpthread -lm -o build/fleet-serve
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/tokcheck.c build/libfleetllm.a -lpthread -lm -o build/fleet-tokcheck

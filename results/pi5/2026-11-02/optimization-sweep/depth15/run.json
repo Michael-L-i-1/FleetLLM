@@ -1,0 +1,34 @@
+{
+  "ngram15": {
+    "command": [
+      "/home/mli5/fleetllm/build/fleet",
+      "eval",
+      "--model",
+      "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+      "--backend",
+      "cpu",
+      "--threads",
+      "4",
+      "--budget-gb",
+      "14.8",
+      "--kv-gb",
+      ".25",
+      "--row-budget",
+      "64",
+      "--no-pin",
+      "--ngram",
+      "--spec-k",
+      "15",
+      "--spec-rows",
+      "16",
+      "--tasks",
+      "/home/mli5/fleetllm/bench/pi-edit-only.jsonl"
+    ],
+    "seconds": 97.6374021319989,
+    "returncode": 0,
+    "stopped": null,
+    "peak_rss_bytes": 11937382400,
+    "minimum_available_bytes": 5263360000,
+    "peak_swap_delta_bytes": 0
+  }
+}

@@ -16,6 +16,7 @@ static const struct { const char *name, *desc; } cmds[] = {
     { "serve",        "OpenAI-compatible HTTP server (streaming, tool calls, KV cap, swap)" },
     { "generate",     "generate from one prompt (smoke test, single-sequence speed)" },
     { "bench",        "concurrent-agent throughput (--share, --draft, --check, --check-spec)" },
+    { "eval",         "single-agent JSONL task sweep with token and decode timing records" },
     { "ppl",          "perplexity of a text file, to measure lossy options" },
     { "reuse-eval",   "quality of reusing a span's KV computed in another context" },
     { "tokcheck",     "token ids per sample, compared with HF by scripts/tokcheck.py" },

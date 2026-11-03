@@ -1,0 +1,7 @@
+[cpu] neon+dotprod, 4 threads; weights 0.80 GB -> 0.82 GB: 96 4-bit (Q4_K) (err 0.0e+00) 17 6-bit (Q6_K) (err 0.0e+00)
+[load] 0.5s llama /home/mli5/models/Llama-3.2-1B-Instruct-Q4_K_M.gguf, 16 layers, weights 0.80 GB (pinned 0.00), KV 2.00 GB (3814 full + 0 swa pages), backend cpu
+engine=FleetLLM backend=cpu model=llama gen=128 share=0 spec=0
+   N   wall s   TTFT ms  agg tok/s  per-agent
+   1    11.73      2262       10.9       10.9  (prefill rows 582, shared 0)
+   4    17.46      4771       29.3        7.3  (prefill rows 545, shared 0)
+  16    55.09     14298       37.2        2.3  (prefill rows 2086, shared 0)

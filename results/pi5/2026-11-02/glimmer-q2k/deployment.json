@@ -1,0 +1,16 @@
+{
+  "source_hashes_match_pi": true,
+  "old_pi_model_removed": "Muse-Glimmer-30B-UD-Q2_K_XL.gguf",
+  "launcher": "/home/mli5/run-glimmer",
+  "final_helper_check": {
+    "command": [
+      "/home/mli5/run-glimmer",
+      "What is the capital of France? Answer in one sentence.",
+      "--n",
+      "16"
+    ],
+    "seconds": 38.384004212000036,
+    "returncode": 0,
+    "peak_rss_bytes": 11938889728
+  }
+}

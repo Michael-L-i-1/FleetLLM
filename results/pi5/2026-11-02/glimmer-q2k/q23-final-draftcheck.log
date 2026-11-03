@@ -1,0 +1,89 @@
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+target hidden capture: layer selection and row layout PASS
+compact K-quants: no implicit 8-bit expansion PASS
+engine native kv1 k1 rejection: accepted 4/42, tokens PASS
+engine native kv1 k1 full acceptance: accepted 24/24, tokens PASS
+engine native kv1 k3 rejection: accepted 3/123, tokens PASS
+engine native kv1 k3 full acceptance: accepted 36/36, tokens PASS
+engine native kv2 k1 rejection: accepted 4/42, tokens PASS
+engine native kv2 k1 full acceptance: accepted 24/24, tokens PASS
+engine native kv2 k3 rejection: accepted 3/123, tokens PASS
+engine native kv2 k3 full acceptance: accepted 36/36, tokens PASS
+engine native kv4 k1 rejection: accepted 4/42, tokens PASS
+engine native kv4 k1 full acceptance: accepted 24/24, tokens PASS
+engine native kv4 k3 rejection: accepted 3/123, tokens PASS
+engine native kv4 k3 full acceptance: accepted 36/36, tokens PASS
+engine reference kv1 k1 rejection: accepted 4/42, tokens PASS
+engine reference kv1 k1 full acceptance: accepted 24/24, tokens PASS
+engine reference kv1 k3 rejection: accepted 3/123, tokens PASS
+engine reference kv1 k3 full acceptance: accepted 36/36, tokens PASS
+engine reference kv2 k1 rejection: accepted 4/42, tokens PASS
+engine reference kv2 k1 full acceptance: accepted 24/24, tokens PASS
+engine reference kv2 k3 rejection: accepted 3/123, tokens PASS
+engine reference kv2 k3 full acceptance: accepted 36/36, tokens PASS
+engine reference kv4 k1 rejection: accepted 4/42, tokens PASS
+engine reference kv4 k1 full acceptance: accepted 24/24, tokens PASS
+engine reference kv4 k3 rejection: accepted 3/123, tokens PASS
+engine reference kv4 k3 full acceptance: accepted 36/36, tokens PASS

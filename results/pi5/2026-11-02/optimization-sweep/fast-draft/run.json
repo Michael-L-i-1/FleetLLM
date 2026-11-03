@@ -1,0 +1,39 @@
+{
+  "group256-draft2": {
+    "command": [
+      "/home/mli5/fleetllm/build/fleet",
+      "eval",
+      "--model",
+      "/home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf",
+      "--backend",
+      "cpu",
+      "--threads",
+      "4",
+      "--budget-gb",
+      "14.8",
+      "--kv-gb",
+      ".25",
+      "--row-budget",
+      "64",
+      "--no-pin",
+      "--activation-group",
+      "256",
+      "--draft",
+      "/home/mli5/models/glimmer-dflash",
+      "--draft-kv-gb",
+      ".064",
+      "--spec-k",
+      "2",
+      "--spec-rows",
+      "3",
+      "--tasks",
+      "/home/mli5/fleetllm/bench/pi-screen.jsonl"
+    ],
+    "seconds": 87.63575490899893,
+    "returncode": 0,
+    "stopped": null,
+    "peak_rss_bytes": 13892780032,
+    "minimum_available_bytes": 2593832960,
+    "peak_swap_delta_bytes": 0
+  }
+}

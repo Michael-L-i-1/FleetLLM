@@ -58,7 +58,10 @@ void engine_free(engine *e) {
 
 bool engine_set_drafter(engine *e, model *dm, size_t kv_budget, int spec_k) {
     if (!e->be->draft || !e->be->attach || !e->be->argmax_ok) { fprintf(stderr, "engine: backend %s cannot run a drafter\n", e->be->name); return false; }
-    if (dm->block_size > 32 || dm->n_target > 8 || dm->c.d != e->m->c.d) { fprintf(stderr, "engine: drafter does not match the target\n"); return false; }
+    if (dm->block_size < 2 || dm->block_size > 32 || dm->n_target < 1 || dm->n_target > 8 || dm->c.d != e->m->c.d) { fprintf(stderr, "engine: drafter does not match the target\n"); return false; }
+    for (int i = 0; i < dm->n_target; i++) if (dm->target_layers[i] < 0 || dm->target_layers[i] >= e->m->c.n_layer) {
+        fprintf(stderr, "engine: drafter capture layer outside target\n"); return false;
+    }
     if (e->be->attach(e->be, dm)) return false;
     const model_cfg *c = &dm->c;
     kv_init(&e->dkv, c->n_full, 0, c->n_kv, c->hd, 0, kv_budget, e->be->kv_elem, be_alloc, e->be);

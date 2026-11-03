@@ -1,0 +1,2 @@
+{"id": "rainbow", "prompt": "Explain how a rainbow forms, step by step. Discuss sunlight, refraction, internal reflection, and why the colors separate. Give a detailed explanation in plain English.", "max_tokens": 32, "check": {"kind": "content_smoke", "all": ["water"], "any": ["sun"], "forbidden": ["white clouds"]}}
+{"id": "physics_complete", "prompt": "In two sentences, explain why a rainbow has different colors. Mention sunlight and water droplets.", "max_tokens": 96}

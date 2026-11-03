@@ -385,7 +385,9 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         char date[16];
         strftime(date, sizeof date, "%Y-%m-%d", localtime(&now));
         const char *effort = json_str(j, root, "reasoning_effort");
-        chat_opts o = { false, effort ? effort : sv->o->reasoning, date, (const char **)tools, n_tools };
+        const char *reasoning = effort ? effort : sv->o->reasoning;
+        bool direct = reasoning && !strcmp(reasoning, "none");
+        chat_opts o = { direct, reasoning, date, (const char **)tools, n_tools };
         text = chat_format_opts(sv->tok, cm, k, &o);
         for (int i = 0; i < k; i++) free(bodies[i].s);
         for (int i = 0; i < n_tools; i++) free(tools[i]);

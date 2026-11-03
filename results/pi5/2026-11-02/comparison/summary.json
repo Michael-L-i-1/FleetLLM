@@ -1,0 +1,20 @@
+[
+  {
+    "concurrency": 1,
+    "fleetllm": 10.814067766271016,
+    "llama.cpp": 10.61886314225405,
+    "fleet_over_llama": 1.018382817576791
+  },
+  {
+    "concurrency": 4,
+    "fleetllm": 28.85924525822307,
+    "llama.cpp": 26.098350432116337,
+    "fleet_over_llama": 1.1057880969637532
+  },
+  {
+    "concurrency": 16,
+    "fleetllm": 36.424822920944166,
+    "llama.cpp": 26.95483758612656,
+    "fleet_over_llama": 1.3513278573673073
+  }
+]

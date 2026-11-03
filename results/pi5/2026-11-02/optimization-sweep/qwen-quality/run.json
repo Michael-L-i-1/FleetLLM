@@ -1,0 +1,29 @@
+{
+  "exact": {
+    "command": [
+      "/home/mli5/fleetllm/build/fleet",
+      "eval",
+      "--model",
+      "/home/mli5/models/Qwen3-8B-Q4_K_M.gguf",
+      "--backend",
+      "cpu",
+      "--threads",
+      "4",
+      "--budget-gb",
+      "14.8",
+      "--kv-gb",
+      ".25",
+      "--row-budget",
+      "64",
+      "--no-pin",
+      "--tasks",
+      "/home/mli5/fleetllm/bench/pi-quality.jsonl"
+    ],
+    "seconds": 83.24813167100001,
+    "returncode": 0,
+    "stopped": null,
+    "peak_rss_bytes": 5313101824,
+    "minimum_available_bytes": 11122720768,
+    "peak_swap_delta_bytes": 0
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "current_model": "bartowski/Muse-Glimmer-30B-GGUF/Muse-Glimmer-30B-Q2_K.gguf",
+  "scope": "generation speed excluding weight loading and prompt processing",
+  "old_claude_claims": [
+    {
+      "file": "0e63e2e4-a692-4861-ace2-d8c168096b36.jsonl",
+      "timestamp_utc": "2026-10-29T02:42:15.416Z",
+      "quote": "~10–30× over today’s reference CPU path (the foundation)",
+      "interpretation": "NEON foundation versus slow reference code, not versus optimized llama.cpp. Repacking, int8 activation arithmetic and multicore use overlap; estimates cannot be multiplied as independent gains."
+    },
+    {
+      "file": "0e63e2e4-a692-4861-ace2-d8c168096b36.jsonl",
+      "timestamp_utc": "2026-10-29T02:42:15.416Z",
+      "quote": "in the same league as llama.cpp’s ARM path per token",
+      "interpretation": "Explicit original expectation after foundation optimization."
+    },
+    {
+      "file": "0e63e2e4-a692-4861-ace2-d8c168096b36.jsonl",
+      "timestamp_utc": "2026-10-28T18:00:03.016Z",
+      "quote": "Against a naive Pi setup (one agent at a time, recompute)",
+      "interpretation": "5–10x aggregate multi-agent prediction; not established against modern llama.cpp."
+    }
+  ],
+  "remaining_candidates": [
+    {
+      "technique": "T-MAC lookup-table low-bit matmul",
+      "status": "not implemented",
+      "relevance": "single-agent and verification kernels; test actual Q2/Q3 scale layouts, do not assume a drop-in format switch",
+      "source": "https://github.com/microsoft/T-MAC",
+      "historical_pi_example": "Llama-2-7B W2, two threads: 5.92 versus 1.31 tok/s; baseline llama.cpp b2794 from May 2024, not Glimmer or our current build"
+    },
+    {
+      "technique": "TEAL activation sparsity",
+      "status": "not implemented",
+      "relevance": "approximate; skip small-activation weight columns with sparse kernels; validate quality on quantized Glimmer",
+      "source": "https://arxiv.org/abs/2408.14690",
+      "reported_gain": "up to 1.53x/1.8x on evaluated model families, not measured here"
+    },
+    {
+      "technique": "LayerSkip self-speculation",
+      "status": "not implemented",
+      "relevance": "published speedups require appropriately trained early-exit checkpoints; not a demonstrated Glimmer shortcut",
+      "source": "https://github.com/facebookresearch/LayerSkip"
+    },
+    {
+      "technique": "n-gram/prompt-lookup drafting",
+      "status": "implemented",
+      "relevance": "copying code/tool outputs; not a general acceleration of novel prose"
+    },
+    {
+      "technique": "prefix sharing, retained KV, SSD session offload, batching",
+      "status": "implemented",
+      "relevance": "multi-turn and aggregate work avoided; not single-agent next-token speed. Modern llama.cpp also has prompt caching and continuous batching."
+    },
+    {
+      "technique": "int8 KV",
+      "status": "implemented",
+      "relevance": "capacity/long-context attention, not dominant for the short prompt tested; ~half FP16 storage, not another universal 4x gain"
+    },
+    {
+      "technique": "smaller model / trained ternary / MoE / model cascade",
+      "status": "Llama small dense supported; alternate architectures/formats need integration",
+      "relevance": "less active weight traffic and compute; changes model capabilities. Bonsai is a hybrid-attention model, not just Glimmer quantization.",
+      "source": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf"
+    }
+  ],
+  "speculation_cost": {
+    "plain_decode_seconds": 33.31,
+    "best_short_draft_decode_seconds": 31.31,
+    "total_draft_seconds": 4.13,
+    "note": "Draft counter includes prompt-context updates, so attributing ~27 seconds to target decode and ~4 seconds to drafting is approximate. Verification is not free; two accepted tokens/verification do not imply 2x wall-clock gain."
+  },
+  "full_block_experiment": {
+    "environment": {
+      "FLEET_FULL_BLOCK": "1"
+    },
+    "trained_block_size": 16,
+    "verified_proposals": 3,
+    "generation_tokens_per_second": 0.7,
+    "decode_seconds": 44.42,
+    "accepted": 14,
+    "proposed": 46,
+    "draft_seconds": 10.82,
+    "short_block_comparison_tokens_per_second": 0.82,
+    "generated_text_identical": true,
+    "conclusion": "No acceptance gain on this prompt; higher draft cost. Default unchanged."
+  },
+  "next_recommended_step": "Prototype a T-MAC-style kernel on actual Glimmer matrices at 1/3/4/8 rows, compare with current kernels and modern llama.cpp; measure full-model speed only after math/storage checks. Separately evaluate activation sparsity if quality tradeoffs are accepted. Do not promise another 10x on unchanged Glimmer."
+}

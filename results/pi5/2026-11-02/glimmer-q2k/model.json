@@ -1,0 +1,8 @@
+{
+  "repository": "bartowski/Muse-Glimmer-30B-GGUF",
+  "revision": "01e1b7c30e19e1823ee9a73dec51d12f59ec4857",
+  "filename": "Muse-Glimmer-30B-Q2_K.gguf",
+  "bytes": 11035579936,
+  "sha256": "af4b15f0f3268d23e0f48f796a4ab563454b9cf8bab60d2bbe251b314b342fb5",
+  "sha256_verified_on_pi": true
+}

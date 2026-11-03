@@ -1,0 +1,22 @@
+warning: no usable GPU found, --gpu-layers option will be ignored
+warning: one possible reason is that llama.cpp was compiled without GPU support
+warning: consult docs/build.md for compilation instructions
+0.00.002.686 I srv  llama_server: initializing ...
+0.00.002.710 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.002.911 W srv  server_setup: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.004.241 I srv    load_model: loading model '/home/mli5/models/Qwen3-8B-Q4_K_M.gguf'
+0.00.490.112 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.20.312.961 I cmn          init: llama threadpool init, n_threads = 4
+0.20.995.525 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 512, kv_unified = 'false'
+0.20.995.593 W srv          init: --cache-idle-slots requires --cache-ram, disabling
+0.21.009.826 I srv  server_run_i: model loaded
+0.21.009.834 I srv  server_on_li: listening on http://127.0.0.1:18094
+0.21.098.737 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.21.098.763 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.37.487.074 I slot print_timing: id  0 | task 0 | prompt eval time =    4326.04 ms /    46 tokens (   94.04 ms per token,    10.63 tokens per second)
+0.37.487.080 I slot print_timing: id  0 | task 0 |        eval time =   12062.24 ms /    32 tokens (  389.10 ms per token,     2.57 tokens per second)
+0.37.487.082 I slot print_timing: id  0 | task 0 |       total time =   16388.28 ms /    78 tokens
+0.37.487.087 I slot print_timing: id  0 | task 0 |    graphs reused =         30
+0.37.487.088 I slot print_timing: id  0 | task 0 |   graph reallocs =          0    /     0        (same size) / (changed size)
+0.37.487.130 I slot      release: id  0 | task 0 | stop processing: n_tokens = 77, truncated = 0
+0.37.488.241 I srv    operator(): operator(): cleaning up before exit...

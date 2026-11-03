@@ -1,0 +1,7 @@
+[cpu] neon+dotprod, 4 threads; weights 10.58 GB -> 10.79 GB: 52 4-bit (Q4_K) (err 0.0e+00) 27 6-bit (Q6_K) (err 0.0e+00) 234 2-bit (Q2_K) (err 0.0e+00) 104 3-bit (Q3_K) (err 0.0e+00)
+[cpu] neon+dotprod, 4 threads; weights 1.44 GB -> 1.60 GB: 36 4-bit affine (err 0.0e+00)
+[load] 31.6s muse-glimmer /home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf, 52 layers, weights 12.08 GB (pinned 0.00), KV 0.25 GB (294 full + 293 swa pages), backend cpu
+[prompt] 80 tokens
+[stats] prefill 80 tok in 31.21s (2.6 tok/s) | decode 31 tok in 31.51s (0.98 tok/s)
+[spec] accepted 12/18 drafts (66.7%), 1.67 tokens/verify; drafter 4.89s, target 57.83s
+[cpu profile] 21 forwards, 2753.76 ms each: matmul 2834.15, output layer 93.71, attention 5.79, other -179.90

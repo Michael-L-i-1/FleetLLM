@@ -46,6 +46,13 @@ struct backend {
     void *impl;
 };
 
+// Configure before any forward; changing these requires discarding existing KV.
+// CPU-only approximations, off by default. Returns false for unsupported backend
+// or invalid options. sparsity zeros the lowest-energy 32-feature FFN blocks;
+// layers is a comma-separated list of whole decoder layer indices to skip.
+// 256 uses coarser activation scaling; default 32 preserves the existing path.
+bool cpu_backend_activation_group(backend *b, int group);
+bool cpu_backend_approximate(backend *b, const model *m, float sparsity, const char *layers);
 backend *cpu_backend_new(model *m); // m: repack its weights (NULL: f32-dequant reference path)
 #ifdef CI_METAL
 backend *metal_backend_new(model *m);

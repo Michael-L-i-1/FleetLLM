@@ -1,0 +1,5 @@
+A rainbow forms when sunlight enters a water droplet and bends. Different wavelengths bend by different amounts. Some light reflects inside the droplet, then bends again as it exits. Many droplets send different colors toward the observer, producing an arc. The Sun must be behind the observer and the droplets ahead.
+
+A software agent should inspect the relevant files before editing them. It should preserve the intended behavior, make a small change, and run checks that exercise the result. If a test fails, the agent should identify whether the change caused the failure before proceeding.
+
+In Python, a function can return the sum of two values with a return statement. JSON represents structured data with objects, arrays, strings, numbers, booleans, and null. An object uses quoted keys separated from their values by colons.

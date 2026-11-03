@@ -1,0 +1,9 @@
+[cpu] neon+dotprod, 4 threads; weights 4.67 GB -> 4.78 GB: 216 4-bit (Q4_K) (err 0.0e+00) 37 6-bit (Q6_K) (err 0.0e+00)
+[load] 2.4s qwen3 /home/mli5/models/Qwen3-8B-Q4_K_M.gguf, 36 layers, weights 4.67 GB (pinned 0.00), KV 0.25 GB (105 full + 0 swa pages), backend cpu
+[eval] rainbow: 32 tokens, 2.25 tok/s
+[eval] arithmetic: 4 tokens, 2.26 tok/s
+[eval] fact: 3 tokens, 2.26 tok/s
+[eval] json: 15 tokens, 2.26 tok/s
+[eval] python: 12 tokens, 2.25 tok/s
+[eval] instruction: 2 tokens, 2.28 tok/s
+[eval] edit: 65 tokens, 2.25 tok/s

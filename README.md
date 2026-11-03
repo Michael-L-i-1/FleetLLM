@@ -110,13 +110,23 @@ scripts/      verification against HF/gguf-py, build helpers
 | Tokenizer from GGUF metadata (byte-level BPE; llama3 / qwen2 / llama4 pre-tokenizers) | matches HF `tokenizers` 10/10 on all three families |
 | Dequantization F16/BF16/Q4_0/Q4_1/Q5_0/Q5_1/Q8_0/Q2_K..Q6_K | bit-exact vs gguf-py |
 | Generic decoder: llama, qwen2, qwen3, muse-glimmer | correct output on all |
-| CPU reference backend | correct, slow by design (Pi NEON kernels are next) |
+| CPU reference backend | correct, slow by design |
+| Optimized CPU backend | NEON integer kernels for Q2_K/Q3_K/Q4_K/Q6_K, Q4_0/Q4_1/Q8_0 and affine 4-bit; [Pi Glimmer Q2_K tests](results/pi5/2026-11-02/glimmer-q2k/README.md) |
 | Metal backend | correct; GGUF: fused mat-vec / fused tile GEMM / dequant-once + dense GEMM; MLX 4-bit: tiled NAX GEMM + tiled mat-vec; attention: NAX (input rows), latency-shaped vector kernel (decode / verify), 8x8-MMA flash kernel (GPUs without NAX) |
 | MLX / HF safetensors loading (config, shards, tokenizer.json, affine weights) | Glimmer, Llama verified on CPU and GPU; tokenizer matches HF 10/10 |
 | In-flight prefix dedup (agents fanned out together share one prefill) | done |
-| Speculative decoding with the DFlash drafter (batched, adaptive draft length) | done; outputs identical to plain greedy |
+| Speculative decoding with the DFlash drafter (batched, adaptive draft length) | Metal and CPU; [first Pi Glimmer test](results/pi5/2026-11-02/glimmer-dflash/README.md), with greedy-output validation |
 | OpenAI-compatible server (streaming, reasoning split, tool calling, KV cap, swap + memory-aware admission) | done; drives simple-evals GPQA and tool-calling agents (official `openai` client) |
 | Paged copy-on-write KV (full + sliding-window pools), continuous batching, automatic prefix sharing | done; batched greedy outputs identical to sequential (8/8) |
+
+## Raspberry Pi tuning
+
+The [Pi optimization sweep](results/pi5/2026-11-02/optimization-sweep/README.md)
+compares normal decoding, verified prompt lookup, DFlash, activation precision,
+and rejected pruning experiments. [Quality controls](docs/pi-tuning.md) are
+explicit and composable: default CPU arithmetic keeps all layers/features;
+pruning and coarser activations are opt-in. The optional Qwen3-8B launcher is a
+separate model choice, while Glimmer remains available unchanged.
 
 ## Roadmap
 
@@ -124,10 +134,11 @@ scripts/      verification against HF/gguf-py, build helpers
    Next for this phase: multi-turn agent sessions (long contexts, tool waits, unique prompts)
    as a benchmark, and the same harness against vLLM / Ollama for comparison.
 2. **One tiled weight format for every quant type + startup auto-tuning** (crossovers,
-   split sizes, draft budget measured per device instead of tuned for the M5); the 2-bit
-   Glimmer GGUF then gets the fast kernels and fits 16 GB.
+   split sizes, draft budget measured per device instead of tuned for the M5).
+   CPU Q2_K/Q3_K tiles are implemented and Glimmer fits 16 GB; Metal low-bit
+   kernel coverage and startup auto-tuning remain.
 3. **Agent memory**: session API (KV kept across turns), explicit fork for subagents, 8-bit KV,
    tool-wait KV offload to SSD, multi-row prefill attention for long contexts.
 4. **Free speculation**: copy-from-context drafts, schema-forced tokens for tool calls; the
    DFlash drafter switched on only when free compute and memory allow.
-5. **Pi 5**: NEON kernels on the same tiled format.
+5. **Pi 5**: NEON kernels deployed; continue tuning and measuring agent workloads.

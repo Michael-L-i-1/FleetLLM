@@ -65,6 +65,14 @@ almost no measured speed gain. Their controls remain experimental and off.
 Full commands, raw answers and rejected trials are in the
 [optimization sweep](../results/pi5/2026-11-02/optimization-sweep/README.md).
 
+The [first concurrent Glimmer trial](../results/pi5/2026-11-02/agent-first-trial/README.md)
+measured 0.95 / 2.18 / 2.62 aggregate decode tok/s at 1 / 4 / 8 requests,
+respectively, with default precision, prefix sharing and verified prompt lookup.
+It uses distinct short prompts and 32 output tokens per request, with no timed
+swap growth. These are independent concurrent calls, not an evaluation of
+coordination or long reasoning histories. Reproduce with
+`python3 bench/pi_agents.py --output ~/my-agent-trial` on the Pi.
+
 ## Reproduce and extend
 
 Run on the provisioned Pi, from `~/fleetllm`:

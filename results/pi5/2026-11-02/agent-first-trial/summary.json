@@ -1,0 +1,74 @@
+{
+  "model": "Muse-Glimmer-30B-Q2_K.gguf (not Qwen, not Muse Spark)",
+  "production_base_commit": "115c774",
+  "repetitions": 1,
+  "generated_tokens_per_request": 32,
+  "results": [
+    {
+      "agents": 1,
+      "tokens": 32,
+      "wall_seconds": 54.328964,
+      "end_to_end_tok_s": 0.589004,
+      "mean_first_token_seconds": 21.618382,
+      "last_first_token_seconds": 21.618382,
+      "decode_window_seconds": 32.710579,
+      "decode_window_tokens": 31,
+      "decode_aggregate_tok_s": 0.947706,
+      "decode_average_per_agent_tok_s": 0.947706,
+      "first_agent_matches_single": true,
+      "shared_tokens": 0,
+      "prefill_rows": 66,
+      "ngram_drafted": 0,
+      "ngram_accepted": 0,
+      "preemptions": 0
+    },
+    {
+      "agents": 4,
+      "tokens": 128,
+      "wall_seconds": 98.148296,
+      "end_to_end_tok_s": 1.304149,
+      "mean_first_token_seconds": 40.798778,
+      "last_first_token_seconds": 42.545358,
+      "decode_window_seconds": 55.602933,
+      "decode_window_tokens": 121,
+      "decode_aggregate_tok_s": 2.176144,
+      "decode_average_per_agent_tok_s": 0.544036,
+      "first_agent_matches_single": true,
+      "shared_tokens": 130,
+      "prefill_rows": 131,
+      "ngram_drafted": 9,
+      "ngram_accepted": 4,
+      "preemptions": 0
+    },
+    {
+      "agents": 8,
+      "tokens": 256,
+      "wall_seconds": 163.368513,
+      "end_to_end_tok_s": 1.567009,
+      "mean_first_token_seconds": 55.798127,
+      "last_first_token_seconds": 72.250546,
+      "decode_window_seconds": 91.117961,
+      "decode_window_tokens": 239,
+      "decode_aggregate_tok_s": 2.622974,
+      "decode_average_per_agent_tok_s": 0.327872,
+      "first_agent_matches_single": true,
+      "shared_tokens": 304,
+      "prefill_rows": 219,
+      "ngram_drafted": 15,
+      "ngram_accepted": 7,
+      "preemptions": 0
+    }
+  ],
+  "source_sha256": {
+    "bench/agent_trial.c": "8d7e02c1b5421e1c5b8e3dcf50a3994bfd90ef71e9b54a9fab8363adf6bc52b9",
+    "bench/pi_agents.py": "b9c6d308b80d1ed76e891682111ed279e8da7ad6cee5ad67c0af9128699a53ff",
+    "bench/pi-agents.jsonl": "a85bc55a256587e8956fb075ca8c7831e7de09e8eb1197549029c038e04d9d59"
+  },
+  "caveats": [
+    "Short independent concurrent requests; no tools, debate or agent coordination evaluated.",
+    "Fixed32 output cap ignores EOS; texts are truncated speed probes, not quality grades.",
+    "Decode window begins after all requests have emitted their first token; earlier output excluded.",
+    "Only first request token IDs compared across concurrency levels; no all-request sequential correctness run.",
+    "One trial, no confidence intervals; common prefixes shared within each level, no prior-level cached KV retained."
+  ]
+}

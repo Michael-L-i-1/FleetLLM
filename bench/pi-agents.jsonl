@@ -1,0 +1,8 @@
+{"id": "rainbow", "prompt": "Explain how rainbows form. Give a detailed explanation of the physics in several paragraphs."}
+{"id": "cache", "prompt": "Explain what a CPU cache does and how cache misses affect performance. Give several paragraphs."}
+{"id": "retry", "prompt": "Explain how retries and exponential backoff work in a reliable network client. Give several paragraphs."}
+{"id": "tests", "prompt": "Explain the difference between unit tests and integration tests, with examples in several paragraphs."}
+{"id": "database", "prompt": "Explain how a database index speeds up queries and what tradeoffs it introduces. Give several paragraphs."}
+{"id": "queue", "prompt": "Explain how a task queue can coordinate several workers safely. Give several paragraphs."}
+{"id": "shutdown", "prompt": "Explain why an operating system should shut down cleanly before power is disconnected. Give several paragraphs."}
+{"id": "search", "prompt": "Explain binary search and why it needs sorted input, with worked examples in several paragraphs."}

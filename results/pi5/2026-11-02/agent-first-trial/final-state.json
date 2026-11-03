@@ -1,0 +1,6 @@
+{
+  "active_inference_processes": [],
+  "temperature": "temp=45.0'C",
+  "throttle": "throttled=0x0",
+  "note": "Trial finished; temporary inputs/home output directories removed after archiving results under ~/fleetllm/results/pi5/2026-11-02/agent-first-trial; standalone benchmark executable retained under build/."
+}

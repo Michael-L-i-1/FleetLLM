@@ -1,0 +1,5 @@
+{
+  "command": "cc -O1 -g -fsanitize=address,undefined -Isrc bench/draft_shortlist_check.c build/libfleetllm.a -lpthread -lm -o build/draft-shortlist-check && ASAN_OPTIONS=detect_leaks=0 build/draft-shortlist-check",
+  "returncode": 0,
+  "stdout": "draft shortlist: partial selection agrees with full sort across 74 cutoffs PASS\ndraft shortlist reference: selected tile scores, padded rows and full-head equivalence PASS\ndraft shortlist native: selected tile scores, padded rows and full-head equivalence PASS\n"
+}

@@ -1,0 +1,3 @@
+draft shortlist: partial selection agrees with full sort across 74 cutoffs PASS
+draft shortlist reference: selected tile scores, padded rows and full-head equivalence PASS
+draft shortlist native: selected tile scores, padded rows and full-head equivalence PASS

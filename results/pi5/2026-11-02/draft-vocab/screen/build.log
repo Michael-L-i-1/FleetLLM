@@ -1,0 +1,28 @@
+mkdir -p build
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/chat.c -o build/chat.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/cpu.c -o build/cpu.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/cpuq.c -o build/cpuq.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/engine.c -o build/engine.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/gguf.c -o build/gguf.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/json.c -o build/json.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/kv.c -o build/kv.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/model.c -o build/model.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/ngram.c -o build/ngram.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/quant.c -o build/quant.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/safetensors.c -o build/safetensors.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/sampler.c -o build/sampler.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/server.c -o build/server.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/spans.c -o build/spans.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/threadpool.c -o build/threadpool.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/tokenizer.c -o build/tokenizer.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -c src/unicode_data.c -o build/unicode_data.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE tools/fleet/main.c -o build/fleet
+ar rcs build/libfleetllm.a build/chat.o build/cpu.o build/cpuq.o build/engine.o build/gguf.o build/json.o build/kv.o build/model.o build/ngram.o build/quant.o build/safetensors.o build/sampler.o build/server.o build/spans.o build/threadpool.o build/tokenizer.o build/unicode_data.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/bench.c build/libfleetllm.a -lpthread -lm -o build/fleet-bench
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/dequant_dump.c build/libfleetllm.a -lpthread -lm -o build/fleet-dequant-dump
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/eval.c build/libfleetllm.a -lpthread -lm -o build/fleet-eval
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/generate.c build/libfleetllm.a -lpthread -lm -o build/fleet-generate
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/ppl.c build/libfleetllm.a -lpthread -lm -o build/fleet-ppl
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/reuse_eval.c build/libfleetllm.a -lpthread -lm -o build/fleet-reuse-eval
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/serve.c build/libfleetllm.a -lpthread -lm -o build/fleet-serve
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -Isrc tools/tokcheck.c build/libfleetllm.a -lpthread -lm -o build/fleet-tokcheck

@@ -1,0 +1,364 @@
+diff --git a/bench/draft_shortlist_check.c b/bench/draft_shortlist_check.c
+new file mode 100644
+index 0000000..b7569ca
+--- /dev/null
++++ b/bench/draft_shortlist_check.c
+@@ -0,0 +1,59 @@
++// Compare sparse draft-head evaluation with the same selected rows of a full
++// projection. This is a proposal optimization: the target remains full-vocab.
++#include "../src/cpu.c"
++
++static int run(bool native) {
++    enum { vocab = 69, d = 256, n = 3 };
++    float weights[vocab * d], input[n * d], source[2 * vocab];
++    for (int i = 0; i < vocab * d; i++) weights[i] = sinf(i * .013f) * .3f;
++    for (int i = 0; i < n * d; i++) input[i] = cosf(i * .019f);
++    for (int i = 0; i < 2 * vocab; i++) source[i] = -100;
++    // Non-adjacent tiles and a padded final tile; include both source rows.
++    source[3] = 3; source[vocab + 68] = 4; source[32] = 2;
++    cpu_state target = { .draft_vocab_limit = 12 }, head = {0};
++    draft_shortlist(&target, source, 2, vocab);
++    if (target.n_draft_tiles != 3 || target.draft_tiles[0] != 0 || target.draft_tiles[1] != 8 || target.draft_tiles[2] != 17) return 1;
++    qmat w = { .type = GGML_F32, .rows = vocab, .cols = d, .row_bytes = d * sizeof(float), .data = (const uint8_t *)weights };
++    if (native) w.gpu = cq_from_qmat(&w);
++    float full[n * vocab], restricted[n * vocab];
++    for (int i = 0; i < n * vocab; i++) restricted[i] = NAN;
++    mm_input(&head, input, n, d);
++    matmul(&head, &w, full, vocab);
++    int32_t actual[n];
++    draft_short_head(&head, &w, target.draft_tiles, target.n_draft_tiles, restricted, actual);
++    for (int t = 0; t < n; t++) {
++        int best = 0;
++        for (int i = 0; i < target.n_draft_tiles; i++) {
++            int start = target.draft_tiles[i] * 4;
++            for (int r = start; r < start + 4 && r < vocab; r++) {
++                if (restricted[t * vocab + r] != full[t * vocab + r]) return 1;
++                if (full[t * vocab + r] > full[t * vocab + best]) best = r;
++            }
++        }
++        if (actual[t] != best) return 1;
++    }
++    free(target.draft_candidates); free(target.draft_tiles);
++    cq_free(w.gpu);
++    free(head.act.q); free(head.act.s); free(head.act.sq); free(head.act.s16); free(head.act.is16); free(head.act.nz);
++    printf("draft shortlist %s: selected tile scores, padded rows and full-head equivalence PASS\n", native ? "native" : "reference");
++    return 0;
++}
++static int selection_check(void) {
++    float source[3 * 257];
++    for (int i = 0; i < 3 * 257; i++) source[i] = sinf(i * .13f) + cosf(i * .017f);
++    for (int limit = 4; limit < 300; limit += 4) {
++        cpu_state s = { .draft_vocab_limit = limit };
++        draft_shortlist(&s, source, 3, 257);
++        draft_candidate ranked[65];
++        memcpy(ranked, s.draft_candidates, sizeof ranked);
++        qsort(ranked, 65, sizeof(draft_candidate), draft_candidate_cmp);
++        int expected[65];
++        for (int i = 0; i < s.n_draft_tiles; i++) expected[i] = ranked[i].tile;
++        qsort(expected, s.n_draft_tiles, sizeof(int), draft_tile_cmp);
++        if (memcmp(expected, s.draft_tiles, s.n_draft_tiles * sizeof(int))) return 1;
++        free(s.draft_tiles); free(s.draft_candidates);
++    }
++    puts("draft shortlist: partial selection agrees with full sort across 74 cutoffs PASS");
++    return 0;
++}
++int main(void) { tp_init(2); return selection_check() || run(false) || run(true); }
+diff --git a/bench/pi_draft_vocab.py b/bench/pi_draft_vocab.py
+new file mode 100644
+index 0000000..303d056
+--- /dev/null
++++ b/bench/pi_draft_vocab.py
+@@ -0,0 +1,166 @@
++"""Isolated draft-vocabulary sweep; full target verification remains unchanged."""
++
++import argparse
++import fcntl
++import json
++import hashlib
++import shutil
++import os
++from pathlib import Path
++import signal
++import subprocess
++import time
++
++p = argparse.ArgumentParser(description=__doc__)
++p.add_argument("--binary", type=Path, required=True)
++p.add_argument(
++    "--build",
++    action="store_true",
++    help="Build CPU binary while holding the benchmark lock",
++)
++p.add_argument(
++    "--tasks", type=Path, default=Path(__file__).with_name("pi-screen.jsonl")
++)
++p.add_argument("--output", type=Path, required=True)
++p.add_argument("--sizes", nargs="+", type=int, default=[0, 32768, 8192, 2048, 0])
++p.add_argument("--spec-k", type=int, default=2)
++p.add_argument(
++    "--reference",
++    type=Path,
++    help="Optional ordinary target JSONL for token identity checks",
++)
++a = p.parse_args()
++lockpath = Path.home() / ".cache/fleetllm-bench.lock"
++lockpath.parent.mkdir(exist_ok=True)
++with lockpath.open("w") as lock:
++    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
++    a.output.mkdir(parents=True, exist_ok=True)
++    if a.build:
++        with (a.output / "build.log").open("w") as log:
++            subprocess.run(
++                ["make", "NO_METAL=1", "-j4"],
++                cwd=Path(__file__).resolve().parents[1],
++                stdout=log,
++                stderr=subprocess.STDOUT,
++                check=True,
++            )
++    shutil.copyfile(a.tasks, a.output / "tasks.jsonl")
++    manifest = {
++        "binary": str(a.binary.resolve()),
++        "binary_sha256": hashlib.sha256(a.binary.read_bytes()).hexdigest(),
++        "source_sha256": hashlib.sha256(
++            (Path(__file__).resolve().parents[1] / "src/cpu.c").read_bytes()
++        ).hexdigest(),
++        "tasks_sha256": hashlib.sha256(a.tasks.read_bytes()).hexdigest(),
++    }
++    (a.output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
++    meta = []
++    baseline = None
++    if a.reference:
++        shutil.copyfile(a.reference, a.output / "target-baseline.jsonl")
++        baseline = {
++            r["id"]: r for r in map(json.loads, a.reference.read_text().splitlines())
++        }
++    for i, size in enumerate(a.sizes):
++        name = f"{i:02d}-vocab-{size}"
++        env = os.environ.copy()
++        env.pop("FLEET_DRAFT_VOCAB", None)
++        if size:
++            env["FLEET_DRAFT_VOCAB"] = str(size)
++        command = [
++            str(a.binary.resolve()),
++            "eval",
++            "--model",
++            str(Path.home() / "models/Muse-Glimmer-30B-Q2_K.gguf"),
++            "--backend",
++            "cpu",
++            "--threads",
++            "4",
++            "--budget-gb",
++            "14.8",
++            "--kv-gb",
++            ".25",
++            "--row-budget",
++            "64",
++            "--no-pin",
++            "--draft",
++            str(Path.home() / "models/glimmer-dflash"),
++            "--draft-kv-gb",
++            ".064",
++            "--spec-k",
++            str(a.spec_k),
++            "--spec-rows",
++            str(a.spec_k + 1),
++            "--tasks",
++            str(a.tasks.resolve()),
++        ]
++        start = time.monotonic()
++        peak = 0
++
++        def memory():
++            return {
++                x.split(":")[0]: int(x.split()[1]) * 1024
++                for x in Path("/proc/meminfo").read_text().splitlines()
++            }
++
++        before = memory()
++        initialswap = before["SwapTotal"] - before["SwapFree"]
++        with (
++            (a.output / (name + ".jsonl")).open("w") as stdout,
++            (a.output / (name + ".log")).open("w") as stderr,
++        ):
++            proc = subprocess.Popen(
++                command, env=env, stdout=stdout, stderr=stderr, start_new_session=True
++            )
++            while proc.poll() is None:
++                try:
++                    mem = memory()
++                    rss = int(
++                        Path(f"/proc/{proc.pid}/statm").read_text().split()[1]
++                    ) * os.sysconf("SC_PAGE_SIZE")
++                    peak = max(peak, rss)
++                    if (
++                        mem["MemAvailable"] < 300 * 1024**2
++                        or mem["SwapTotal"] - mem["SwapFree"] - initialswap
++                        > 128 * 1024**2
++                        or time.monotonic() - start > 1800
++                    ):
++                        os.killpg(proc.pid, signal.SIGTERM)
++                        raise RuntimeError("memory/swap/time guard")
++                except FileNotFoundError:
++                    pass
++                time.sleep(0.5)
++            code = proc.wait()
++        after = memory()
++        info = dict(
++            name=name,
++            size=size,
++            command=command,
++            seconds=time.monotonic() - start,
++            returncode=code,
++            peak_rss_bytes=peak,
++            swap_growth_bytes=after["SwapTotal"] - after["SwapFree"] - initialswap,
++        )
++        meta.append(info)
++        (a.output / "run.json").write_text(json.dumps(meta, indent=2) + "\n")
++        if code:
++            raise RuntimeError(f"{name} failed: {code}")
++        rows = {
++            r["id"]: r
++            for r in map(
++                json.loads, (a.output / (name + ".jsonl")).read_text().splitlines()
++            )
++        }
++        if baseline is None:
++            baseline = rows
++        info["target_tokens_identical"] = {
++            k: r["tokens"] == baseline[k]["tokens"] for k, r in rows.items()
++        }
++        assert all(info["target_tokens_identical"].values())
++        (a.output / "run.json").write_text(json.dumps(meta, indent=2) + "\n")
++        print(
++            name,
++            {k: r["decode_tokens_per_second"] for k, r in rows.items()},
++            info["target_tokens_identical"],
++            flush=True,
++        )
+diff --git a/src/cpu.c b/src/cpu.c
+index 904a990..02b865a 100644
+--- a/src/cpu.c
++++ b/src/cpu.c
+@@ -54,0 +55 @@ typedef struct { double energy; int block; } prune_score;
++typedef struct { float score; int tile; } draft_candidate;
+@@ -64,0 +66,2 @@ typedef struct cpu_state {
++    int draft_vocab_limit, *draft_tiles, n_draft_tiles;
++    draft_candidate *draft_candidates; size_t draft_candidate_cap;
+@@ -447,0 +451,94 @@ static void argmax_rows(const float *logits, int rows, int vocab, int32_t *out)
++// Experimental draft-only shortlist: full target logits rank four-token
++// weight tiles. All target rows still use the full vocabulary. A missed draft
++// proposal changes acceptance/performance, never the verified greedy answer.
++static int draft_candidate_cmp(const void *a, const void *b) {
++    const draft_candidate *x = a, *y = b;
++    return x->score > y->score ? -1 : x->score < y->score ? 1 : (x->tile > y->tile) - (x->tile < y->tile);
++}
++static int draft_tile_cmp(const void *a, const void *b) {
++    int x = *(const int *)a, y = *(const int *)b;
++    return (x > y) - (x < y);
++}
++static void draft_shortlist(cpu_state *s, const float *logits, int n, int vocab) {
++    int count = (vocab + 3) / 4;
++    if ((size_t)count > s->draft_candidate_cap) {
++        s->draft_candidate_cap = count;
++        s->draft_candidates = realloc(s->draft_candidates, count * sizeof(draft_candidate));
++    }
++    float *maxima = malloc(n * sizeof(float));
++    for (int row = 0; row < n; row++) {
++        maxima[row] = -INFINITY;
++        for (int j = 0; j < vocab; j++)
++            if (logits[(size_t)row * vocab + j] > maxima[row]) maxima[row] = logits[(size_t)row * vocab + j];
++    }
++    for (int i = 0; i < count; i++) {
++        float score = -INFINITY;
++        for (int row = 0; row < n; row++)
++            for (int j = i * 4; j < (i + 1) * 4 && j < vocab; j++)
++                if (logits[(size_t)row * vocab + j] - maxima[row] > score)
++                    score = logits[(size_t)row * vocab + j] - maxima[row];
++        s->draft_candidates[i] = (draft_candidate){ score, i };
++    }
++    free(maxima);
++    int keep = (s->draft_vocab_limit + 3) / 4;
++    if (keep > count) keep = count;
++    // Partition only the top tiles; sorting all ~50k vocabulary tiles at every
++    // target step costs more than selecting them. Total ordering breaks ties.
++    int lo = 0, hi = count - 1;
++    while (lo < hi && keep < count) {
++        draft_candidate pivot = s->draft_candidates[(lo + hi) / 2];
++        int i = lo, j = hi;
++        while (i <= j) {
++            while (draft_candidate_cmp(&s->draft_candidates[i], &pivot) < 0) i++;
++            while (draft_candidate_cmp(&s->draft_candidates[j], &pivot) > 0) j--;
++            if (i <= j) {
++                draft_candidate tmp = s->draft_candidates[i];
++                s->draft_candidates[i++] = s->draft_candidates[j];
++                s->draft_candidates[j--] = tmp;
++            }
++        }
++        if (keep - 1 <= j) hi = j;
++        else if (keep - 1 >= i) lo = i;
++        else break;
++    }
++    s->draft_tiles = realloc(s->draft_tiles, keep * sizeof(int));
++    s->n_draft_tiles = keep;
++    for (int i = 0; i < keep; i++) s->draft_tiles[i] = s->draft_candidates[i].tile;
++    qsort(s->draft_tiles, keep, sizeof(int), draft_tile_cmp);
++}
++typedef struct {
++    cpu_state *s;
++    const qmat *w;
++    const int *tiles;
++    float *logits;
++} draft_head_job;
++static void draft_head_tiles(void *ctx, int begin, int end) {
++    draft_head_job *j = ctx;
++    for (int i = begin; i < end;) {
++        int first = j->tiles[i] * 4, last = first + 4;
++        while (++i < end && j->tiles[i] * 4 == last) last += 4;
++        if (last > j->w->rows) last = j->w->rows;
++        if (j->w->gpu) cq_matmul_rows(j->w->gpu, &j->s->act, j->logits, j->w->rows, first, last);
++        else {
++            mm_job job = { j->w, j->s->in, j->logits, j->s->in_n, j->w->rows };
++            mm_rows(&job, first, last);
++        }
++    }
++}
++static void draft_short_head(cpu_state *s, const qmat *w, const int *tiles, int count, float *logits, int32_t *out) {
++    if (w->gpu && !s->act_ok) {
++        cq_quantize_group(&s->act, s->in, s->in_n, s->in_cols, s->activation_group);
++        s->act_ok = true;
++    }
++    draft_head_job job = { s, w, tiles, logits };
++    parallel_for(count, 16, draft_head_tiles, &job);
++    for (int t = 0; t < s->in_n; t++) {
++        int best = tiles[0] * 4;
++        const float *row = logits + (size_t)t * w->rows;
++        for (int i = 0; i < count; i++)
++            for (int r = tiles[i] * 4; r < tiles[i] * 4 + 4 && r < w->rows; r++)
++                if (row[r] > row[best]) best = r;
++        out[t] = best;
++    }
++}
++
+@@ -575,0 +673 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
++        if (s->draft_vocab_limit) draft_shortlist(s, result, ns, c->vocab);
+@@ -587,0 +686 @@ static void cpu_state_free(cpu_state *s) {
++    free(s->draft_tiles); free(s->draft_candidates);
+@@ -678,0 +778,9 @@ static int cpu_attach(backend *b, model *dm) {
++    const char *limit = getenv("FLEET_DRAFT_VOCAB");
++    if (limit) {
++        char *end; long v = strtol(limit, &end, 10);
++        if (end == limit || *end || v < 4 || v > 10000000) {
++            fprintf(stderr, "FLEET_DRAFT_VOCAB must be an integer >= 4\n"); return 1;
++        }
++        s->draft_vocab_limit = (int)v;
++        fprintf(stderr, "[draft] experimental target-ranked vocabulary shortlist: %d rows\n", s->draft_vocab_limit);
++    }
+@@ -778,2 +886,6 @@ static int cpu_draft(backend *b, const model *dm, const model *tm, kv_cache *kv,
+-        matmul(s, &tm->output, logits, tm->c.vocab);
+-        argmax_rows(logits, ns, tm->c.vocab, out);
++        if (target->n_draft_tiles)
++            draft_short_head(s, &tm->output, target->draft_tiles, target->n_draft_tiles, logits, out);
++        else {
++            matmul(s, &tm->output, logits, tm->c.vocab);
++            argmax_rows(logits, ns, tm->c.vocab, out);
++        }

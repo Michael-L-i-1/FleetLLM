@@ -1,0 +1,6 @@
+{
+  "binary": "/home/mli5/fleetllm-experiments/draft-tuning/build/fleet",
+  "binary_sha256": "5f5c005e9f341222bdbc490dea97393e1004d799b0d53ead2bd809e6f72becd9",
+  "source_sha256": "ba10f2203b9a2afa0cbcd35ccacee3af15deb81a72b98b6493c682d12ab28c7b",
+  "tasks_sha256": "cb5771c6f9279fb50252fa9867af10c9322ee48984b5ccba2b90a9254a8d570b"
+}

@@ -1,0 +1,48 @@
+{
+  "decision": "Rejected: no end-to-end speedup; keep prototype archived only.",
+  "mean_control_tokens_per_second": 1.1099860000000001,
+  "rows": [
+    {
+      "name": "00-vocab-0",
+      "decode_tokens_per_second": 1.109451,
+      "decode_seconds": 27.941759,
+      "decode_draft_seconds": 3.93783,
+      "decode_target_seconds": 24.003818,
+      "accepted": 15,
+      "drafted": 30,
+      "relative_to_mean_control": 0.9995180119388891
+    },
+    {
+      "name": "01-vocab-32768",
+      "decode_tokens_per_second": 1.030248,
+      "decode_seconds": 30.089852,
+      "decode_draft_seconds": 3.075041,
+      "decode_target_seconds": 27.014679,
+      "accepted": 13,
+      "drafted": 34,
+      "relative_to_mean_control": 0.928163057912442
+    },
+    {
+      "name": "02-vocab-8192",
+      "decode_tokens_per_second": 1.0433,
+      "decode_seconds": 29.713407,
+      "decode_draft_seconds": 2.831406,
+      "decode_target_seconds": 26.881886,
+      "accepted": 13,
+      "drafted": 33,
+      "relative_to_mean_control": 0.939921764779015
+    },
+    {
+      "name": "03-vocab-0",
+      "decode_tokens_per_second": 1.110521,
+      "decode_seconds": 27.914827,
+      "decode_draft_seconds": 3.90496,
+      "decode_target_seconds": 24.009754,
+      "accepted": 15,
+      "drafted": 30,
+      "relative_to_mean_control": 1.0004819880611107
+    }
+  ],
+  "all_target_tokens_identical": true,
+  "all_swap_growth_bytes_zero": true
+}

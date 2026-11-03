@@ -30,3 +30,6 @@ int32_t tok_bos(const tokenizer *t);
 // The model's Jinja chat template as shipped (tokenizer_config.json or GGUF
 // tokenizer.chat_template); "" if absent. Used to detect template variants.
 const char *tok_chat_template(const tokenizer *t);
+
+// Qwen3.5 generation prompt pre-opens its reasoning block.
+bool tok_qwen35(const tokenizer *t);

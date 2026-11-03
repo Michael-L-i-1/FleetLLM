@@ -18,6 +18,7 @@
 
 typedef struct {
     bool live, cached, generating, done;
+    int prefix_cached; // actual prefix tokens reused, excluding an unresolved leader wait
     seq_pages pages;
     int32_t *tokens; int n_tokens, cap_tokens;    // tokens whose KV is written
     int32_t *pending; int n_pending, cap_pending; // queued input

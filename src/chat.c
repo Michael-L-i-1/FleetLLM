@@ -86,7 +86,11 @@ char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const ch
                 if (i + 1 == n || strcmp(msgs[i + 1].role, "tool")) put(&b, "<|im_end|>\n");
                 continue;
             }
-            put(&b, "<|im_start|>%s\n%s", m->role, m->content);
+            put(&b, "<|im_start|>%s\n", m->role);
+            if (tok_qwen35(t))
+                put_trimmed(&b, m->content);
+            else
+                put(&b, "%s", m->content);
             for (int k = 0; k < m->n_calls; k++)
                 put(&b, "%s<tool_call>\n{\"name\": \"%s\", \"arguments\": %s}\n</tool_call>", (*m->content || k) ? "\n" : "", m->calls[k].name,
                     m->calls[k].arguments && *m->calls[k].arguments ? m->calls[k].arguments : "{}");
@@ -94,6 +98,8 @@ char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const ch
         }
         put(&b, "<|im_start|>assistant\n");
         if (o->direct && tok_lookup(t, "<think>") >= 0) put(&b, "<think>\n\n</think>\n\n");
+        else if (tok_qwen35(t))
+            put(&b, "<think>\n");
         break;
     }
     case CHAT_GLIMMER: { // follows the checkpoint's chat_template.jinja (no tools)

@@ -440,8 +440,82 @@ static void *metal_alloc(backend *b, size_t bytes, void **handle) {
 
 static void write_buf(id<MTLBuffer> b, const void *src, size_t n) { memcpy(b.contents, src, n); }
 
+typedef struct {
+    uint32_t first, count, kh, vh, kd, vd, cd, hist;
+} DeltaArgs;
+
+static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const model *m, const layer *l, const seq_pages *const *pages, const row_t *rows, int n,
+                         id<MTLBuffer> h, id<MTLBuffer> ob) {
+    const model_cfg *c = &m->c;
+    int vd = c->linear_v_heads * c->linear_v_dim, cd = 2 * c->linear_k_heads * c->linear_k_dim + vd;
+    DeltaArgs a = {0, 0, c->linear_k_heads, c->linear_v_heads, c->linear_k_dim, c->linear_v_dim, cd, 3 * cd};
+    size_t stride = a.hist + (size_t)a.vh * a.kd * a.vd;
+    id<MTLBuffer> x = B(mt, @"linear_qkv", 4 * (size_t)n * cd), z = B(mt, @"linear_z", 4 * (size_t)n * vd), av = B(mt, @"linear_a", 4 * (size_t)n * a.vh),
+                  bv = B(mt, @"linear_b", 4 * (size_t)n * a.vh), cv = B(mt, @"linear_conv", 4 * (size_t)n * cd), y = B(mt, @"linear_y", 4 * (size_t)n * vd),
+                  out = B(mt, @"linear_out", 4 * (size_t)n * vd);
+    matmul(mt, e, &l->wq, h, x, cd, n);
+    matmul(mt, e, &l->wk, h, z, vd, n);
+    matmul(mt, e, &l->wv, h, av, a.vh, n);
+    matmul(mt, e, &l->wg, h, bv, a.vh, n);
+    // Rows of each sequence are contiguous within a scheduler step.
+    for (int first = 0; first < n;) {
+        int end = first + 1;
+        while (end < n && rows[end].seq == rows[first].seq)
+            end++;
+        a.first = first;
+        a.count = end - first;
+        const seq_pages *pg = pages[rows[first].seq];
+        id<MTLBuffer> state = [mt->dev newBufferWithBytesNoCopy:pg->recurrent length:pg->recurrent_bytes options:MTLResourceStorageModeShared deallocator:nil];
+        NSUInteger off = 4 * stride * l->recurrent_layer;
+        [e setComputePipelineState:P(mt, @"q35_conv")];
+        [e setBuffer:x offset:0 atIndex:0];
+        set_w(e, mt, l->conv, 1);
+        [e setBuffer:state offset:off atIndex:2];
+        [e setBuffer:cv offset:0 atIndex:3];
+        set_bytes(e, &a, sizeof a, 4);
+        [e dispatchThreads:MTLSizeMake(cd, 1, 1) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+        first = end;
+    }
+    [e setComputePipelineState:P(mt, @"q35_linear_qk")];
+    [e setBuffer:cv offset:0 atIndex:0];
+    set_bytes(e, &a, sizeof a, 1);
+    [e dispatchThreadgroups:MTLSizeMake(n, 2 * a.kh, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+    for (int first = 0; first < n;) {
+        int end = first + 1;
+        while (end < n && rows[end].seq == rows[first].seq)
+            end++;
+        a.first = first;
+        a.count = end - first;
+        const seq_pages *pg = pages[rows[first].seq];
+        id<MTLBuffer> state = [mt->dev newBufferWithBytesNoCopy:pg->recurrent length:pg->recurrent_bytes options:MTLResourceStorageModeShared deallocator:nil];
+        [e setComputePipelineState:P(mt, @"q35_delta")];
+        [e setBuffer:cv offset:0 atIndex:0];
+        [e setBuffer:av offset:0 atIndex:1];
+        [e setBuffer:bv offset:0 atIndex:2];
+        set_w(e, mt, l->a_log, 3);
+        set_w(e, mt, l->dt_bias, 4);
+        [e setBuffer:state offset:4 * stride * l->recurrent_layer atIndex:5];
+        [e setBuffer:y offset:0 atIndex:6];
+        set_bytes(e, &a, sizeof a, 7);
+        [e dispatchThreadgroups:MTLSizeMake(a.vd, a.vh, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+        first = end;
+    }
+    [e setComputePipelineState:P(mt, @"q35_gate_norm")];
+    [e setBuffer:y offset:0 atIndex:0];
+    [e setBuffer:z offset:0 atIndex:1];
+    set_w(e, mt, l->linear_norm, 2);
+    [e setBuffer:out offset:0 atIndex:3];
+    set_bytes(e, &a, sizeof a, 4);
+    [e dispatchThreadgroups:MTLSizeMake(n, a.vh, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+    matmul_affine(mt, e, &l->wo, out, 0, false, ob, 0, c->d, n);
+}
+
 static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pages *const *pages, const row_t *rows, int n, float *logits) {
     @autoreleasepool {
+        if (!backend_recurrent_rows_valid(m, pages, rows, n)) {
+            fprintf(stderr, "invalid recurrent endpoint or non-causal rows\n");
+            return 1;
+        }
         CIMetal *mt = (__bridge CIMetal *)be->impl;
         const model_cfg *c = &m->c;
         int d = c->d, hd = c->hd, qd = c->n_head * hd, kvd = c->n_kv * hd;
@@ -504,7 +578,7 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         bool nax_attn = mt->nax && attn_nax_on() && (hd == 64 || hd == 128), naxs_attn = nax_attn && attn_naxs_on() && G <= 16;
         bool vec_attn = !naxs_attn && attn_vec_on();
         for (int i = 0; i < n; i++) {
-            if (vec_attn && !rows[i].input) {
+            if (vec_attn && (!rows[i].input || hd == 256)) {
                 vrows[n_vec++] = (uint32_t)i;
                 skip[i] = 1;
                 const RowInfo *rs[2] = { &ri_full[i], &ri_swa[i] };
@@ -579,144 +653,182 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
 
         id<MTLCommandBuffer> cb = [mt->queue commandBuffer];
         id<MTLComputeCommandEncoder> e = [cb computeCommandEncoder];
-        bool fd = c->n_head / c->n_kv <= 16 && (hd == 64 || hd == 128);
+        bool fd = c->n_head / c->n_kv <= 16 && (hd == 64 || hd == 128 || hd == 256);
         if (!fd) { fprintf(stderr, "metal: head_dim %d / GQA group %d not supported by attention kernel\n", hd, c->n_head / c->n_kv); exit(1); }
         for (int li = 0; li < c->n_layer; li++) {
             const layer *l = &m->layers[li];
             bool fuse_norms = add_norm_ok(d);
             if (li == 0 || !fuse_norms) rms(mt, e, xb, hb, l->attn_norm, d, c->eps, false, n, nil); // else done by the previous layer
-            // q/k/v/gate: one fused matmul into [n][q|k|v|g] rows, or four separate ones
-            id<MTLBuffer> qB = qb, kB = kb, vB = vb, gB = gb;
-            NSUInteger qO = 0, kO = 0, vO = 0, gO = 0;
-            uint32_t qs = qd, ks = kvd, vs = kvd, gs = qd;
-            if (mt->f_qkvg[li].type) {
-                matmul(mt, e, &mt->f_qkvg[li], hb, qkvgb, qkvg_w, n);
-                qB = kB = vB = gB = qkvgb;
-                kO = 4 * qd; vO = 4 * (qd + kvd); gO = 4 * (qd + 2 * kvd);
-                qs = ks = vs = gs = qkvg_w;
+            if (l->linear) {
+                metal_linear(mt, e, m, l, pages, rows, n, hb, ob);
             } else {
-                matmul(mt, e, &l->wq, hb, qb, qd, n);
-                matmul(mt, e, &l->wk, hb, kb, kvd, n);
-                matmul(mt, e, &l->wv, hb, vb, kvd, n);
-                if (l->wg.data) matmul(mt, e, &l->wg, hb, gb, qd, n);
-            }
-            if (l->bq) add_bcast(mt, e, qb, l->bq, nil, qd, (size_t)n * qd);
-            if (l->bk) add_bcast(mt, e, kb, l->bk, nil, kvd, (size_t)n * kvd);
-            if (l->bv) add_bcast(mt, e, vb, l->bv, nil, kvd, (size_t)n * kvd);
-            if (l->q_norm || l->k_norm || l->rope) {
-                QkArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->eps, l->q_norm != NULL, l->k_norm != NULL, l->rope, c->rope_neox, qs, ks };
-                [e setComputePipelineState:P(mt, @"qk_norm_rope")];
-                [e setBuffer:qB offset:qO atIndex:0];
-                [e setBuffer:kB offset:kO atIndex:1];
-                set_w(e, mt, l->q_norm, 2);
-                set_w(e, mt, l->k_norm, 3);
-                [e setBuffer:B(mt, @"pos", 4 * n) offset:0 atIndex:4];
-                [e setBuffer:mt->invf offset:0 atIndex:5];
-                set_bytes(e, &a, sizeof a, 6);
-                [e dispatchThreadgroups:MTLSizeMake(n, c->n_head + c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
-            }
-            const kv_pool *pl = l->swa ? &kv->swa : &kv->full;
-            id<MTLBuffer> pool = l->swa ? swa_pool : full_pool;
-            uint64_t layer_off = (uint64_t)l->pool_layer * 2 * c->n_kv * KV_PAGE * hd;
-            {
-                KvwArgs a = { (uint32_t)c->n_kv, (uint32_t)hd, KV_PAGE, ks, layer_off, vs, (uint32_t)l->pool_layer };
-                [e setComputePipelineState:P(mt, q8 ? @"kv_write8" : @"kv_write")];
-                [e setBuffer:kB offset:kO atIndex:0];
-                [e setBuffer:vB offset:vO atIndex:1];
-                [e setBuffer:pool offset:0 atIndex:2];
-                [e setBuffer:B(mt, l->swa ? @"slot_swa" : @"slot_full", 8 * n) offset:0 atIndex:3];
-                set_bytes(e, &a, sizeof a, 4);
-                if (q8) {
-                    [e setBuffer:B(mt, l->swa ? @"sslot_swa" : @"sslot_full", 8 * n) offset:0 atIndex:5];
-                    [e dispatchThreadgroups:MTLSizeMake(n, c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(hd, 1, 1)];
-                } else [e dispatchThreads:MTLSizeMake(kvd, n, 1) threadsPerThreadgroup:MTLSizeMake(kvd < 256 ? kvd : 256, 1, 1)];
-            }
-            {
-                AttnArgs a = { (uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->attn_scale, pl->page_stride, layer_off, KV_PAGE, l->wg.data != NULL, qs, gs, mt->h16,
-                               (uint32_t)l->pool_layer, pl->scale_off };
-                uint32_t sp[2] = { naxs_attn ? DEC_SPAN : 0, l->swa ? max_sp_swa : max_sp_full }; // .x: span size (attn_naxs), else per-row splits
-                bool mma = attn_mma_on();
-                id<MTLBuffer> rib = B(mt, l->swa ? @"ri_swa" : @"ri_full", sizeof(RowInfo) * n);
-                int ngr = l->swa ? ng_swa : ng_full, rmx = l->swa ? rmax_swa : rmax_full;
-                if (n_vec) {
-                    [e setComputePipelineState:P(mt, [NSString stringWithFormat:q8 ? @"attn_vec8_%d_%d" : @"attn_vec_%d_%d", hd, G <= 4 ? 4 : G <= 8 ? 8 : 16])];
-                    [e setBuffer:qB offset:qO atIndex:0];
-                    [e setBuffer:pool offset:0 atIndex:1];
-                    [e setBuffer:rib offset:0 atIndex:2];
-                    [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
-                    [e setBuffer:part offset:0 atIndex:4];
-                    set_bytes(e, &a, sizeof a, 5);
-                    set_bytes(e, sp, sizeof sp, 6);
-                    [e setBuffer:B(mt, @"vrows", 4 * n) offset:0 atIndex:7];
-                    [e dispatchThreadgroups:MTLSizeMake(n_vec, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+                // q/k/v/gate: one fused matmul into [n][q|k|v|g] rows, or four separate ones
+                id<MTLBuffer> qB = qb, kB = kb, vB = vb, gB = gb;
+                NSUInteger qO = 0, kO = 0, vO = 0, gO = 0;
+                uint32_t qs = qd, ks = kvd, vs = kvd, gs = qd;
+                if (mt->f_qkvg[li].type) {
+                    matmul(mt, e, &mt->f_qkvg[li], hb, qkvgb, qkvg_w, n);
+                    qB = kB = vB = gB = qkvgb;
+                    kO = 4 * qd;
+                    vO = 4 * (qd + kvd);
+                    gO = 4 * (qd + 2 * kvd);
+                    qs = ks = vs = gs = qkvg_w;
+                } else {
+                    if (c->arch == ARCH_QWEN35)
+                        matmul(mt, e, &l->wq, hb, B(mt, @"q35_qg", 8 * (size_t)n * qd), 2 * qd, n);
+                    else
+                        matmul(mt, e, &l->wq, hb, qb, qd, n);
+                    matmul(mt, e, &l->wk, hb, kb, kvd, n);
+                    matmul(mt, e, &l->wv, hb, vb, kvd, n);
+                    if (l->wg.data) matmul(mt, e, &l->wg, hb, gb, qd, n);
                 }
-                int nit = l->swa ? ni_swa : ni_full;
-                if (naxs_attn && nit) {
-                    [e setComputePipelineState:P(mt, [NSString stringWithFormat:q8 ? @"attn_naxs8_%d" : @"attn_naxs_%d", hd])];
+                if (l->bq) add_bcast(mt, e, qb, l->bq, nil, qd, (size_t)n * qd);
+                if (l->bk) add_bcast(mt, e, kb, l->bk, nil, kvd, (size_t)n * kvd);
+                if (l->bv) add_bcast(mt, e, vb, l->bv, nil, kvd, (size_t)n * kvd);
+                if (c->arch == ARCH_QWEN35) {
+                    uint32_t dims[4] = {c->n_head, c->n_kv, hd, c->rope_dim};
+                    [e setComputePipelineState:P(mt, @"q35_prepare")];
+                    [e setBuffer:B(mt, @"q35_qg", 8 * (size_t)n * qd) offset:0 atIndex:0];
+                    [e setBuffer:qb offset:0 atIndex:1];
+                    [e setBuffer:kb offset:0 atIndex:2];
+                    [e setBuffer:gb offset:0 atIndex:3];
+                    set_w(e, mt, l->q_norm, 4);
+                    set_w(e, mt, l->k_norm, 5);
+                    [e setBuffer:B(mt, @"pos", 4 * n) offset:0 atIndex:6];
+                    [e setBuffer:mt->invf offset:0 atIndex:7];
+                    set_bytes(e, dims, sizeof dims, 8);
+                    [e dispatchThreadgroups:MTLSizeMake(n, c->n_head + c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+                } else if (l->q_norm || l->k_norm || l->rope) {
+                    QkArgs a = {(uint32_t)c->n_head, (uint32_t)c->n_kv, (uint32_t)hd, c->eps, l->q_norm != NULL,
+                                l->k_norm != NULL,   l->rope,           c->rope_neox, qs,     ks};
+                    [e setComputePipelineState:P(mt, @"qk_norm_rope")];
                     [e setBuffer:qB offset:qO atIndex:0];
-                    [e setBuffer:pool offset:0 atIndex:1];
-                    [e setBuffer:rib offset:0 atIndex:2];
-                    [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
-                    [e setBuffer:part offset:0 atIndex:4];
-                    set_bytes(e, &a, sizeof a, 5);
-                    set_bytes(e, sp, sizeof sp, 6);
-                    [e setBuffer:B(mt, l->swa ? @"grp_swa" : @"grp_full", 8 * n) offset:0 atIndex:7];
-                    [e setBuffer:B(mt, l->swa ? @"sitems_swa" : @"sitems_full", sizeof(SpanItem) * nit) offset:0 atIndex:8];
-                    [e dispatchThreadgroups:MTLSizeMake(nit, c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
-                } else if (ngr) {
-                    NSString *kn = mma ? (q8 ? @"attn_mma8_%d" : @"attn_mma_%d") : (q8 ? @"attn_fd8_%d" : @"attn_fd_%d");
-                    [e setComputePipelineState:P(mt, [NSString stringWithFormat:kn, hd])];
-                    [e setBuffer:qB offset:qO atIndex:0];
-                    [e setBuffer:pool offset:0 atIndex:1];
-                    [e setBuffer:rib offset:0 atIndex:2];
-                    [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
-                    [e setBuffer:part offset:0 atIndex:4];
-                    set_bytes(e, &a, sizeof a, 5);
-                    set_bytes(e, sp, sizeof sp, 6);
-                    [e setBuffer:B(mt, l->swa ? @"grp_swa" : @"grp_full", 8 * n) offset:0 atIndex:7];
-                    [e dispatchThreadgroups:MTLSizeMake(ngr, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(mma ? 128 : 32 * G * rmx, 1, 1)];
+                    [e setBuffer:kB offset:kO atIndex:1];
+                    set_w(e, mt, l->q_norm, 2);
+                    set_w(e, mt, l->k_norm, 3);
+                    [e setBuffer:B(mt, @"pos", 4 * n) offset:0 atIndex:4];
+                    [e setBuffer:mt->invf offset:0 atIndex:5];
+                    set_bytes(e, &a, sizeof a, 6);
+                    [e dispatchThreadgroups:MTLSizeMake(n, c->n_head + c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
                 }
-                if (ngr || n_vec) {
-                    [e setComputePipelineState:P(mt, @"attn_reduce")];
-                    [e setBuffer:part offset:0 atIndex:0];
-                    [e setBuffer:gB offset:gO atIndex:1];
-                    [e setBuffer:ab offset:0 atIndex:2];
-                    set_bytes(e, &a, sizeof a, 3);
-                    set_bytes(e, sp, sizeof sp, 4);
-                    [e setBuffer:B(mt, @"pslot", 4 * n) offset:0 atIndex:5];
-                    [e setBuffer:rib offset:0 atIndex:6];
-                    [e dispatchThreadgroups:MTLSizeMake(n, c->n_head, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+                const kv_pool *pl = l->swa ? &kv->swa : &kv->full;
+                id<MTLBuffer> pool = l->swa ? swa_pool : full_pool;
+                uint64_t layer_off = (uint64_t)l->pool_layer * 2 * c->n_kv * KV_PAGE * hd;
+                {
+                    KvwArgs a = {(uint32_t)c->n_kv, (uint32_t)hd, KV_PAGE, ks, layer_off, vs, (uint32_t)l->pool_layer};
+                    [e setComputePipelineState:P(mt, q8 ? @"kv_write8" : @"kv_write")];
+                    [e setBuffer:kB offset:kO atIndex:0];
+                    [e setBuffer:vB offset:vO atIndex:1];
+                    [e setBuffer:pool offset:0 atIndex:2];
+                    [e setBuffer:B(mt, l->swa ? @"slot_swa" : @"slot_full", 8 * n) offset:0 atIndex:3];
+                    set_bytes(e, &a, sizeof a, 4);
+                    if (q8) {
+                        [e setBuffer:B(mt, l->swa ? @"sslot_swa" : @"sslot_full", 8 * n) offset:0 atIndex:5];
+                        [e dispatchThreadgroups:MTLSizeMake(n, c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(hd, 1, 1)];
+                    } else
+                        [e dispatchThreads:MTLSizeMake(kvd, n, 1) threadsPerThreadgroup:MTLSizeMake(kvd < 256 ? kvd : 256, 1, 1)];
                 }
-                if (n_nax) {
-                    [e setComputePipelineState:P(mt, [NSString stringWithFormat:q8 ? @"attn_nax8_%d" : @"attn_nax_%d", hd])];
-                    [e setBuffer:qB offset:qO atIndex:0];
-                    [e setBuffer:pool offset:0 atIndex:1];
-                    [e setBuffer:rib offset:0 atIndex:2];
-                    [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
-                    [e setBuffer:ab offset:0 atIndex:4];
-                    set_bytes(e, &a, sizeof a, 5);
-                    [e setBuffer:B(mt, @"ngrp", 8 * n) offset:0 atIndex:6];
-                    [e setBuffer:gB offset:gO atIndex:7];
-                    [e setBuffer:npart offset:0 atIndex:8];
-                    [e setBuffer:nax_sp > 1 ? B(mt, @"nslot", 4 * n) : B(mt, @"pslot", 4 * n) offset:0 atIndex:9];
-                    uint32_t nsp[2] = { nax_span(), nax_sp };
-                    set_bytes(e, nsp, sizeof nsp, 10);
-                    [e dispatchThreadgroups:MTLSizeMake(n_nax, c->n_head, nax_sp) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
-                    if (nax_sp > 1) {
+                {
+                    AttnArgs a = {(uint32_t)c->n_head,
+                                  (uint32_t)c->n_kv,
+                                  (uint32_t)hd,
+                                  c->attn_scale,
+                                  pl->page_stride,
+                                  layer_off,
+                                  KV_PAGE,
+                                  l->wg.data != NULL || c->arch == ARCH_QWEN35,
+                                  qs,
+                                  gs,
+                                  mt->h16,
+                                  (uint32_t)l->pool_layer,
+                                  pl->scale_off};
+                    uint32_t sp[2] = {naxs_attn ? DEC_SPAN : 0, l->swa ? max_sp_swa : max_sp_full}; // .x: span size (attn_naxs), else per-row splits
+                    bool mma = attn_mma_on();
+                    id<MTLBuffer> rib = B(mt, l->swa ? @"ri_swa" : @"ri_full", sizeof(RowInfo) * n);
+                    int ngr = l->swa ? ng_swa : ng_full, rmx = l->swa ? rmax_swa : rmax_full;
+                    if (n_vec) {
+                        [e setComputePipelineState:P(mt, [NSString stringWithFormat:q8 ? @"attn_vec8_%d_%d" : @"attn_vec_%d_%d", hd,
+                                                                                    G <= 4   ? 4
+                                                                                    : G <= 8 ? 8
+                                                                                             : 16])];
+                        [e setBuffer:qB offset:qO atIndex:0];
+                        [e setBuffer:pool offset:0 atIndex:1];
+                        [e setBuffer:rib offset:0 atIndex:2];
+                        [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
+                        [e setBuffer:part offset:0 atIndex:4];
+                        set_bytes(e, &a, sizeof a, 5);
+                        set_bytes(e, sp, sizeof sp, 6);
+                        [e setBuffer:B(mt, @"vrows", 4 * n) offset:0 atIndex:7];
+                        [e dispatchThreadgroups:MTLSizeMake(n_vec, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(256, 1, 1)];
+                    }
+                    int nit = l->swa ? ni_swa : ni_full;
+                    if (naxs_attn && nit) {
+                        [e setComputePipelineState:P(mt, [NSString stringWithFormat:q8 ? @"attn_naxs8_%d" : @"attn_naxs_%d", hd])];
+                        [e setBuffer:qB offset:qO atIndex:0];
+                        [e setBuffer:pool offset:0 atIndex:1];
+                        [e setBuffer:rib offset:0 atIndex:2];
+                        [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
+                        [e setBuffer:part offset:0 atIndex:4];
+                        set_bytes(e, &a, sizeof a, 5);
+                        set_bytes(e, sp, sizeof sp, 6);
+                        [e setBuffer:B(mt, l->swa ? @"grp_swa" : @"grp_full", 8 * n) offset:0 atIndex:7];
+                        [e setBuffer:B(mt, l->swa ? @"sitems_swa" : @"sitems_full", sizeof(SpanItem) * nit) offset:0 atIndex:8];
+                        [e dispatchThreadgroups:MTLSizeMake(nit, c->n_kv, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                    } else if (ngr) {
+                        NSString *kn = mma ? (q8 ? @"attn_mma8_%d" : @"attn_mma_%d") : (q8 ? @"attn_fd8_%d" : @"attn_fd_%d");
+                        [e setComputePipelineState:P(mt, [NSString stringWithFormat:kn, hd])];
+                        [e setBuffer:qB offset:qO atIndex:0];
+                        [e setBuffer:pool offset:0 atIndex:1];
+                        [e setBuffer:rib offset:0 atIndex:2];
+                        [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
+                        [e setBuffer:part offset:0 atIndex:4];
+                        set_bytes(e, &a, sizeof a, 5);
+                        set_bytes(e, sp, sizeof sp, 6);
+                        [e setBuffer:B(mt, l->swa ? @"grp_swa" : @"grp_full", 8 * n) offset:0 atIndex:7];
+                        [e dispatchThreadgroups:MTLSizeMake(ngr, c->n_kv, sp[1]) threadsPerThreadgroup:MTLSizeMake(mma ? 128 : 32 * G * rmx, 1, 1)];
+                    }
+                    if (ngr || n_vec) {
                         [e setComputePipelineState:P(mt, @"attn_reduce")];
-                        [e setBuffer:npart offset:0 atIndex:0];
+                        [e setBuffer:part offset:0 atIndex:0];
                         [e setBuffer:gB offset:gO atIndex:1];
                         [e setBuffer:ab offset:0 atIndex:2];
                         set_bytes(e, &a, sizeof a, 3);
-                        uint32_t rsp[2] = { 0, nax_sp };
-                        set_bytes(e, rsp, sizeof rsp, 4);
-                        [e setBuffer:B(mt, @"nslot", 4 * n) offset:0 atIndex:5];
+                        set_bytes(e, sp, sizeof sp, 4);
+                        [e setBuffer:B(mt, @"pslot", 4 * n) offset:0 atIndex:5];
                         [e setBuffer:rib offset:0 atIndex:6];
                         [e dispatchThreadgroups:MTLSizeMake(n, c->n_head, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
                     }
+                    if (n_nax) {
+                        [e setComputePipelineState:P(mt, [NSString stringWithFormat:q8 ? @"attn_nax8_%d" : @"attn_nax_%d", hd])];
+                        [e setBuffer:qB offset:qO atIndex:0];
+                        [e setBuffer:pool offset:0 atIndex:1];
+                        [e setBuffer:rib offset:0 atIndex:2];
+                        [e setBuffer:B(mt, @"tab", 4 * tab_n) offset:0 atIndex:3];
+                        [e setBuffer:ab offset:0 atIndex:4];
+                        set_bytes(e, &a, sizeof a, 5);
+                        [e setBuffer:B(mt, @"ngrp", 8 * n) offset:0 atIndex:6];
+                        [e setBuffer:gB offset:gO atIndex:7];
+                        [e setBuffer:npart offset:0 atIndex:8];
+                        [e setBuffer:nax_sp > 1 ? B(mt, @"nslot", 4 * n) : B(mt, @"pslot", 4 * n) offset:0 atIndex:9];
+                        uint32_t nsp[2] = {nax_span(), nax_sp};
+                        set_bytes(e, nsp, sizeof nsp, 10);
+                        [e dispatchThreadgroups:MTLSizeMake(n_nax, c->n_head, nax_sp) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                        if (nax_sp > 1) {
+                            [e setComputePipelineState:P(mt, @"attn_reduce")];
+                            [e setBuffer:npart offset:0 atIndex:0];
+                            [e setBuffer:gB offset:gO atIndex:1];
+                            [e setBuffer:ab offset:0 atIndex:2];
+                            set_bytes(e, &a, sizeof a, 3);
+                            uint32_t rsp[2] = {0, nax_sp};
+                            set_bytes(e, rsp, sizeof rsp, 4);
+                            [e setBuffer:B(mt, @"nslot", 4 * n) offset:0 atIndex:5];
+                            [e setBuffer:rib offset:0 atIndex:6];
+                            [e dispatchThreadgroups:MTLSizeMake(n, c->n_head, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+                        }
+                    }
                 }
-            }
-            matmul(mt, e, &l->wo, ab, ob, d, n);
+                matmul(mt, e, &l->wo, ab, ob, d, n);
+            } // full attention
             if (fuse_norms) add_norm(mt, e, ob, xb, hb, l->post_attn_norm, c->post_eps, l->ffn_norm, c->eps, d, n);
             else {
                 if (l->post_attn_norm) rms(mt, e, ob, xb, l->post_attn_norm, d, c->post_eps, true, n, nil);
@@ -785,6 +897,9 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
             fprintf(stderr, "metal: command buffer failed (status %ld): %s\n", (long)cb.status, cb.error.localizedDescription.UTF8String);
             return 1;
         }
+        if (c->n_linear)
+            for (int i = 0; i < n; i++)
+                ((seq_pages *)pages[rows[i].seq])->recurrent_len = rows[i].pos + 1;
         if (ns && logits) memcpy(logits, lg.contents, sizeof(float) * (size_t)ns * c->vocab);
         if (ns && be->argmax) memcpy(be->argmax, B(mt, @"amax", 4 * ns).contents, 4 * (size_t)ns);
         return 0;
@@ -1137,7 +1252,7 @@ backend *metal_backend_new(model *m) {
             for (int i = 0; i < m->c.n_layer; i++) {
                 layer *l = &m->layers[i];
                 qmat *qkvg[] = { &l->wq, &l->wk, &l->wv, &l->wg }, *gu[] = { &l->w_gate, &l->w_up };
-                if (!l->bq && !l->bk && !l->bv) repacked += fuse_tiled(mt, qkvg, l->wg.data ? 4 : 3, &mt->f_qkvg[i]);
+                if (m->c.arch != ARCH_QWEN35 && !l->bq && !l->bk && !l->bv) repacked += fuse_tiled(mt, qkvg, l->wg.data ? 4 : 3, &mt->f_qkvg[i]);
                 repacked += fuse_tiled(mt, gu, 2, &mt->f_gu[i]);
             }
         for (int i = 0; i < nm; i++) {

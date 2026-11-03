@@ -37,6 +37,8 @@ void kv_init(kv_cache *kv, int full_layers, int swa_layers, int kv_heads, int he
     uint32_t full_pages = full_pb ? (uint32_t)((budget - (size_t)swa_pages * swa_pb) / full_pb) : 0;
     pool_init(&kv->full, full_layers, kv_heads, head_dim, full_pages, elem, alloc, user);
     pool_init(&kv->swa, swa_layers, kv_heads, head_dim, swa_pages, elem, alloc, user);
+    kv->recurrent_bytes = 0;
+    kv->recurrent_limit = kv->recurrent_used = 0;
     kv->window = swa_pages ? window : 0;
 }
 
@@ -71,6 +73,13 @@ static void grow(seq_pages *s) {
 }
 
 bool kv_reserve(kv_cache *kv, seq_pages *s, int pos) {
+    if (kv->recurrent_bytes && !s->recurrent) {
+        if (kv->recurrent_used >= kv->recurrent_limit) return false;
+        s->recurrent_bytes = (kv->recurrent_bytes + 16383) & ~(size_t)16383;
+        if (posix_memalign((void **)&s->recurrent, 16384, s->recurrent_bytes)) return false;
+        memset(s->recurrent, 0, s->recurrent_bytes);
+        kv->recurrent_used++;
+    }
     int pi = pos / KV_PAGE;
     if (pi == s->n_pages) {
         grow(s);
@@ -89,7 +98,9 @@ bool kv_reserve(kv_cache *kv, seq_pages *s, int pos) {
 }
 
 bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len) {
-    if (len > s->len) return false;
+    if (len < 0 || len > s->len) return false;
+    if (kv->recurrent_bytes && len && kv->recurrent_used >= kv->recurrent_limit) return false;
+    if (kv->recurrent_bytes && len && (!s->recurrent || len != s->recurrent_len)) return false;
     if (!kv->window || len == 0) return true;
     int first = (len + 1 > kv->window ? len + 1 - kv->window : 0) / KV_PAGE;
     int last = (len + KV_PAGE - 1) / KV_PAGE;
@@ -99,6 +110,17 @@ bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len) {
 
 seq_pages kv_fork_at(kv_cache *kv, const seq_pages *s, int len) {
     seq_pages c = {0};
+    if (!kv_can_fork_at(kv, s, len)) {
+        fprintf(stderr, "KV: unavailable fork snapshot\n");
+        abort();
+    }
+    if (len && s->recurrent) {
+        c.recurrent_bytes = s->recurrent_bytes;
+        if (posix_memalign((void **)&c.recurrent, 16384, c.recurrent_bytes)) abort();
+        memcpy(c.recurrent, s->recurrent, c.recurrent_bytes);
+        c.recurrent_len = len;
+        kv->recurrent_used++;
+    }
     int np = (len + KV_PAGE - 1) / KV_PAGE;
     c.cap = np > 16 ? np : 16;
     c.full = malloc(sizeof(uint32_t) * c.cap);
@@ -119,6 +141,8 @@ void kv_free_seq(kv_cache *kv, seq_pages *s) {
         prelease(&kv->full, s->full[i]);
         if (kv->window) prelease(&kv->swa, s->swa[i]);
     }
+    if (s->recurrent) kv->recurrent_used--;
+    free(s->recurrent);
     free(s->full);
     free(s->swa);
     memset(s, 0, sizeof *s);
@@ -133,6 +157,10 @@ void kv_trim_window(kv_cache *kv, seq_pages *s) {
 }
 
 void kv_truncate(kv_cache *kv, seq_pages *s, int len) {
+    if (s->recurrent && len < s->recurrent_len) {
+        fprintf(stderr, "recurrent rollback requires a checkpoint\n");
+        abort();
+    }
     int keep = (len + KV_PAGE - 1) / KV_PAGE;
     for (int i = keep; i < s->n_pages; i++) {
         prelease(&kv->full, s->full[i]);

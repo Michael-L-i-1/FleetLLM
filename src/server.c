@@ -181,7 +181,7 @@ static void *engine_loop(void *arg) {
             sv->queue = r->next;
             if (sv->n_active == sv->cap_active) { sv->cap_active = sv->cap_active ? sv->cap_active * 2 : 64; sv->active = realloc(sv->active, sizeof(req *) * sv->cap_active); }
             r->seq = engine_create(e, r->prompt, r->n_prompt);
-            r->n_cached = e->seqs[r->seq].n_tokens + e->seqs[r->seq].wait_len;
+            r->n_cached = e->seqs[r->seq].prefix_cached;
             engine_start(e, r->seq, r->p);
             r->started = true;
             sv->active[sv->n_active++] = r;
@@ -201,6 +201,7 @@ static void *engine_loop(void *arg) {
             req *r = sv->active[i];
             seq_t *s = &e->seqs[r->seq];
             pthread_mutex_lock(&r->mu);
+            r->n_cached = s->prefix_cached;
             bool stopped = false;
             for (; r->seen < s->n_gen; r->seen++) {
                 if (!r->n_gen) r->t_first = wall();
@@ -350,6 +351,18 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
     if (chat) {
         const jnode *msgs = json_get(j, root, "messages");
         if (!msgs || msgs->type != J_ARR || !msgs->n) { respond_error(c->fd, 400, "messages must be a non-empty array"); json_free(j); free_req(r); return; }
+        if (tok_qwen35(sv->tok)) {
+            bool unsupported=false;
+            for(const jnode *m=json_first(j,msgs);m;m=json_next(j,m)) {
+                const char *role=json_str(j,m,"role");
+                const jnode *calls=json_get(j,m,"tool_calls"),*content=json_get(j,m,"content");
+                unsupported |= (role && !strcmp(role,"tool")) || (calls && calls->type==J_ARR && calls->n);
+                for(const jnode *part=content && content->type==J_ARR ? json_first(j,content) : NULL;part;part=json_next(j,part)) {
+                    const char *type=json_str(j,part,"type");unsupported |= !type || strcmp(type,"text");
+                }
+            }
+            if(unsupported) {respond_error(c->fd,400,"Qwen3.5 currently supports text messages and JSON actions; native tool calls and media are not implemented");json_free(j);free_req(r);return;}
+        }
         chat_msg *cm = calloc(msgs->n, sizeof(chat_msg));
         buf *bodies = calloc(msgs->n, sizeof(buf));
         int k = 0, n_calls = 0;
@@ -389,12 +402,20 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         bool direct = reasoning && !strcmp(reasoning, "none");
         chat_opts o = { direct, reasoning, date, (const char **)tools, n_tools };
         text = chat_format_opts(sv->tok, cm, k, &o);
+        if (tok_qwen35(sv->tok) && !direct) r->channel = CH_REASONING;
         for (int i = 0; i < k; i++) free(bodies[i].s);
         for (int i = 0; i < n_tools; i++) free(tools[i]);
         free(tools);
         free(calls);
         free(bodies);
         free(cm);
+        if (tok_qwen35(sv->tok) && r->tools) {
+            free(text);
+            respond_error(c->fd, 400, "Qwen3.5 native tool-call format is not implemented; use text/JSON actions");
+            json_free(j);
+            free_req(r);
+            return;
+        }
     } else {
         const char *p = json_str(j, root, "prompt");
         if (!p) { respond_error(c->fd, 400, "prompt must be a string"); json_free(j); free_req(r); return; }

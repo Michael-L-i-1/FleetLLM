@@ -1013,3 +1013,123 @@ kernel void gather_half(device const half* src [[buffer(0)]], device half* dst [
                         constant uint& w [[buffer(3)]], uint2 gid [[thread_position_in_grid]]) {
     if (gid.x < w) dst[(size_t)gid.y * w + gid.x] = src[(size_t)idx[gid.y] * w + gid.x];
 }
+
+// Qwen3.5: q_proj interleaves [query, gate] per head; RoPE covers only
+// the first rope_dim components after full-head RMS normalization.
+kernel void q35_prepare(device const float *qg [[buffer(0)]], device float *q [[buffer(1)]], device float *k [[buffer(2)]], device float *gate [[buffer(3)]],
+                        device const float *qn [[buffer(4)]], device const float *kn [[buffer(5)]], device const uint *pos [[buffer(6)]],
+                        device const float *freq [[buffer(7)]], constant uint4 &dims [[buffer(8)]], uint2 tg [[threadgroup_position_in_grid]],
+                        ushort lane [[thread_index_in_simdgroup]]) {
+    uint nh = dims.x, nk = dims.y, hd = dims.z, rd = dims.w, row = tg.x, h = tg.y;
+    bool isq = h < nh;
+    uint hh = isq ? h : h - nh;
+    float x[8], ss = 0;
+    for (uint i = 0; i < 8; i++) {
+        uint j = lane + 32 * i;
+        x[i] = isq ? qg[row * 2 * nh * hd + hh * 2 * hd + j] : k[row * nk * hd + hh * hd + j];
+        ss += x[i] * x[i];
+    }
+    float r = rsqrt(simd_sum(ss) / float(hd) + 1e-6f);
+    for (uint i = 0; i < 8; i++) {
+        uint j = lane + 32 * i;
+        x[i] *= r * (isq ? qn[j] : kn[j]);
+    }
+    // rd=64: each lane owns both members of its rotated pair.
+    float a = x[0], b = x[1], ang = float(pos[row]) * freq[lane];
+    x[0] = a * precise::cos(ang) - b * precise::sin(ang);
+    x[1] = a * precise::sin(ang) + b * precise::cos(ang);
+    for (uint i = 0; i < 8; i++) {
+        uint j = lane + 32 * i;
+        if (isq) {
+            q[row * nh * hd + hh * hd + j] = x[i];
+            gate[row * nh * hd + hh * hd + j] = qg[row * 2 * nh * hd + hh * 2 * hd + hd + j];
+        } else
+            k[row * nk * hd + hh * hd + j] = x[i];
+    }
+}
+
+struct DeltaArgs {
+    uint first, count, kh, vh, kd, vd, cd, hist;
+};
+// Depthwise causal convolution, one thread per channel, sequential in time.
+kernel void q35_conv(device const float *x [[buffer(0)]], device const float *w [[buffer(1)]], device float *state [[buffer(2)]], device float *y [[buffer(3)]],
+                     constant DeltaArgs &a [[buffer(4)]], uint j [[thread_position_in_grid]]) {
+    if (j >= a.cd) return;
+    float s0 = state[j], s1 = state[a.cd + j], s2 = state[2 * a.cd + j];
+    for (uint t = a.first; t < a.first + a.count; t++) {
+        float v = x[t * a.cd + j], o = s0 * w[j * 4] + s1 * w[j * 4 + 1] + s2 * w[j * 4 + 2] + v * w[j * 4 + 3];
+        y[t * a.cd + j] = o / (1 + exp(-o));
+        s0 = s1;
+        s1 = s2;
+        s2 = v;
+    }
+    state[j] = s0;
+    state[a.cd + j] = s1;
+    state[2 * a.cd + j] = s2;
+}
+// RMS-normalize q/k, then q /= kd and k /= sqrt(kd), as the model specifies.
+kernel void q35_linear_qk(device float *x [[buffer(0)]], constant DeltaArgs &a [[buffer(1)]], uint2 tg [[threadgroup_position_in_grid]],
+                          ushort lane [[thread_index_in_simdgroup]]) {
+    uint h = tg.y;
+    bool q = h < a.kh;
+    uint off = q ? h * a.kd : a.kh * a.kd + (h - a.kh) * a.kd;
+    device float *p = x + tg.x * a.cd + off;
+    float v[4], ss = 0;
+    for (uint j = 0; j < 4; j++) {
+        v[j] = p[lane + 32 * j];
+        ss += v[j] * v[j];
+    }
+    float sc = rsqrt(simd_sum(ss) / float(a.kd) + 1e-6f) * (q ? 1.0f / float(a.kd) : rsqrt(float(a.kd)));
+    for (uint j = 0; j < 4; j++)
+        p[lane + 32 * j] = v[j] * sc;
+}
+// One SIMD group per value channel and value head. State remains f32.
+kernel void q35_delta(device const float *x [[buffer(0)]], device const float *av [[buffer(1)]], device const float *bv [[buffer(2)]],
+                      device const float *alog [[buffer(3)]], device const float *dt [[buffer(4)]], device float *mem [[buffer(5)]],
+                      device float *out [[buffer(6)]], constant DeltaArgs &a [[buffer(7)]], uint2 tg [[threadgroup_position_in_grid]],
+                      ushort lane [[thread_index_in_simdgroup]]) {
+    uint h = tg.y, v = tg.x, kh = h / (a.vh / a.kh), vd = a.vh * a.vd;
+    device float *s = mem + a.hist + (h * a.vd + v) * a.kd;
+    float st[4];
+    for (uint j = 0; j < 4; j++)
+        st[j] = s[lane + 32 * j];
+    for (uint t = a.first; t < a.first + a.count; t++) {
+        float b = 1 / (1 + exp(-bv[t * a.vh + h])), z = av[t * a.vh + h] + dt[h];
+        float soft = max(z, 0.0f) + log(1 + exp(-abs(z))), g = exp(-exp(alog[h]) * soft), old = 0, k[4], q[4];
+        for (uint j = 0; j < 4; j++) {
+            uint d = lane + 32 * j;
+            k[j] = x[t * a.cd + a.kh * a.kd + kh * a.kd + d];
+            q[j] = x[t * a.cd + kh * a.kd + d];
+            st[j] *= g;
+            old += st[j] * k[j];
+        }
+        float delta = (x[t * a.cd + 2 * a.kh * a.kd + h * a.vd + v] - simd_sum(old)) * b, y = 0;
+        for (uint j = 0; j < 4; j++) {
+            st[j] += k[j] * delta;
+            y += st[j] * q[j];
+        }
+        y = simd_sum(y);
+        if (lane == 0) out[t * vd + h * a.vd + v] = y;
+    }
+    for (uint j = 0; j < 4; j++)
+        s[lane + 32 * j] = st[j];
+}
+kernel void q35_gate_norm(device const float *x [[buffer(0)]], device const float *z [[buffer(1)]], device const float *w [[buffer(2)]],
+                          device float *out [[buffer(3)]], constant DeltaArgs &a [[buffer(4)]], uint2 tg [[threadgroup_position_in_grid]],
+                          ushort lane [[thread_index_in_simdgroup]]) {
+    uint base = (tg.x * a.vh + tg.y) * a.vd;
+    float v[4], ss = 0;
+    for (uint j = 0; j < 4; j++) {
+        v[j] = x[base + lane + 32 * j];
+        ss += v[j] * v[j];
+    }
+    float sc = rsqrt(simd_sum(ss) / float(a.vd) + 1e-6f);
+    for (uint j = 0; j < 4; j++) {
+        uint d = lane + 32 * j;
+        float g = z[base + d];
+        out[base + d] = v[j] * sc * w[d] * g / (1 + exp(-g));
+    }
+}
+ATTN_VEC(256, false, 4, "attn_vec_256_4")
+ATTN_VEC(256, false, 8, "attn_vec_256_8") ATTN_VEC(256, false, 16, "attn_vec_256_16") ATTN_VEC(256, true, 4, "attn_vec8_256_4")
+    ATTN_VEC(256, true, 8, "attn_vec8_256_8") ATTN_VEC(256, true, 16, "attn_vec8_256_16")

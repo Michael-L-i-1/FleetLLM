@@ -478,7 +478,76 @@ static void capture_hidden(backend *b, cpu_state *s, int li, int n, int d) {
                    s->x + (size_t)r * d, d * sizeof(float));
 }
 
+// Reference recurrent update. Projections use the same quantized matmul path as attention.
+static void linear_attention(cpu_state *s, const model *m, const layer *l, const seq_pages *const *pages, const row_t *rows, int n) {
+    const model_cfg *c = &m->c;
+    int K = c->linear_k_dim, V = c->linear_v_dim, H = c->linear_v_heads, KH = c->linear_k_heads;
+    int kd = K * KH, vd = V * H, cd = 2 * kd + vd, hist = (c->conv_kernel - 1) * cd;
+    size_t stride = (size_t)hist + (size_t)H * K * V;
+    float *qkv = malloc(4 * (size_t)n * cd), *z = malloc(4 * (size_t)n * vd), *a = malloc(4 * (size_t)n * H), *b = malloc(4 * (size_t)n * H),
+          *cv = malloc(4 * cd);
+    matmul(s, &l->wq, qkv, cd);
+    matmul(s, &l->wk, z, vd);
+    matmul(s, &l->wv, a, H);
+    matmul(s, &l->wg, b, H);
+    for (int r = 0; r < n; r++) {
+        float *st = pages[rows[r].seq]->recurrent + l->recurrent_layer * stride;
+        for (int j = 0; j < cd; j++) {
+            float x = qkv[(size_t)r * cd + j], v = l->conv[j * 4 + 3] * x;
+            for (int t = 0; t < 3; t++)
+                v += st[t * cd + j] * l->conv[j * 4 + t];
+            cv[j] = v / (1 + expf(-v));
+            st[j] = st[cd + j];
+            st[cd + j] = st[2 * cd + j];
+            st[2 * cd + j] = x;
+        }
+        for (int h = 0; h < KH; h++) {
+            rms(cv + h * K, K, NULL, 1e-6f);
+            rms(cv + kd + h * K, K, NULL, 1e-6f);
+            for (int j = 0; j < K; j++) {
+                cv[h * K + j] /= K;
+                cv[kd + h * K + j] /= sqrtf(K);
+            }
+        }
+        for (int h = 0; h < H; h++) {
+            int kh = h / (H / KH);
+            float av = a[r * H + h] + l->dt_bias[h], soft = fmaxf(av, 0) + log1pf(expf(-fabsf(av)));
+            float decay = expf(-expf(l->a_log[h]) * soft), beta = 1 / (1 + expf(-b[r * H + h]));
+            float *q = cv + kh * K, *k = cv + kd + kh * K, *o = s->att + (size_t)r * vd + h * V;
+            for (int v = 0; v < V; v++) {
+                float *mem = st + hist + ((size_t)h * V + v) * K, old = 0;
+                for (int j = 0; j < K; j++) {
+                    mem[j] *= decay;
+                    old += mem[j] * k[j];
+                }
+                float delta = (cv[2 * kd + h * V + v] - old) * beta, y = 0;
+                for (int j = 0; j < K; j++) {
+                    mem[j] += k[j] * delta;
+                    y += mem[j] * q[j];
+                }
+                o[v] = y;
+            }
+            rms(o, V, l->linear_norm, c->eps);
+            for (int v = 0; v < V; v++) {
+                float g = z[(size_t)r * vd + h * V + v];
+                o[v] *= g / (1 + expf(-g));
+            }
+        }
+    }
+    mm_input(s, s->att, n, vd);
+    matmul(s, &l->wo, s->o, c->d);
+    free(qkv);
+    free(z);
+    free(a);
+    free(b);
+    free(cv);
+}
+
 static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages *const *pages, const row_t *rows, int n, float *logits) {
+    if (!backend_recurrent_rows_valid(m, pages, rows, n)) {
+        fprintf(stderr, "invalid recurrent endpoint or non-causal rows\n");
+        return 1;
+    }
     cpu_state *s = b->impl;
     const model_cfg *c = &m->c;
     double tf = prof_on ? now_secs() : 0;
@@ -508,39 +577,60 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
         memcpy(s->h, s->x, sizeof(float) * n * d);
         for (int r = 0; r < n; r++) rms(s->h + (size_t)r * d, d, l->attn_norm, c->eps);
         mm_input(s, s->h, n, d);
-        matmul(s, &l->wq, s->q, qd);
-        matmul(s, &l->wk, s->k, kvd);
-        matmul(s, &l->wv, s->v, kvd);
-        if (l->wg.data) matmul(s, &l->wg, s->g, qd);
-        for (int r = 0; r < n; r++) {
-            if (l->bq) for (int i = 0; i < qd; i++) s->q[(size_t)r * qd + i] += l->bq[i];
-            if (l->bk) for (int i = 0; i < kvd; i++) s->k[(size_t)r * kvd + i] += l->bk[i];
-            if (l->bv) for (int i = 0; i < kvd; i++) s->v[(size_t)r * kvd + i] += l->bv[i];
-            for (int h = 0; h < c->n_head + c->n_kv; h++) {
-                bool isq = h < c->n_head;
-                float *x = isq ? s->q + (size_t)r * qd + (size_t)h * hd : s->k + (size_t)r * kvd + (size_t)(h - c->n_head) * hd;
-                const float *nw = isq ? l->q_norm : l->k_norm;
-                if (nw) rms(x, hd, nw, c->eps);
-                if (l->rope) rope(x, s->cs + r * half, s->sn + r * half, half, c->rope_neox);
+        if (l->linear) {
+            linear_attention(s, m, l, pages, rows, n);
+        } else {
+            if (c->arch == ARCH_QWEN35) {
+                float *qg = malloc(sizeof(float) * (size_t)n * 2 * qd);
+                matmul(s, &l->wq, qg, 2 * qd);
+                for (int r = 0; r < n; r++)
+                    for (int h = 0; h < c->n_head; h++) {
+                        memcpy(s->q + (size_t)r * qd + h * hd, qg + (size_t)r * 2 * qd + 2 * h * hd, hd * 4);
+                        memcpy(s->g + (size_t)r * qd + h * hd, qg + (size_t)r * 2 * qd + (2 * h + 1) * hd, hd * 4);
+                    }
+                free(qg);
+            } else
+                matmul(s, &l->wq, s->q, qd);
+            matmul(s, &l->wk, s->k, kvd);
+            matmul(s, &l->wv, s->v, kvd);
+            if (l->wg.data) matmul(s, &l->wg, s->g, qd);
+            for (int r = 0; r < n; r++) {
+                if (l->bq)
+                    for (int i = 0; i < qd; i++)
+                        s->q[(size_t)r * qd + i] += l->bq[i];
+                if (l->bk)
+                    for (int i = 0; i < kvd; i++)
+                        s->k[(size_t)r * kvd + i] += l->bk[i];
+                if (l->bv)
+                    for (int i = 0; i < kvd; i++)
+                        s->v[(size_t)r * kvd + i] += l->bv[i];
+                for (int h = 0; h < c->n_head + c->n_kv; h++) {
+                    bool isq = h < c->n_head;
+                    float *x = isq ? s->q + (size_t)r * qd + (size_t)h * hd : s->k + (size_t)r * kvd + (size_t)(h - c->n_head) * hd;
+                    const float *nw = isq ? l->q_norm : l->k_norm;
+                    if (nw) rms(x, hd, nw, c->eps);
+                    if (l->rope) rope(x, s->cs + r * half, s->sn + r * half, c->rope_dim ? c->rope_dim / 2 : half, c->rope_neox);
+                }
             }
-        }
-        // write K/V for all rows first so prefill rows see each other
-        kv_pool *pool = l->swa ? &kv->swa : &kv->full;
-        for (int r = 0; r < n; r++) {
-            const seq_pages *pg = pages[rows[r].seq];
-            uint32_t page = l->swa ? pg->swa[rows[r].pos / KV_PAGE] : pg->full[rows[r].pos / KV_PAGE];
-            for (int h = 0; h < c->n_kv; h++) {
-                kv_vec_store(pool, page, l->pool_layer, 0, h, rows[r].pos % KV_PAGE, s->k + (size_t)r * kvd + (size_t)h * hd);
-                kv_vec_store(pool, page, l->pool_layer, 1, h, rows[r].pos % KV_PAGE, s->v + (size_t)r * kvd + (size_t)h * hd);
+            // write K/V for all rows first so prefill rows see each other
+            kv_pool *pool = l->swa ? &kv->swa : &kv->full;
+            for (int r = 0; r < n; r++) {
+                const seq_pages *pg = pages[rows[r].seq];
+                uint32_t page = l->swa ? pg->swa[rows[r].pos / KV_PAGE] : pg->full[rows[r].pos / KV_PAGE];
+                for (int h = 0; h < c->n_kv; h++) {
+                    kv_vec_store(pool, page, l->pool_layer, 0, h, rows[r].pos % KV_PAGE, s->k + (size_t)r * kvd + (size_t)h * hd);
+                    kv_vec_store(pool, page, l->pool_layer, 1, h, rows[r].pos % KV_PAGE, s->v + (size_t)r * kvd + (size_t)h * hd);
+                }
             }
-        }
-        double ta = prof_on ? now_secs() : 0;
-        attention(s, m, l, kv, pages, rows, n, l->swa ? kv->window : 0);
-        if (prof_on) prof[P_ATTN] += now_secs() - ta;
-        if (l->wg.data)
-            for (size_t i = 0; i < (size_t)n * qd; i++) s->att[i] *= 1.f / (1.f + expf(-s->g[i]));
-        mm_input(s, s->att, n, qd);
-        matmul(s, &l->wo, s->o, d);
+            double ta = prof_on ? now_secs() : 0;
+            attention(s, m, l, kv, pages, rows, n, l->swa ? kv->window : 0);
+            if (prof_on) prof[P_ATTN] += now_secs() - ta;
+            if (l->wg.data || c->arch == ARCH_QWEN35)
+                for (size_t i = 0; i < (size_t)n * qd; i++)
+                    s->att[i] *= 1.f / (1.f + expf(-s->g[i]));
+            mm_input(s, s->att, n, qd);
+            matmul(s, &l->wo, s->o, d);
+        } // full attention
         residual(s->x, s->o, n, d, l->post_attn_norm, c->post_eps);
 
         memcpy(s->h, s->x, sizeof(float) * n * d);
@@ -556,6 +646,9 @@ static int cpu_forward(backend *b, const model *m, kv_cache *kv, const seq_pages
         residual(s->x, s->o, n, d, l->post_ffn_norm, c->post_eps);
         capture_hidden(b, s, li, n, d);
     }
+    if (c->n_linear)
+        for (int r = 0; r < n; r++)
+            ((seq_pages *)pages[rows[r].seq])->recurrent_len = rows[r].pos + 1;
     int ns = 0;
     for (int r = 0; r < n; r++) {
         if (!rows[r].logits) continue;

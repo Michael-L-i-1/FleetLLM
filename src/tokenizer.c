@@ -40,6 +40,7 @@ struct tokenizer {
     int32_t bos;
     json *src; // tokenizer.json the token strings point into (HF loader)
     char *chat_template;
+    bool qwen35;
 };
 
 static uint64_t fnv(const char *s, size_t n) {
@@ -288,6 +289,9 @@ tokenizer *tok_load_hf(const char *dir) {
     json *cf = json_load_file(path);
     if (cf) {
         const jnode *r = json_root(cf), *e = json_get(cf, r, "eos_token_id");
+        const char *mt = json_str(cf, r, "model_type");
+        t->qwen35 = mt && (!strcmp(mt, "qwen3_5") || !strcmp(mt, "qwen3_5_text"));
+        if (!e) e = json_get(cf, json_get(cf, r, "text_config"), "eos_token_id");
         if (e && e->type == J_NUM) add_stop(t, (int64_t)e->num);
         for (const jnode *x = e && e->type == J_ARR ? json_first(cf, e) : NULL; x; x = json_next(cf, x)) add_stop(t, (int64_t)x->num);
         json_free(cf);
@@ -502,3 +506,5 @@ char *tok_decode(const tokenizer *t, const int32_t *ids, int n) {
     out[w] = 0;
     return out;
 }
+
+bool tok_qwen35(const tokenizer *t) { return t->qwen35; }

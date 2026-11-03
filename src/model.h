@@ -35,18 +35,25 @@ typedef struct {
 typedef struct {
     const float *attn_norm, *ffn_norm, *post_attn_norm, *post_ffn_norm, *q_norm, *k_norm, *bq, *bk, *bv;
     qmat wq, wk, wv, wg, wo, w_gate, w_up, w_down;
+    // Linear layers reuse projection slots: wq=qkv, wk=z, wv=a, wg=b, wo=out.
+    bool linear;
+    int recurrent_layer;
+    const float *conv, *a_log, *dt_bias, *linear_norm;
     bool swa;       // sliding-window layer (KV lives in the SWA pool)
     bool rope;      // apply rotary embedding
     int pool_layer; // index within its KV pool
 } layer;
 
-typedef enum { ARCH_LLAMA, ARCH_QWEN2, ARCH_QWEN3, ARCH_GLIMMER, ARCH_DFLASH } arch_t;
+typedef enum { ARCH_LLAMA, ARCH_QWEN2, ARCH_QWEN3, ARCH_GLIMMER, ARCH_DFLASH, ARCH_QWEN35 } arch_t;
 
 typedef struct {
     arch_t arch;
     int n_layer, d, ff, n_head, n_kv, hd, vocab;
     int window; // 0 = no sliding-window layers
     int n_full, n_swa;
+    int n_linear, linear_k_heads, linear_v_heads, linear_k_dim, linear_v_dim, conv_kernel, rope_dim;
+    size_t recurrent_floats; // per sequence, f32 convolution + delta state
+
     float rope_base, eps, post_eps, attn_scale, logit_scale, softcap, embed_scale;
     bool rope_neox, embed_norm;
 } model_cfg;

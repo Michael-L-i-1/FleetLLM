@@ -27,6 +27,9 @@ typedef struct {
 } kv_pool;
 
 typedef struct {
+    float *recurrent; // aligned f32 endpoint snapshot; owned by this sequence
+    size_t recurrent_bytes;
+    int recurrent_len;
     int len;          // tokens with KV written
     uint32_t *full;   // page ids, one per KV_PAGE tokens
     uint32_t *swa;    // KV_NONE once released (or if the model has no SWA layers)
@@ -37,6 +40,8 @@ typedef void *(*kv_alloc_fn)(void *user, size_t bytes, void **handle);
 
 typedef struct {
     kv_pool full, swa;
+    size_t recurrent_bytes;
+    int recurrent_limit, recurrent_used; // state slots reserved within the KV budget
     int window; // 0 = no sliding-window layers
 } kv_cache;
 

@@ -30,6 +30,7 @@ static const char *model_path(const char *alias) {
     const char *pat = NULL;
     if (!strcmp(alias, "glimmer")) pat = "models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/*/Muse-Glimmer-30B-UD-Q2_K_XL.gguf";
     else if (!strcmp(alias, "llama1b")) pat = "models--unsloth--Llama-3.2-1B-Instruct-GGUF/snapshots/*/Llama-3.2-1B-Instruct-Q4_K_M.gguf";
+    else if (!strcmp(alias, "qwen35-4b-mlx4")) pat = "models--mlx-community--Qwen3.5-4B-4bit/snapshots/*";
     else if (!strcmp(alias, "qwen3")) pat = "models--unsloth--Qwen3-1.7B-GGUF/snapshots/*/Qwen3-1.7B-Q4_K_M.gguf";
     else if (!strcmp(alias, "glimmer-mlx4")) pat = "models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/*";
     else if (!strcmp(alias, "llama1b-mlx4")) pat = "models--mlx-community--Llama-3.2-1B-Instruct-4bit/snapshots/*";
@@ -59,6 +60,10 @@ static runtime load_runtime(int argc, char **argv) {
     const char *path = model_path(arg_str(argc, argv, "--model", "llama1b"));
     rt.m = model_load(path);
     if (!rt.m) exit(1);
+    if (rt.m->c.n_linear && arg_num(argc, argv, "--swap-gb", 0) > 0) {
+        fprintf(stderr, "Qwen3.5 recurrent state offload is not implemented; omit --swap-gb\n");
+        exit(1);
+    }
     rt.tok = rt.m->g ? tok_load(rt.m->g) : tok_load_hf(rt.m->dir);
     if (!rt.tok) exit(1);
     double budget_gb = arg_num(argc, argv, "--budget-gb", 16);

@@ -17,6 +17,8 @@ const char *arch_name(arch_t a) {
     case ARCH_LLAMA: return "llama";
     case ARCH_QWEN2: return "qwen2";
     case ARCH_QWEN3: return "qwen3";
+    case ARCH_QWEN35:
+        return "qwen3.5";
     case ARCH_GLIMMER: return "muse-glimmer";
     case ARCH_DFLASH: return "dflash-drafter";
     }
@@ -134,7 +136,7 @@ model *model_load(const char *path) {
         }
         l->swa = c->window > 0 && i % pattern != pattern - 1;
         l->rope = !glimmer || l->swa; // glimmer: RoPE on SWA layers, NoPE on full layers
-        l->pool_layer = l->swa ? c->n_swa++ : c->n_full++;
+        l->pool_layer = l->linear ? -1 : l->swa ? c->n_swa++ : c->n_full++;
     }
     const float *factors = get_vec(g, "rope_freqs.weight", 0);
     m->inv_freq = malloc(sizeof(float) * c->hd / 2);
@@ -399,6 +401,8 @@ static model *model_load_st(const char *dir) {
     if (!strcmp(mt, "llama")) c->arch = ARCH_LLAMA;
     else if (!strcmp(mt, "qwen2")) c->arch = ARCH_QWEN2;
     else if (!strcmp(mt, "qwen3")) c->arch = ARCH_QWEN3;
+    else if (!strcmp(mt, "qwen3_5") || !strcmp(mt, "qwen3_5_text"))
+        c->arch = ARCH_QWEN35;
     else if (!strcmp(mt, "muse_glimmer") || !strcmp(mt, "muse_glimmer_text")) c->arch = ARCH_GLIMMER;
     else if (!strcmp(mt, "muse_glimmer_assistant")) { free(m); return model_load_dflash(dir, j); }
     else { fprintf(stderr, "model_type '%s' not supported\n", mt); exit(1); }
@@ -415,6 +419,20 @@ static model *model_load_st(const char *dir) {
     c->rope_base = (float)NUM("rope_theta", 10000.0);
     const jnode *rp = json_get(j, cfg, "rope_parameters");
     if (rp) c->rope_base = (float)json_num(j, rp, "rope_theta", c->rope_base);
+    bool q35 = c->arch == ARCH_QWEN35;
+    c->rope_dim = q35 ? (int)(c->hd * json_num(j, rp, "partial_rotary_factor", .25)) : c->hd;
+    if (q35) {
+        c->linear_k_heads = (int)NUM("linear_num_key_heads", 0);
+        c->linear_v_heads = (int)NUM("linear_num_value_heads", 0);
+        c->linear_k_dim = (int)NUM("linear_key_head_dim", 0);
+        c->linear_v_dim = (int)NUM("linear_value_head_dim", 0);
+        c->conv_kernel = (int)NUM("linear_conv_kernel_dim", 0);
+        if (c->linear_k_heads <= 0 || c->linear_v_heads <= 0 || c->linear_v_heads % c->linear_k_heads || c->linear_k_dim != 128 || c->linear_v_dim != 128 || c->conv_kernel != 4 ||
+            c->rope_dim != 64 || c->hd != 256 || c->eps != 1e-6f || c->linear_v_heads*c->linear_v_dim > c->n_head*c->hd) {
+            fprintf(stderr, "qwen3.5: unsupported recurrent/head dimensions\n");
+            exit(1);
+        }
+    }
     c->window = glimmer || json_bool(j, cfg, "use_sliding_window", false) ? (int)NUM("sliding_window", 0) : 0;
     c->logit_scale = glimmer ? (float)NUM("output_multiplier", 1.0) : 1.f;
     c->softcap = (float)NUM("final_logit_softcapping", 0.0);
@@ -429,6 +447,8 @@ static model *model_load_st(const char *dir) {
     if (!m->st) exit(1);
     for (int i = 0; i < m->st->n_files; i++) m->regions[m->n_regions++] = (mem_region){ m->st->files[i].map, m->st->files[i].size };
     m->aux_len = ((size_t)c->n_layer * (4 * c->d + 2 * c->hd + 3 * 1024) * 4 + c->d * 4 + (1 << 20) + 16383) & ~(size_t)16383;
+    if (q35) m->aux_len += (size_t)c->n_layer * (2 * c->linear_k_heads * c->linear_k_dim + c->linear_v_heads * c->linear_v_dim) * c->conv_kernel * 4;
+    m->aux_len = (m->aux_len + 16383) & ~(size_t)16383;
     m->aux = mmap(NULL, m->aux_len, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
     m->regions[m->n_regions++] = (mem_region){ m->aux, m->aux_len };
     // Multimodal checkpoints nest the text tower under language_model.
@@ -441,7 +461,7 @@ static model *model_load_st(const char *dir) {
 
     const jnode *lt = json_get(j, cfg, "layer_types"), *lr = json_get(j, cfg, "layer_rope_theta");
     m->layers = calloc(c->n_layer, sizeof(layer));
-    float center = glimmer ? 1.f : 0.f; // glimmer's per-block norms scale by (1 + w)
+    float center = glimmer ? 1.f : 0.f; // Glimmer uses 1+w; converted MLX Qwen3.5 norms are already centered.
     for (int i = 0; i < c->n_layer; i++) {
         layer *l = &m->layers[i];
         char k[256];
@@ -472,23 +492,70 @@ static model *model_load_st(const char *dir) {
         l->w_gate = st_mat(&nm, L("mlp.gate_proj"), c->d);
         l->w_up = st_mat(&nm, L("mlp.up_proj"), c->d);
         l->w_down = st_mat(&nm, L("mlp.down_proj"), c->ff);
+        const jnode *typ = json_child(j, lt, i);
+        l->linear = q35 && typ && typ->type == J_STR && !strcmp(typ->s, "linear_attention");
+        if (q35 && !typ) l->linear = (i + 1) % (int)NUM("full_attention_interval", 4) != 0;
+        if (l->linear) {
+            l->recurrent_layer = c->n_linear++;
+            int cd = 2 * c->linear_k_heads * c->linear_k_dim + c->linear_v_heads * c->linear_v_dim;
+            l->wq = st_mat(&nm, L("linear_attn.in_proj_qkv"), c->d);
+            l->wk = st_mat(&nm, L("linear_attn.in_proj_z"), c->d);
+            l->wv = st_mat(&nm, L("linear_attn.in_proj_a"), c->d);
+            l->wg = st_mat(&nm, L("linear_attn.in_proj_b"), c->d);
+            l->wo = st_mat(&nm, L("linear_attn.out_proj"), c->linear_v_heads * c->linear_v_dim);
+            l->a_log = st_vec(m, &nm, L("linear_attn.A_log"), c->linear_v_heads, 0);
+            l->dt_bias = st_vec(m, &nm, L("linear_attn.dt_bias"), c->linear_v_heads, 0);
+            l->linear_norm = st_vec(m, &nm, L("linear_attn.norm.weight"), c->linear_v_dim, 0);
+            const st_tensor *ct = st_get(&nm, L("linear_attn.conv1d.weight"));
+            if (!ct || ct->n_dims != 3 || ct->shape[0] != cd || ct->shape[1] != c->conv_kernel || ct->shape[2] != 1 || (ct->dtype != ST_F32 && ct->dtype != ST_F16 && ct->dtype != ST_BF16)) {
+                fprintf(stderr, "qwen3.5: invalid convolution tensor\n");
+                exit(1);
+            }
+            float *cv = aux_alloc(m, cd * c->conv_kernel);
+            for (int z = 0; z < cd * c->conv_kernel; z++) {
+                uint16_t h;
+                if (ct->dtype == ST_F32)
+                    memcpy(cv + z, ct->data + 4 * z, 4);
+                else {
+                    memcpy(&h, ct->data + 2 * z, 2);
+                    cv[z] = ct->dtype == ST_BF16 ? bf16(h) : fp16_to_f32(h);
+                }
+            }
+            l->conv = cv;
+            if (!l->a_log || !l->dt_bias || !l->linear_norm || !l->wg.data) {
+                fprintf(stderr, "qwen3.5: missing recurrent parameters\n");
+                exit(1);
+            }
+        }
 #undef L
         if (!l->attn_norm || !l->ffn_norm || !l->wq.data || !l->wk.data || !l->wv.data || !l->wo.data || !l->w_gate.data || !l->w_up.data || !l->w_down.data) {
             fprintf(stderr, "layer %d: missing tensors\n", i);
             exit(1);
         }
+        if (q35) {
+            int kd=c->linear_k_heads*c->linear_k_dim,vd=c->linear_v_heads*c->linear_v_dim;
+            int qr=l->linear ? 2*kd+vd : 2*c->n_head*c->hd;
+            int kr=l->linear ? vd : c->n_kv*c->hd,vr=l->linear ? c->linear_v_heads : c->n_kv*c->hd;
+            if (l->wq.rows!=qr || l->wk.rows!=kr || l->wv.rows!=vr || l->wo.rows!=c->d ||
+                (l->linear && l->wg.rows!=c->linear_v_heads) || (!l->linear && (!l->q_norm || !l->k_norm))) {
+                fprintf(stderr,"qwen3.5: incompatible projection shapes at layer %d\n",i);exit(1);
+            }
+        }
         const jnode *t = json_child(j, lt, i), *th = json_child(j, lr, i);
         l->swa = c->window > 0 && (t ? t->type == J_STR && !strcmp(t->s, "sliding_attention") : glimmer && i % 4 != 3);
         l->rope = th ? th->num != 0 : !glimmer || l->swa;
-        l->pool_layer = l->swa ? c->n_swa++ : c->n_full++;
+        l->pool_layer = l->linear ? -1 : l->swa ? c->n_swa++ : c->n_full++;
     }
+    c->recurrent_floats =
+        (size_t)c->n_linear * ((size_t)(c->conv_kernel - 1) * (2 * c->linear_k_heads * c->linear_k_dim + c->linear_v_heads * c->linear_v_dim) +
+                               (size_t)c->linear_v_heads * c->linear_k_dim * c->linear_v_dim);
     // inverse frequencies, with llama3-style long-context scaling when configured
     m->inv_freq = malloc(sizeof(float) * c->hd / 2);
     const jnode *rs = json_get(j, cfg, "rope_scaling");
     const char *rtype = rs ? json_str(j, rs, "rope_type") : NULL;
     if (!rtype && rs) rtype = json_str(j, rs, "type");
     for (int i = 0; i < c->hd / 2; i++) {
-        double f = pow(c->rope_base, -(double)(2 * i) / c->hd);
+        double f = pow(c->rope_base, -(double)(2 * i) / (c->rope_dim ? c->rope_dim : c->hd));
         if (rtype && !strcmp(rtype, "llama3")) {
             double factor = json_num(j, rs, "factor", 8), lo = json_num(j, rs, "low_freq_factor", 1), hi = json_num(j, rs, "high_freq_factor", 4);
             double old = json_num(j, rs, "original_max_position_embeddings", 8192);

@@ -60,3 +60,20 @@ backend *metal_backend_new(model *m);
 // "cpu", "cpu-ref", "metal", or "auto" (metal when available). A backend may attach
 // repacked copies of weight matrices to the model (qmat.gpu).
 backend *backend_create(const char *name, model *m);
+
+// Recurrent kernels require an exact endpoint and causal, contiguous rows.
+static inline bool backend_recurrent_rows_valid(const model *m, const seq_pages *const *pages, const row_t *rows, int n) {
+    if (!m->c.n_linear) return true;
+    for (int i = 0; i < n; i++) {
+        const seq_pages *p = pages[rows[i].seq];
+        if (!p->recurrent || rows[i].ctx_end != rows[i].pos) return false;
+        if (i && rows[i].seq == rows[i - 1].seq) {
+            if (rows[i].pos != rows[i - 1].pos + 1) return false;
+        } else {
+            if (rows[i].pos != p->recurrent_len) return false;
+            for (int j = 0; j < i; j++)
+                if (rows[j].seq == rows[i].seq) return false;
+        }
+    }
+    return true;
+}

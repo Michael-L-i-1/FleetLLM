@@ -37,7 +37,18 @@ engine *engine_new(model *m, backend *be, const tokenizer *tok, size_t kv_budget
     e->row_budget = 128;
     e->min_share = 16;
     const model_cfg *c = &m->c;
-    kv_init(&e->kv, c->n_full, c->n_swa, c->n_kv, c->hd, c->window, kv_budget, be->kv_elem, be_alloc, be);
+    size_t recurrent = (c->recurrent_floats * 4 + 16383) & ~(size_t)16383;
+    int slots = recurrent ? (int)(kv_budget / 4 / recurrent) : 0;
+    if (recurrent && slots < 1) slots = 1;
+    if (slots > 64) slots = 64;
+    if (recurrent && kv_budget <= recurrent + (1u << 20)) {
+        fprintf(stderr, "KV budget too small for recurrent state\n");
+        exit(1);
+    }
+    kv_init(&e->kv, c->n_full, c->n_swa, c->n_kv, c->hd, c->window, kv_budget - recurrent * slots, be->kv_elem, be_alloc, be);
+    e->kv.recurrent_bytes = recurrent;
+    e->kv.recurrent_limit = slots;
+    if (slots) fprintf(stderr, "[recurrent] %d state slots, %.2f MB each, reserved within KV budget; endpoint prefix snapshots only\n", slots, recurrent / 1e6);
     return e;
 }
 
@@ -57,6 +68,10 @@ void engine_free(engine *e) {
 }
 
 bool engine_set_drafter(engine *e, model *dm, size_t kv_budget, int spec_k) {
+    if (e->m->c.n_linear) {
+        fprintf(stderr, "qwen3.5: speculative rollback not implemented\n");
+        return false;
+    }
     if (!e->be->draft || !e->be->attach || !e->be->argmax_ok) { fprintf(stderr, "engine: backend %s cannot run a drafter\n", e->be->name); return false; }
     if (dm->block_size < 2 || dm->block_size > 32 || dm->n_target < 1 || dm->n_target > 8 || dm->c.d != e->m->c.d) { fprintf(stderr, "engine: drafter does not match the target\n"); return false; }
     for (int i = 0; i < dm->n_target; i++) if (dm->target_layers[i] < 0 || dm->target_layers[i] >= e->m->c.n_layer) {
@@ -84,6 +99,10 @@ static int new_seq(engine *e) {
 }
 
 void engine_set_reuse(engine *e, int min_len, int head, int tail) {
+    if (e->m->c.n_linear && min_len) {
+        fprintf(stderr, "qwen3.5: span reuse needs recurrent checkpoints\n");
+        exit(1);
+    }
     e->reuse_min = min_len;
     e->reuse_head = head;
     e->reuse_tail = tail < 1 ? 1 : tail; // the input's last token is computed (its logits)
@@ -95,6 +114,10 @@ void engine_set_reuse(engine *e, int min_len, int head, int tail) {
 }
 
 void engine_set_ngram(engine *e, bool on) {
+    if (e->m->c.n_linear && on) {
+        fprintf(stderr, "qwen3.5: ngram verification needs recurrent rollback\n");
+        exit(1);
+    }
     e->ngram = on;
     if (on && !e->ng.t) ng_global_init(&e->ng, 20);
     if (!e->spec_rows) e->spec_rows = 32;
@@ -110,6 +133,14 @@ int engine_create_fresh(engine *e, const int32_t *prompt, int n) {
 }
 
 int engine_fork_at(engine *e, int parent, int len, const int32_t *suffix, int n) {
+    if (!kv_can_fork_at(&e->kv, &e->seqs[parent].pages, len)) {
+        int32_t *p = malloc(sizeof(int32_t) * (len + n));
+        memcpy(p, e->seqs[parent].tokens, sizeof(int32_t) * len);
+        memcpy(p + len, suffix, sizeof(int32_t) * n);
+        int id = engine_create_fresh(e, p, len + n);
+        free(p);
+        return id;
+    }
     int id = new_seq(e); // may realloc seqs: take pointers after
     seq_t *p = &e->seqs[parent], *s = &e->seqs[id];
     s->pages = kv_fork_at(&e->kv, &p->pages, len);
@@ -117,6 +148,7 @@ int engine_fork_at(engine *e, int parent, int len, const int32_t *suffix, int n)
     append(&s->tokens, &s->n_tokens, &s->cap_tokens, p->tokens, len);
     append(&s->pending, &s->n_pending, &s->cap_pending, suffix, n);
     s->t_start = now_secs();
+    s->prefix_cached = len;
     e->st.shared_tokens += len;
     return id;
 }
@@ -198,7 +230,7 @@ int engine_create(engine *e, const int32_t *prompt, int n) {
         if (w > n - 1) w = n - 1;
         bool forkable = s->swapped ? l <= s->swap_len : kv_can_fork_at(&e->kv, &s->pages, l);
         if (l >= e->min_share && l > best_len && forkable) { best = i; best_len = l; }
-        if (w > lead_len) { lead = i; lead_len = w; }
+        if (!e->m->c.n_linear && w > lead_len) { lead = i; lead_len = w; }
     }
     if (lead >= 0 && lead_len >= best_len + e->min_share) { // worth waiting for a leader still prefilling
         int id = engine_create_fresh(e, prompt, n);
@@ -233,6 +265,7 @@ static void resolve_wait(engine *e, int id, bool force) {
         s->n_pending -= len;
         e->st.shared_tokens += len;
         e->st.deduped_tokens += len;
+        s->prefix_cached += len;
         s->wait_len = 0;
     } else if (force || !l->live || l->swapped || l->n_tokens >= len || l->wait_len) {
         s->wait_len = 0;
@@ -288,6 +321,7 @@ void engine_retire(engine *e, int id) {
 // sharing instead of duplicating it.
 static bool swap_out(engine *e, int id) {
     seq_t *s = &e->seqs[id];
+    if (e->m->c.n_linear) return false; // recurrent state offload is not implemented
     if (!e->swap_dir || s->swapped || !s->pages.n_pages) return false;
     kv_cache *kv = &e->kv;
     size_t fb = kv_page_bytes(&kv->full), wb = kv->window ? kv_page_bytes(&kv->swa) : 0, size = 0;
@@ -718,6 +752,34 @@ bool engine_step(engine *e, const int *ids, int n) {
         }
         if (victim < 0) { fprintf(stderr, "engine: KV cache too small for one sequence (raise --budget-gb)\n"); exit(1); }
         if (!swap_out(e, victim)) preempt(e, victim);
+    }
+    if (e->kv.recurrent_bytes) {
+        int wanted = 0;
+        for (int i = 0; i < np; i++)
+            wanted += !e->seqs[plan[i].seq].pages.recurrent;
+        while (e->n_cached && e->kv.recurrent_used + wanted > e->kv.recurrent_limit)
+            engine_release(e, e->cached[0]);
+        while (np > 1 && e->kv.recurrent_used + wanted > e->kv.recurrent_limit) {
+            wanted -= !e->seqs[plan[np - 1].seq].pages.recurrent;
+            np--;
+        }
+        while (e->kv.recurrent_used + wanted > e->kv.recurrent_limit) {
+            int victim = -1;
+            for (int i = 0; i < e->n_seqs; i++) {
+                bool planned = false;
+                for (int j = 0; j < np; j++)
+                    planned |= plan[j].seq == i;
+                if (e->seqs[i].live && !planned && e->seqs[i].pages.recurrent) {
+                    victim = i;
+                    break;
+                }
+            }
+            if (victim < 0) {
+                fprintf(stderr, "recurrent state budget exhausted\n");
+                exit(1);
+            }
+            preempt(e, victim);
+        }
     }
     for (int i = 0; i < np; i++) n_rows += plan[i].take;
     if (n_rows > e->cap_rows) { e->cap_rows = n_rows * 2; e->rows = realloc(e->rows, sizeof(row_t) * e->cap_rows); }

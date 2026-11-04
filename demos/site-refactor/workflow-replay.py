@@ -52,7 +52,8 @@ summary = {'label': a.label, 'model': a.model, 'success': None, 'seconds': secon
            'completion_tokens': sum(c['usage'].get('completion_tokens',0) for c in demo.calls),
            'workload': 'fixed recorded histories, three turns per worker, 128-token cap, no tool execution'}
 summary['aggregate_completion_tokens_per_second'] = summary['completion_tokens']/seconds
-summary['median_ttft_seconds'] = statistics.median(c['ttft_seconds'] for c in demo.calls)
+ttfts = [c['ttft_seconds'] for c in demo.calls if c['ttft_seconds'] is not None]
+summary['median_ttft_seconds'] = statistics.median(ttfts) if ttfts else None
 (demo.root/'calls.json').write_text(json.dumps(demo.calls,indent=2)+'\n')
 (demo.root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
 with (demo.root/'summary.csv').open('w') as f:

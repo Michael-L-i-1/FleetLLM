@@ -116,7 +116,7 @@ class Demo:
         self.actions = []
         self.context_drops = {}
         self.tool_errors = 0
-        self.event('start', config=vars(args), fixture={f: digest(self.site / f) for f in sorted(FILES)})
+        self.event('start', config={k: str(v) if isinstance(v, Path) else v for k,v in vars(args).items()}, fixture={f: digest(self.site / f) for f in sorted(FILES)})
         (self.root / 'brief.txt').write_text((HERE / 'brief.txt').read_text())
 
     def event(self, kind, **data):

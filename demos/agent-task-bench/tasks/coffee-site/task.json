@@ -1,0 +1,88 @@
+{
+  "id": "coffee-site",
+  "title": "Common Ground nonprofit coffee website redesign",
+  "fixture": "fixture",
+  "instructions": "Read brief.md, then redesign all eight supplied HTML fragments into one cohesive responsive nonprofit coffee marketing site. Preserve the protected assembly/behavior contracts. Implement real edits and finish only after your assigned work is complete. The full task passes only when all automated browser checks pass; visual design is reviewed separately.",
+  "editable_files": [
+    "sections/01-header.html",
+    "sections/02-hero.html",
+    "sections/03-mission.html",
+    "sections/04-menu.html",
+    "sections/05-impact.html",
+    "sections/06-events.html",
+    "sections/07-visit.html",
+    "sections/08-footer.html"
+  ],
+  "read_only_files": [
+    "brief.md"
+  ],
+  "workers": [
+    {
+      "name": "Header designer",
+      "file": "sections/01-header.html",
+      "brief": "Build the brand header and responsive semantic navigation linking menu, mission, events and visit. Scope CSS to #top. Follow brief.md for palette, IDs and accessibility."
+    },
+    {
+      "name": "Hero designer",
+      "file": "sections/02-hero.html",
+      "brief": "Create a compelling editorial hero with a large h1, a coffee visual using CSS or inline SVG, and menu/mission calls to action. Scope CSS to #hero. Follow brief.md."
+    },
+    {
+      "name": "Mission designer",
+      "file": "sections/03-mission.html",
+      "brief": "Design a persuasive nonprofit mission section, explicitly including 100% of surplus funding job training. Scope CSS to #mission. Follow brief.md."
+    },
+    {
+      "name": "Menu designer",
+      "file": "sections/04-menu.html",
+      "brief": "Design responsive drink cards and accessible search. Preserve protected script selectors, all supplied names/prices and the no-results message. Scope CSS to #menu. Follow brief.md."
+    },
+    {
+      "name": "Impact designer",
+      "file": "sections/05-impact.html",
+      "brief": "Design a responsive annual-impact stats section: 2,500 meals, 120 training hours, 35 graduates, with meaningful labels. Scope CSS to #impact. Follow brief.md."
+    },
+    {
+      "name": "Events designer",
+      "file": "sections/06-events.html",
+      "brief": "Design three dated event cards using the supplied names/dates, semantic h3/time markup and newsletter signup links. Scope CSS to #events. Follow brief.md."
+    },
+    {
+      "name": "Visit designer",
+      "file": "sections/07-visit.html",
+      "brief": "Design the visit section with semantic address, supplied location and opening hours, and an optional CSS/inline-SVG location visual. Scope CSS to #visit. Follow brief.md."
+    },
+    {
+      "name": "Newsletter designer",
+      "file": "sections/08-footer.html",
+      "brief": "Design accessible newsletter signup and footer. Preserve all form/input/status IDs and attributes for protected behavior. Scope CSS to #newsletter and footer. Follow brief.md."
+    }
+  ],
+  "validation_command": [
+    "python3",
+    "{task_dir}/check.py",
+    "--workspace",
+    "{workspace}",
+    "--output",
+    "{output}"
+  ],
+  "render_command": [
+    "python3",
+    "{task_dir}/render.py",
+    "--workspace",
+    "{workspace}",
+    "--output",
+    "{output}"
+  ],
+  "render_entry": "index.html",
+  "success_definition": "All browser checks pass at390px and1440px; no scripts or external assets. Visual aesthetics are separately reviewed, not certified by tests.",
+  "capture": {
+    "kind": "html",
+    "entry": "index.html",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    }
+  },
+  "notes": "Validation lives outside the model-editable workspace. A model cannot change expected answers or tests."
+}

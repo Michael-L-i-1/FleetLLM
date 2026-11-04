@@ -1,0 +1,45 @@
+{
+  "inference_used": false,
+  "baseline": {
+    "passed": false,
+    "checks": 57,
+    "failed": 29,
+    "failures": [
+      "01-header.html: custom styling supplied: requirement not met",
+      "02-hero.html: custom styling supplied: requirement not met",
+      "03-mission.html: custom styling supplied: requirement not met",
+      "05-impact.html: custom styling supplied: requirement not met",
+      "06-events.html: custom styling supplied: requirement not met",
+      "07-visit.html: custom styling supplied: requirement not met",
+      "08-footer.html: custom styling supplied: requirement not met",
+      "390px: navigation: requirement not met",
+      "390px: hero calls to action: requirement not met",
+      "390px: mission disclosure: requirement not met",
+      "390px: menu cards: requirement not met",
+      "390px: labelled search: requirement not met",
+      "390px: search behavior: requirement not met",
+      "390px: impact facts: requirement not met",
+      "390px: dated events: requirement not met",
+      "390px: visit details: requirement not met",
+      "390px: accessible newsletter: requirement not met",
+      "390px: no horizontal overflow: requirement not met",
+      "1440px: hero typography: requirement not met",
+      "1440px: navigation: requirement not met",
+      "1440px: hero calls to action: requirement not met",
+      "1440px: mission disclosure: requirement not met",
+      "1440px: menu cards: requirement not met",
+      "1440px: labelled search: requirement not met",
+      "1440px: search behavior: requirement not met",
+      "1440px: impact facts: requirement not met",
+      "1440px: dated events: requirement not met",
+      "1440px: visit details: requirement not met",
+      "1440px: accessible newsletter: requirement not met"
+    ]
+  },
+  "temporary_feasibility_implementation": {
+    "passed": true,
+    "checks": 57,
+    "failed": 0,
+    "note": "Temporary minimal hand-authored fixture outside repository; not a model result or benchmark starter."
+  }
+}

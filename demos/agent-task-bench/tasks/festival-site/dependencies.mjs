@@ -1,0 +1,10 @@
+import {existsSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {dirname,resolve} from 'node:path';
+import {createRequire} from 'node:module';
+const here=dirname(fileURLToPath(import.meta.url));
+export const playwrightModule=process.env.FESTIVAL_PLAYWRIGHT_MODULE || resolve(here,'../../../site-refactor/node_modules/@playwright/test/index.mjs');
+if (!existsSync(playwrightModule)) throw Error('Pinned Playwright is missing; install demos/site-refactor deps or set FESTIVAL_PLAYWRIGHT_MODULE');
+export const {chromium}=await import(playwrightModule);
+const require=createRequire(import.meta.url);
+export const {PNG}=require(resolve(dirname(playwrightModule),'../../playwright-core/lib/utilsBundle.js'));

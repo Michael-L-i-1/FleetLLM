@@ -1,0 +1,143 @@
+{
+  "id": "festival-site",
+  "title": "Lantern Commons Arts Weekend \u2014 eight-page, three-round website project",
+  "fixture": "fixture",
+  "brief_file": "brief.md",
+  "instructions": "Read brief.md and content.json. Build a polished, responsive eight-page Lantern Commons Arts Weekend site by editing only the eight page fragments. Use genuine supplied program facts, accessible local interactions and meaningful custom styling. No external assets or JavaScript. Each page has one visible descriptive h1 and one visible violet primary action [data-primary-cta]. A task is complete only when the real cumulative browser checks pass; visual aesthetics are reviewed separately. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+  "editable_files": [
+    "pages/home.html",
+    "pages/lineup.html",
+    "pages/schedule.html",
+    "pages/venues.html",
+    "pages/tickets.html",
+    "pages/accessibility.html",
+    "pages/volunteer.html",
+    "pages/faq.html"
+  ],
+  "read_only_files": [
+    "brief.md",
+    "content.json"
+  ],
+  "workers": [
+    {
+      "name": "Home page designer",
+      "file": "pages/home.html",
+      "brief": "Design the festival home page: memorable hero, real dates/place, clear ticket action and schedule link. Use supplied artwork if useful. Follow shared brief and content.json; own only pages/home.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+    },
+    {
+      "name": "Lineup page designer",
+      "file": "pages/lineup.html",
+      "brief": "Design a polished artist lineup with the three supplied artist cards and disciplines. Primary action opens schedule.html. Follow shared brief and content.json; own only pages/lineup.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+    },
+    {
+      "name": "Schedule page designer",
+      "file": "pages/schedule.html",
+      "brief": "Design a readable six-event schedule with working category select and correct event dates/venues. Preserve protected filter selectors. Follow shared brief and content.json; own only pages/schedule.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+    },
+    {
+      "name": "Venues page designer",
+      "file": "pages/venues.html",
+      "brief": "Design venue cards and practical location guidance with street address and access-guide links. Follow shared brief and content.json; own only pages/venues.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+    },
+    {
+      "name": "Tickets page designer",
+      "file": "pages/tickets.html",
+      "brief": "Design clear $18/$30 pass cards and accessible local ticket-interest signup. No payment is taken. Follow shared brief and content.json; own only pages/tickets.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+    },
+    {
+      "name": "Accessibility page designer",
+      "file": "pages/accessibility.html",
+      "brief": "Design a welcoming practical access guide with step-free routes, quiet space, accessible toilets and access contact. Follow shared brief and content.json; own only pages/accessibility.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+    },
+    {
+      "name": "Volunteer page designer",
+      "file": "pages/volunteer.html",
+      "brief": "Design volunteer shift information and accessible local signup including the supplied shift select. Follow shared brief and content.json; own only pages/volunteer.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+    },
+    {
+      "name": "Faq page designer",
+      "file": "pages/faq.html",
+      "brief": "Design a useful four-question native FAQ about families, rain, food and arrival. Follow shared brief and content.json; own only pages/faq.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+    }
+  ],
+  "rounds": [
+    {
+      "id": 1,
+      "title": "Initial festival redesign",
+      "instructions": "Read brief.md and content.json. Build a polished, responsive eight-page Lantern Commons Arts Weekend site by editing only the eight page fragments. Use genuine supplied program facts, accessible local interactions and meaningful custom styling. No external assets or JavaScript. Each page has one visible descriptive h1 and one visible violet primary action [data-primary-cta]. A task is complete only when the real cumulative browser checks pass; visual aesthetics are reviewed separately. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+      "worker_instructions": {
+        "pages/home.html": "Design the festival home page: memorable hero, real dates/place, clear ticket action and schedule link. Use supplied artwork if useful. Follow shared brief and content.json; own only pages/home.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/lineup.html": "Design a polished artist lineup with the three supplied artist cards and disciplines. Primary action opens schedule.html. Follow shared brief and content.json; own only pages/lineup.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/schedule.html": "Design a readable six-event schedule with working category select and correct event dates/venues. Preserve protected filter selectors. Follow shared brief and content.json; own only pages/schedule.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/venues.html": "Design venue cards and practical location guidance with street address and access-guide links. Follow shared brief and content.json; own only pages/venues.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/tickets.html": "Design clear $18/$30 pass cards and accessible local ticket-interest signup. No payment is taken. Follow shared brief and content.json; own only pages/tickets.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/accessibility.html": "Design a welcoming practical access guide with step-free routes, quiet space, accessible toilets and access contact. Follow shared brief and content.json; own only pages/accessibility.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/volunteer.html": "Design volunteer shift information and accessible local signup including the supplied shift select. Follow shared brief and content.json; own only pages/volunteer.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/faq.html": "Design a useful four-question native FAQ about families, rain, food and arrival. Follow shared brief and content.json; own only pages/faq.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+      }
+    },
+    {
+      "id": 2,
+      "title": "Family-friendly stakeholder update",
+      "instructions": "Stakeholder update: make the festival easier for families to plan. On EVERY page add a visible [data-family-notice] advisory containing exactly the policies \"Under-12s free with an adult\", \"No booking fees\", and \"Family hours 10:00\u201316:00\". Change each primary action background to the new teal brand #087f7a (solid or a gradient including that exact color). This supersedes the original violet action color; keep the warm paper/deep-ink direction and preserve all existing content/functions. Also make the assigned page-specific family improvement below. Keep edits small where possible rather than rewriting correct markup unnecessarily. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+      "worker_instructions": {
+        "pages/home.html": "Add a visible [data-family-highlight] block naming Family Story Circle and Clay Play, promoting both as family highlights. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/lineup.html": "Add [data-family-highlight] to a visible block mentioning Mira Chen and the words \"all ages\"; keep all three artist cards. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/schedule.html": "On both existing family-category event cards, add data-family-highlight and a visible \"Family pick\" label. Preserve all six cards, categories and filter behavior. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/venues.html": "Add a visible [data-family-highlight] block mentioning Story Grove and Quiet space to help families orient themselves. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/tickets.html": "Add a visible [data-family-highlight] block explaining Under-12s admission with an adult. It may also be the family advisory; preserve adult pass prices and working form. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/accessibility.html": "Add a visible [data-family-highlight] block linking Quiet space with the 10:00 start of family hours, with a practical welcoming explanation. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/volunteer.html": "Add a third #volunteer-shift option value=\"family\" labeled \"Family welcome (10:00\u201313:00)\". Explain it in a visible [data-family-highlight] block containing \"Family welcome\" and \"10:00\". Preserve other shifts and working signup. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/faq.html": "Update the family FAQ answer with \"Under-12s free with an adult\" and put this family question first. Add data-family-highlight to that details element. Preserve the other three useful questions. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+      }
+    },
+    {
+      "id": 3,
+      "title": "Browser polish and accessible wayfinding",
+      "instructions": "Browser-polish round: preserve the family policies, teal actions, supplied facts and working interactions. Check the 390px and1440px layouts and fix any failed browser diagnostics. Every page now needs an end-of-content [data-help-strip] with visible \"Need a hand?\", a link to accessibility.html and an email link mailto:access@lanterncommons.example. Add a clearly visible keyboard-focus treatment on the primary action: at least a2px outline or a nonempty box-shadow when focused. Preserve genuine visible pixels for each h1/action; never cover content with decorative overlays. Maintain clear mobile layout and readable hierarchy. Make only actual needed refinements and validate the assembled site. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete. The focused appearance must differ from the unfocused appearance; an always-on decorative shadow alone is not a keyboard focus indicator.",
+      "worker_instructions": {
+        "pages/home.html": "Polish your owned page against the cumulative browser checks. Add the help strip and visible primary-action keyboard focus; retain round2 family/theme updates and all original functions. Edit only pages/home.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/lineup.html": "Polish your owned page against the cumulative browser checks. Add the help strip and visible primary-action keyboard focus; retain round2 family/theme updates and all original functions. Edit only pages/lineup.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/schedule.html": "Polish your owned page against the cumulative browser checks. Add the help strip and visible primary-action keyboard focus; retain round2 family/theme updates and all original functions. Edit only pages/schedule.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/venues.html": "Polish your owned page against the cumulative browser checks. Add the help strip and visible primary-action keyboard focus; retain round2 family/theme updates and all original functions. Edit only pages/venues.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/tickets.html": "Polish your owned page against the cumulative browser checks. Add the help strip and visible primary-action keyboard focus; retain round2 family/theme updates and all original functions. Edit only pages/tickets.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/accessibility.html": "Polish your owned page against the cumulative browser checks. Add the help strip and visible primary-action keyboard focus; retain round2 family/theme updates and all original functions. Edit only pages/accessibility.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/volunteer.html": "Polish your owned page against the cumulative browser checks. Add the help strip and visible primary-action keyboard focus; retain round2 family/theme updates and all original functions. Edit only pages/volunteer.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete.",
+        "pages/faq.html": "Polish your owned page against the cumulative browser checks. Add the help strip and visible primary-action keyboard focus; retain round2 family/theme updates and all original functions. Edit only pages/faq.html. Use the harness JSON tools: put HTML/CSS source in the write action content field, never return raw HTML as your response. Finish with the done action when your assigned work is complete."
+      }
+    }
+  ],
+  "validation_command": [
+    "python3",
+    "{task_dir}/check.py",
+    "--workspace",
+    "{workspace}",
+    "--output",
+    "{output}",
+    "--round",
+    "{round}"
+  ],
+  "renderer": "render.py",
+  "render_command": [
+    "python3",
+    "{task_dir}/render.py",
+    "--workspace",
+    "{workspace}",
+    "--output",
+    "{output}"
+  ],
+  "capture": {
+    "pages": [
+      "index.html",
+      "lineup.html",
+      "schedule.html",
+      "venues.html",
+      "tickets.html",
+      "accessibility.html",
+      "volunteer.html",
+      "faq.html"
+    ],
+    "entry": "index.html"
+  },
+  "success_definition": "All cumulative round3 browser checks pass on all8pages at390/1440px, with genuine visible headings/actions, working filters/forms/FAQ, supplied content and stakeholder refinements. Visual aesthetics separately reviewed."
+}

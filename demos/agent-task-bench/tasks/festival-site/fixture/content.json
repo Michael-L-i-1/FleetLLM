@@ -1,0 +1,99 @@
+{
+  "festival": {
+    "name": "Lantern Commons Arts Weekend",
+    "dates": "12\u201313 June 2027",
+    "location": "Alder Park, Brookfield",
+    "address": "18 River Walk, Brookfield",
+    "email": "hello@lanterncommons.example",
+    "access_email": "access@lanterncommons.example",
+    "day_price": 18,
+    "weekend_price": 30
+  },
+  "artists": [
+    {
+      "name": "Riverlight Quartet",
+      "discipline": "Live jazz and improvisation"
+    },
+    {
+      "name": "Night Orchard",
+      "discipline": "Indie folk under the evening sky"
+    },
+    {
+      "name": "Mira Chen",
+      "discipline": "Printmaking and live visual art"
+    }
+  ],
+  "venues": [
+    {
+      "name": "River Stage",
+      "detail": "Main outdoor music stage beside the river path."
+    },
+    {
+      "name": "Workshop Yard",
+      "detail": "Covered making tables, water points and bicycle parking."
+    },
+    {
+      "name": "Story Grove",
+      "detail": "Shaded storytelling lawn beside the quiet space."
+    }
+  ],
+  "events": [
+    {
+      "name": "Family Story Circle",
+      "day": "2027-06-12",
+      "time": "10:00",
+      "category": "family",
+      "venue": "Story Grove"
+    },
+    {
+      "name": "Paper Lantern Lab",
+      "day": "2027-06-12",
+      "time": "11:00",
+      "category": "workshops",
+      "venue": "Workshop Yard"
+    },
+    {
+      "name": "Riverlight Quartet",
+      "day": "2027-06-12",
+      "time": "13:00",
+      "category": "music",
+      "venue": "River Stage"
+    },
+    {
+      "name": "Night Orchard",
+      "day": "2027-06-12",
+      "time": "19:00",
+      "category": "music",
+      "venue": "River Stage"
+    },
+    {
+      "name": "Clay Play",
+      "day": "2027-06-13",
+      "time": "11:00",
+      "category": "family",
+      "venue": "Workshop Yard"
+    },
+    {
+      "name": "Community Print Studio",
+      "day": "2027-06-13",
+      "time": "14:00",
+      "category": "workshops",
+      "venue": "Workshop Yard"
+    }
+  ],
+  "accessibility": [
+    "Step-free routes",
+    "Quiet space",
+    "Accessible toilets"
+  ],
+  "volunteer_shifts": [
+    {
+      "value": "welcome",
+      "label": "Welcome crew"
+    },
+    {
+      "value": "workshops",
+      "label": "Workshop helpers"
+    }
+  ]
+}

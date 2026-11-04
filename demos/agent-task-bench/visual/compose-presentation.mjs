@@ -141,6 +141,8 @@ main{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-cont
 .name sup{font-size:12px;color:var(--mute);margin-left:3px}
 .time{font-size:12px;font-weight:600;color:var(--faint);margin-top:8px;font-variant-numeric:tabular-nums}
 .time.done{color:var(--mute)}
+.lane-note{min-height:40px;margin-top:10px;font-size:13px;line-height:18px;color:var(--mute)}
+.lane-note b{font-weight:700;color:var(--ink)}
 .tps{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
 .tps b{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--ink)}
 .tps i{font-style:normal;font-size:13px;font-weight:600;color:var(--mute)}
@@ -165,6 +167,7 @@ footer{flex:none;display:flex;justify-content:space-between;gap:32px;font-size:1
     <div class="shot"><img id="img${i}" alt=""></div>
     <div class="rail"><div class="fill" id="fill${i}"></div><div class="end" id="end${i}" style="left:${(l.duration / maxDuration * 100).toFixed(4)}%"></div></div>
     <div class="time" id="time${i}">0:00</div>
+    <div class="lane-note">${l.note ? `<b>${esc(l.note.label)}</b><br>${esc(l.note.detail)}` : ''}</div>
   </section>`).join('')}
 </main>
 ${config.footnote_mark || config.footnote_method ? `<footer><div>${esc(config.footnote_mark || '')}</div><div>${esc(config.footnote_method || '')}</div></footer>` : ''}
@@ -240,6 +243,7 @@ fs.writeFileSync(path.join(output, `provenance${suffix}.json`), JSON.stringify({
     workflow_output_tokens_per_second: l.tps, displayed_tps: l.tpsDisplay,
     duration_seconds_capture_clock: l.duration, task_seconds: l.row.task_seconds,
     checks: `${l.row.checks_passed}/${l.row.checks_total}`, passed_all_rounds: l.row.passed, final_passed: l.row.final_passed,
+    display_note: l.note ?? null,
     rounds: l.row.rounds.map(r => `${r.round}:${r.checksPassed}/${r.checksTotal}`),
     final_capture_ok: l.final_capture_ok, final_uses_fallback: l.final_uses_fallback, capture_dir: rel(l.dir)})),
   notes: [

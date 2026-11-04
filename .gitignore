@@ -47,3 +47,6 @@ evals/third_party/
 
 /results/fleetpi/presentation/demo-video/.render/
 /results/fleetpi/presentation/demo-video/presentation.html
+
+/results/fleetpi/presentation/annotated-demo/.render/
+/results/fleetpi/presentation/annotated-demo/presentation.html

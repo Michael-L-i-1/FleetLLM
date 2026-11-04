@@ -30,7 +30,11 @@
       "name": "vLLM",
       "agents": "1 agent",
       "capture_dir": "../comparison/vllm1/capture",
-      "expected_display_tps": "14.2"
+      "expected_display_tps": "14.2",
+      "note": {
+        "label": "Failed first two stages",
+        "detail": "Malformed initial tool call; final site later passed."
+      }
     }
   ],
   "footnote_mark": "",

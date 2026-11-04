@@ -1,0 +1,214 @@
+{
+  "speed": 40,
+  "fps": 30,
+  "end_hold_seconds": 3,
+  "page": "index.html",
+  "page_mode": "follow-capture",
+  "real_duration_seconds": 1031.3570001125336,
+  "comparison_video_seconds": 25.8333,
+  "total_video_seconds": 28.8333,
+  "rule": "Video frame k shows real time min(k*speed/fps, max). Each lane shows its latest manifest frame with elapsed <= t; at t >= lane duration it freezes on the final capture. Same speed for every lane; last frame held end_hold_seconds.",
+  "stills_only": true,
+  "frames": [
+    {
+      "video_index": 0,
+      "video_seconds": 0,
+      "real_seconds": 0,
+      "lanes": [
+        {
+          "mode": "fleet8",
+          "ended": false,
+          "shown_real_seconds": 0,
+          "manifest_line": 1,
+          "manifest_elapsed": 1.043,
+          "reason": "initial",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000000.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm8",
+          "ended": false,
+          "shown_real_seconds": 0,
+          "manifest_line": 1,
+          "manifest_elapsed": 1.828,
+          "reason": "initial",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/vllm8/capture/frames/page-00-000000.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm1",
+          "ended": false,
+          "shown_real_seconds": 0,
+          "manifest_line": 1,
+          "manifest_elapsed": 1.154,
+          "reason": "initial",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/vllm1/capture/frames/page-00-000000.png",
+          "fallback_to_last_good": false
+        }
+      ]
+    },
+    {
+      "video_index": 256,
+      "video_seconds": 8.5333,
+      "real_seconds": 341.333,
+      "lanes": [
+        {
+          "mode": "fleet8",
+          "ended": true,
+          "shown_real_seconds": 340.716,
+          "manifest_line": 47,
+          "manifest_elapsed": 341.305,
+          "reason": "final",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000040.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm8",
+          "ended": false,
+          "shown_real_seconds": 341.333,
+          "manifest_line": 37,
+          "manifest_elapsed": 335.182,
+          "reason": "workspace-change",
+          "page": "tickets.html",
+          "image": "results/fleetpi/comparison/vllm8/capture/frames/page-04-000036.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm1",
+          "ended": false,
+          "shown_real_seconds": 341.333,
+          "manifest_line": 36,
+          "manifest_elapsed": 340.041,
+          "reason": "periodic",
+          "page": "venues.html",
+          "image": "results/fleetpi/comparison/vllm1/capture/frames/page-03-000000.png",
+          "fallback_to_last_good": false
+        }
+      ]
+    },
+    {
+      "video_index": 387,
+      "video_seconds": 12.9,
+      "real_seconds": 516,
+      "lanes": [
+        {
+          "mode": "fleet8",
+          "ended": true,
+          "shown_real_seconds": 340.716,
+          "manifest_line": 47,
+          "manifest_elapsed": 341.305,
+          "reason": "final",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000040.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm8",
+          "ended": false,
+          "shown_real_seconds": 516,
+          "manifest_line": 55,
+          "manifest_elapsed": 512.867,
+          "reason": "periodic",
+          "page": "lineup.html",
+          "image": "results/fleetpi/comparison/vllm8/capture/frames/page-01-000034.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm1",
+          "ended": false,
+          "shown_real_seconds": 516,
+          "manifest_line": 54,
+          "manifest_elapsed": 509.902,
+          "reason": "periodic",
+          "page": "lineup.html",
+          "image": "results/fleetpi/comparison/vllm1/capture/frames/page-01-000027.png",
+          "fallback_to_last_good": false
+        }
+      ]
+    },
+    {
+      "video_index": 465,
+      "video_seconds": 15.5,
+      "real_seconds": 620,
+      "lanes": [
+        {
+          "mode": "fleet8",
+          "ended": true,
+          "shown_real_seconds": 340.716,
+          "manifest_line": 47,
+          "manifest_elapsed": 341.305,
+          "reason": "final",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000040.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm8",
+          "ended": false,
+          "shown_real_seconds": 620,
+          "manifest_line": 66,
+          "manifest_elapsed": 609.918,
+          "reason": "workspace-change",
+          "page": "accessibility.html",
+          "image": "results/fleetpi/comparison/vllm8/capture/frames/page-05-000065.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm1",
+          "ended": true,
+          "shown_real_seconds": 619.759,
+          "manifest_line": 67,
+          "manifest_elapsed": 620.048,
+          "reason": "final",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/vllm1/capture/frames/page-00-000022.png",
+          "fallback_to_last_good": false
+        }
+      ]
+    },
+    {
+      "video_index": 774,
+      "video_seconds": 25.8,
+      "real_seconds": 1031.357,
+      "lanes": [
+        {
+          "mode": "fleet8",
+          "ended": true,
+          "shown_real_seconds": 340.716,
+          "manifest_line": 47,
+          "manifest_elapsed": 341.305,
+          "reason": "final",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000040.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm8",
+          "ended": true,
+          "shown_real_seconds": 1031.357,
+          "manifest_line": 114,
+          "manifest_elapsed": 1031.718,
+          "reason": "final",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/vllm8/capture/frames/page-00-000102.png",
+          "fallback_to_last_good": false
+        },
+        {
+          "mode": "vllm1",
+          "ended": true,
+          "shown_real_seconds": 619.759,
+          "manifest_line": 67,
+          "manifest_elapsed": 620.048,
+          "reason": "final",
+          "page": "index.html",
+          "image": "results/fleetpi/comparison/vllm1/capture/frames/page-00-000022.png",
+          "fallback_to_last_good": false
+        }
+      ]
+    }
+  ]
+}

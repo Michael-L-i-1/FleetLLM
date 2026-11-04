@@ -1,0 +1,258 @@
+{
+  "speed": 40,
+  "fps": 30,
+  "end_hold_seconds": 3,
+  "page": "index.html",
+  "page_mode": "follow-capture",
+  "real_duration_seconds": 1031.3570001125336,
+  "comparison_video_seconds": 25.8333,
+  "total_video_seconds": 28.8333,
+  "generated_by": "demos/agent-task-bench/visual/compose-presentation.mjs",
+  "inputs": [
+    {
+      "role": "config",
+      "path": "results/fleetpi/presentation/config.json",
+      "sha256": "30875fba4ac49d1ccf5f23e33475916c7617681225fe82abbf3b5670d5b58ea8"
+    },
+    {
+      "role": "summary",
+      "path": "results/fleetpi/summary.json",
+      "sha256": "fb55c7ce153780f9f43e0dbd1b80fbdae899c41c0435aa4db14d8022640690a8"
+    },
+    {
+      "role": "manifest:fleet8",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames.jsonl",
+      "sha256": "29388b7bee7462fea27cbdb5b61f7420c23b0c8c9bd63ae40a4d9d7d6019c25d"
+    },
+    {
+      "role": "manifest:vllm8",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames.jsonl",
+      "sha256": "8ef1da47135053920b9c2d195a293685ee330166163916211b61a8a56fc63f65"
+    },
+    {
+      "role": "manifest:vllm1",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames.jsonl",
+      "sha256": "2b7b1371f947f16f7a6bd24073a95c23f424bcab5c9d80e3a6df7408609e8b13"
+    }
+  ],
+  "lanes": [
+    {
+      "mode": "fleet8",
+      "label": "Demo · 8 agents",
+      "summary_label": "FleetPi + Fleet, 8 agents",
+      "workflow_output_tokens_per_second": 112.692411383471,
+      "displayed_tps": "112.7",
+      "duration_seconds_capture_clock": 340.71599984169006,
+      "task_seconds": 339.428356625,
+      "checks": "251/251",
+      "passed_all_rounds": true,
+      "final_passed": true,
+      "display_note": null,
+      "rounds": [
+        "1:187/187",
+        "2:219/219",
+        "3:251/251"
+      ],
+      "final_capture_ok": true,
+      "final_uses_fallback": false,
+      "capture_dir": "results/fleetpi/comparison/fleet8/capture"
+    },
+    {
+      "mode": "vllm8",
+      "label": "vLLM · 8 agents",
+      "summary_label": "Pi + default vLLM, 8 agents",
+      "workflow_output_tokens_per_second": 37.966930367901355,
+      "displayed_tps": "38.0",
+      "duration_seconds_capture_clock": 1031.3570001125336,
+      "task_seconds": 1029.26414175,
+      "checks": "251/251",
+      "passed_all_rounds": true,
+      "final_passed": true,
+      "display_note": null,
+      "rounds": [
+        "1:187/187",
+        "2:219/219",
+        "3:251/251"
+      ],
+      "final_capture_ok": true,
+      "final_uses_fallback": false,
+      "capture_dir": "results/fleetpi/comparison/vllm8/capture"
+    },
+    {
+      "mode": "vllm1",
+      "label": "vLLM · 1 agent",
+      "summary_label": "Pi + default vLLM, 1 agent",
+      "workflow_output_tokens_per_second": 14.170550726238035,
+      "displayed_tps": "14.2",
+      "duration_seconds_capture_clock": 619.7590000629425,
+      "task_seconds": 618.465730042,
+      "checks": "251/251",
+      "passed_all_rounds": false,
+      "final_passed": true,
+      "display_note": {
+        "label": "Failed first two stages",
+        "detail": "Malformed initial tool call; final site later passed."
+      },
+      "rounds": [
+        "1:117/187",
+        "2:115/219",
+        "3:251/251"
+      ],
+      "final_capture_ok": true,
+      "final_uses_fallback": false,
+      "capture_dir": "results/fleetpi/comparison/vllm1/capture"
+    }
+  ],
+  "notes": [
+    "TPS is the workflow-average output tokens/s over each full run (summary.json workflow_output_tokens_per_second), shown statically; it is not live decode speed.",
+    "Lane clocks use the capture clock (summary capture_seconds), identical to the original comparison video; task_seconds excludes the initial screenshot hook.",
+    "Only real per-page screenshots from the capture manifests are shown; no page is recaptured, restyled or synthesised. Sampling skips intermediate states.",
+    "vllm1 missed rounds 1-2 (passed=false) and only its final cumulative check passed; the full report retains this result. No speed-to-success claim is made against it.",
+    "In follow-capture mode, each lane displays the page selected in its genuine capture manifest, restoring original recorded page navigation."
+  ],
+  "images": [
+    {
+      "lane": "fleet8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000000.png",
+      "sha256": "065887506b8d0c2d77ce059de1e02615e37cb84e7ff7119e457934698cc7003a",
+      "page_html_sha256": "484802c74688f718dea01a67b189fef54a9470a268b958f45294b055dcd2f7c0",
+      "page_screenshot_elapsed": 0.6549999713897705,
+      "first_shown_real_seconds": 0,
+      "last_shown_real_seconds": 0,
+      "source_frames": [
+        1
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-00-000000.png",
+      "sha256": "065887506b8d0c2d77ce059de1e02615e37cb84e7ff7119e457934698cc7003a",
+      "page_html_sha256": "484802c74688f718dea01a67b189fef54a9470a268b958f45294b055dcd2f7c0",
+      "page_screenshot_elapsed": 0.7039999961853027,
+      "first_shown_real_seconds": 0,
+      "last_shown_real_seconds": 0,
+      "source_frames": [
+        1
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-00-000000.png",
+      "sha256": "065887506b8d0c2d77ce059de1e02615e37cb84e7ff7119e457934698cc7003a",
+      "page_html_sha256": "484802c74688f718dea01a67b189fef54a9470a268b958f45294b055dcd2f7c0",
+      "page_screenshot_elapsed": 0.7820000648498535,
+      "first_shown_real_seconds": 0,
+      "last_shown_real_seconds": 0,
+      "source_frames": [
+        1
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000040.png",
+      "sha256": "62a6a7c584884998fe9e293963b54cb47fa9973d9a5d74a26c1321f2b8ded506",
+      "page_html_sha256": "dc5987872609fdb15f21b708ba6e4712e076920a5a854000d3e4b55090e4738e",
+      "page_screenshot_elapsed": 309.9119999408722,
+      "first_shown_real_seconds": 341.333,
+      "last_shown_real_seconds": 1031.357,
+      "source_frames": [
+        47
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-04-000036.png",
+      "sha256": "09843664506332b9fc6de916333a4eff94fc2ba5fa56effbb62eb1019edb0024",
+      "page_html_sha256": "e4a02e7e5237229bdddd1a2bb22298e1df2e13bbf180440a07feb83f4a83406d",
+      "page_screenshot_elapsed": 335.12599992752075,
+      "first_shown_real_seconds": 341.333,
+      "last_shown_real_seconds": 341.333,
+      "source_frames": [
+        37
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-03-000000.png",
+      "sha256": "e645c39ed70ebef0e3387ab7e04f1ad468f9b49ff444b26aad4bb703a45ad965",
+      "page_html_sha256": "6e8260a55bad0cdb8baed2bbd56b00ba8d71d411c428c31f9367e2ebc79a3eb2",
+      "page_screenshot_elapsed": 0.9000000953674316,
+      "first_shown_real_seconds": 341.333,
+      "last_shown_real_seconds": 341.333,
+      "source_frames": [
+        36
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-01-000034.png",
+      "sha256": "8b1f619a816e4609b98c2b3fe6285cf566c75363aa6e3c488a73dbc40659fd99",
+      "page_html_sha256": "892e3668f6d8a86f0f28d9082d1d8191af96fe5ddac500418e53cea91341c17f",
+      "page_screenshot_elapsed": 323.8129999637604,
+      "first_shown_real_seconds": 516,
+      "last_shown_real_seconds": 516,
+      "source_frames": [
+        55
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-01-000027.png",
+      "sha256": "d354742a459cdfde74efccd49fa617437b9f493bf3c9758a161a60bd96ded53c",
+      "page_html_sha256": "e2fbc2badb75e2ecb9e5116851a4fd9a7de4f85d604112dee8014eceff959d30",
+      "page_screenshot_elapsed": 265.4560000896454,
+      "first_shown_real_seconds": 516,
+      "last_shown_real_seconds": 516,
+      "source_frames": [
+        54
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-05-000065.png",
+      "sha256": "5eb7e2f92f8bdcfeee56d84319166d5a03499cdb8abfb9c1152b04bc4bde658e",
+      "page_html_sha256": "2d374020ad643b37c18b6199220505dff8916193a6edd9dcdd48ea7f5f58d54f",
+      "page_screenshot_elapsed": 609.8329999446869,
+      "first_shown_real_seconds": 620,
+      "last_shown_real_seconds": 620,
+      "source_frames": [
+        66
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-00-000022.png",
+      "sha256": "3e585c180a308aa1a4a822b7c20e01f6c98573d5295a7cef2919dfc53fb8bbec",
+      "page_html_sha256": "efc1aa2dbfa311c31ce7ab16031dafb68c63283c61ac5356b5ff1adf8734c326",
+      "page_screenshot_elapsed": 219.36700010299683,
+      "first_shown_real_seconds": 620,
+      "last_shown_real_seconds": 1031.357,
+      "source_frames": [
+        67
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-00-000102.png",
+      "sha256": "d2b76d0eb6b32ebec7e36a5a021fc193d43806b7640ce2635828b5d74a4dd730",
+      "page_html_sha256": "34838e1e13b6799aa9dbe136e81439f23a9ae626a2bc93aaa25cc625e35aac07",
+      "page_screenshot_elapsed": 943.6819999217987,
+      "first_shown_real_seconds": 1031.357,
+      "last_shown_real_seconds": 1031.357,
+      "source_frames": [
+        114
+      ]
+    }
+  ]
+}

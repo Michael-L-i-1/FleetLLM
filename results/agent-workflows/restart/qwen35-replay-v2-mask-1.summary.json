@@ -1,0 +1,13 @@
+{
+  "label": "qwen35-replay-v2-mask-1",
+  "model": "qwen35-4b-mlx4",
+  "success": null,
+  "seconds": 13.919134750030935,
+  "calls": 12,
+  "error": null,
+  "prompt_tokens": 15070,
+  "completion_tokens": 1275,
+  "workload": "fixed recorded histories, three turns per worker, 128-token cap, no tool execution",
+  "aggregate_completion_tokens_per_second": 91.6005213612266,
+  "median_ttft_seconds": 0.6684233124833554
+}

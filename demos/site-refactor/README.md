@@ -141,7 +141,7 @@ The isolated experiment uses the same four-file task and browser checks. See
 `results/agent-workflows/README.md` for checkpoint revisions and recorded settings.
 
 `run.py --context-prune` optionally masks confirmed superseded file observations
-with a short receipt, keeping message roles, immutable app.js and current feedback.
+with a short receipt when at least 512 characters long, keeping message roles, immutable app.js and current feedback.
 The transcript preserves original messages plus the masked indices. Active-history
 hashes are recorded in context_edit events. This changes model context and is an
 opt-in quality experiment, not an exact-output optimization.

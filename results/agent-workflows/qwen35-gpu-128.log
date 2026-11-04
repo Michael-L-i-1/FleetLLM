@@ -1,0 +1,5 @@
+[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s
+[recurrent] 4 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only
+[load] 0.7s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.79 GB (1505 full + 0 swa pages), backend metal
+[prompt] 23 tokens
+[stats] prefill 23 tok in 0.11s (201.1 tok/s) | decode 127 tok in 1.41s (90.26 tok/s)

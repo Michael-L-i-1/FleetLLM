@@ -1,0 +1,2 @@
+label,model,success,seconds,calls,error,prompt_tokens,completion_tokens,workload,aggregate_completion_tokens_per_second,median_ttft_seconds
+qwen35-replay-v2-checkpoints-1,qwen35-4b-mlx4,,12.136743208859116,12,,15602,1275,"fixed recorded histories, three turns per worker, 128-token cap, no tool execution",105.05289417916697,0.6957075624959543

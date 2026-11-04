@@ -1,0 +1,11 @@
+{
+  "status": "completed bounded experiment suite",
+  "active_model_servers": 0,
+  "branch": "experiment/agent-workflows",
+  "code_commit": "8226e98",
+  "report": "restart/README.md",
+  "full_coding_task_solved": false,
+  "replay_trials": 8,
+  "checkpoint_throughput_ratio": 1.1714412770063591,
+  "masking_enabled_by_default": false
+}

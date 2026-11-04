@@ -1,0 +1,15 @@
+{
+  "label": "qwen35-restart-combined",
+  "model": "qwen35-4b-mlx4",
+  "success": false,
+  "seconds": 161.90117954206653,
+  "calls": 33,
+  "error": "coordinator exceeded 20 steps",
+  "prompt_tokens": 79152,
+  "completion_tokens": 15299,
+  "aggregate_completion_tokens_per_second": 94.49591437982627,
+  "tool_errors": 5,
+  "check_calls": 2,
+  "write_calls": 5,
+  "median_ttft_seconds": 1.0045851250179112
+}

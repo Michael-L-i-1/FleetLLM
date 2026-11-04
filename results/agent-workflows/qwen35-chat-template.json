@@ -1,0 +1,12 @@
+[
+  {
+    "direct": false,
+    "matches_checkpoint_template": true,
+    "formatted": "<|im_start|>system\nYou are helpful.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\nHello!<|im_end|>\n<|im_start|>user\nWhat is 2 + 2?<|im_end|>\n<|im_start|>assistant\n<think>\n"
+  },
+  {
+    "direct": true,
+    "matches_checkpoint_template": true,
+    "formatted": "<|im_start|>system\nYou are helpful.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\nHello!<|im_end|>\n<|im_start|>user\nWhat is 2 + 2?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
+  }
+]

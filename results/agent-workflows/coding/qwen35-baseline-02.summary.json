@@ -1,0 +1,15 @@
+{
+  "label": "qwen35-baseline-02",
+  "model": "qwen35-4b-mlx4",
+  "success": false,
+  "seconds": 138.28104787506163,
+  "calls": 27,
+  "error": "worker-1 failed 3 consecutive tool actions",
+  "prompt_tokens": 48344,
+  "completion_tokens": 16061,
+  "aggregate_completion_tokens_per_second": 116.14751440494783,
+  "tool_errors": 6,
+  "check_calls": 1,
+  "write_calls": 7,
+  "median_ttft_seconds": 1.0264291670173407
+}

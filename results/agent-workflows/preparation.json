@@ -1,0 +1,37 @@
+{
+  "base_commit": "afc999e",
+  "source_workspace": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference",
+  "worktree": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows",
+  "model_status": "downloaded; native architecture validation passed",
+  "model_calls_started": true,
+  "copied_demo_hashes": {
+    "demos/site-refactor/.gitignore": "d5b755fcaf07f446a7c69e68c6b559990cf6523008a32303a45938506fa816b5",
+    "demos/site-refactor/README.md": "1805294e9f6f46666770ff74d7e9ba96b6aaec0ded118d938479900626cda710",
+    "demos/site-refactor/analyze.py": "565bd2a9f550ecd7ecab0948a639b4842703efd07f470c96d69613122b47f452",
+    "demos/site-refactor/brief.txt": "7bf2fb2bb2f2067a68233d8dff6887d05dfff1b0816f1d91b375874b054de34d",
+    "demos/site-refactor/browser-check.mjs": "f40ec63491c12a532b4db07e2cfe8c8166d081e88e4dece7b58791449854f2d1",
+    "demos/site-refactor/capture.mjs": "9e09b465514c694f13c9959f8a8ad2bb8ce60f1400d13dacf55ae42831e4411d",
+    "demos/site-refactor/compare.py": "3c0215046627c0b5bd352e24fcf952382f40191e5facc9cbc54b16d271dba050",
+    "demos/site-refactor/fixture/app.js": "973b92d2fb5feb37a15b2273ed1bdffe6dac009018568bc2f7dd93f836aca06f",
+    "demos/site-refactor/fixture/index.html": "01a9ce1ef1ad6b9709ab69819ade09417a9ed3775db5187a33226dbbecebcfb3",
+    "demos/site-refactor/fixture/responsive.css": "417cdbb47967d929ae80522d75a22c126b00d557ec0d030d7a021e2c41f2ba03",
+    "demos/site-refactor/fixture/styles.css": "8097221305b2c4e09b5a8006ae724304dd8b0422fe1f553815d201eca9d3ba0e",
+    "demos/site-refactor/fixture/theme.css": "b18d3e20649d2a181f7f4e3c36b78909d73eddfc09a93fc8349deabad43a0c42",
+    "demos/site-refactor/package-lock.json": "8b7e48e769dd2e56ffaa45de3cb9883be73249a8a63d14b56df187117a3addfb",
+    "demos/site-refactor/package.json": "000f448cd27843378bd124e93d77e96165cd545bac0e9b47f928eddd6c821d83",
+    "demos/site-refactor/replay.py": "bd64671eb655623de47321c2cc6f5fc63854516a7ab46fcfa44b7933c00ae8d4",
+    "demos/site-refactor/report.py": "9d00ea6d66cafe2c83264ca5920c507e32a6a11d835a6ffd9166e3c46acec3f0",
+    "demos/site-refactor/run.py": "7c4af36f59b7e1497299f60821b8818729843bcf81b504f071451fabb2524ae3",
+    "demos/site-refactor/sample_process.py": "49acc649f76ce8f00fe41f5d05be9cda38d32518a67bf98fc6bb60aab7e31e59",
+    "demos/site-refactor/test_harness.py": "b116c22cc645949f656df0f1183b4e933653bcb932b702c3e206cb4e122228ae",
+    "demos/site-refactor/watch.py": "59b196fff9a0582d2c035bc1b8e541575209c17f53a6bf394592119633dff0f3"
+  },
+  "model_id": "mlx-community/Qwen3.5-4B-4bit",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "quantization": {
+    "bits": 4,
+    "group_size": 64,
+    "mode": "affine"
+  },
+  "native_validation": "qwen35-precision-audit.json"
+}

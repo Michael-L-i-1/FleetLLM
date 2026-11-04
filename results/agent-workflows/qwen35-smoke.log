@@ -1,0 +1,4 @@
+[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s
+[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 1.00 GB (1907 full + 0 swa pages), backend metal
+[prompt] 26 tokens
+[stats] prefill 26 tok in 0.10s (264.7 tok/s) | decode 1 tok in 0.03s (31.68 tok/s)

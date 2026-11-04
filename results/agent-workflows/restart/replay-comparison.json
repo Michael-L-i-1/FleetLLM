@@ -1,0 +1,86 @@
+{
+  "control": {
+    "repeats": 2,
+    "seconds_mean": 14.314586708438583,
+    "seconds_range": [
+      14.19738783291541,
+      14.431785583961755
+    ],
+    "generated_tokens_each": [
+      1275,
+      1275
+    ],
+    "generated_tokens_per_second": 89.06998336517641,
+    "cached_fraction_mean": 0.0,
+    "warm_ttft_median_mean": 0.9409756665118039,
+    "identical_responses_vs_control": [
+      12,
+      12
+    ],
+    "responses_compared_each": 12,
+    "throughput_ratio_vs_control": 1.0
+  },
+  "checkpoints": {
+    "repeats": 2,
+    "seconds_mean": 12.219636604422703,
+    "seconds_range": [
+      12.136743208859116,
+      12.302529999986291
+    ],
+    "generated_tokens_each": [
+      1275,
+      1275
+    ],
+    "generated_tokens_per_second": 104.34025505623744,
+    "cached_fraction_mean": 0.26733752083066276,
+    "warm_ttft_median_mean": 0.7120722704567015,
+    "identical_responses_vs_control": [
+      12,
+      12
+    ],
+    "responses_compared_each": 12,
+    "throughput_ratio_vs_control": 1.1714412770063591
+  },
+  "mask": {
+    "repeats": 2,
+    "seconds_mean": 14.089651583461091,
+    "seconds_range": [
+      13.919134750030935,
+      14.260168416891247
+    ],
+    "generated_tokens_each": [
+      1275,
+      1275
+    ],
+    "generated_tokens_per_second": 90.49194669204157,
+    "cached_fraction_mean": 0.0,
+    "warm_ttft_median_mean": 1.0752908125286922,
+    "identical_responses_vs_control": [
+      11,
+      11
+    ],
+    "responses_compared_each": 12,
+    "throughput_ratio_vs_control": 1.015964562618534
+  },
+  "combined": {
+    "repeats": 2,
+    "seconds_mean": 12.412885041558184,
+    "seconds_range": [
+      12.369579249992967,
+      12.4561908331234
+    ],
+    "generated_tokens_each": [
+      1275,
+      1275
+    ],
+    "generated_tokens_per_second": 102.7158469389925,
+    "cached_fraction_mean": 0.2106171201061712,
+    "warm_ttft_median_mean": 0.811577062762808,
+    "identical_responses_vs_control": [
+      11,
+      11
+    ],
+    "responses_compared_each": 12,
+    "throughput_ratio_vs_control": 1.1532038410501286
+  }
+}

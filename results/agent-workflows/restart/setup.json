@@ -1,0 +1,26 @@
+{
+  "status": "restarted",
+  "model": "mlx-community/Qwen3.5-4B-4bit",
+  "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "quantization": "affine 4bit/group64",
+  "backend": "native Metal GPU",
+  "concurrency": 4,
+  "max_tokens_per_call": 4096,
+  "max_calls_per_agent": 20,
+  "max_consecutive_invalid_actions": 3,
+  "context_mask_min_chars": 512,
+  "changes_since_paused_runs": "Workers finish their owned artifact; coordinator alone must pass integration/browser checks. Same final grading. Small observations below 512 characters are retained. Old runs are historical, not directly comparable.",
+  "server_sha256": "a020044592213b3771313d336ba61471fa9913a3c4e25cf28990d57472af675f",
+  "source_hashes": {
+    "demos/site-refactor/run.py": "355051d18fbc3bef35ddd766465923118cbf05831b6d7954f8aa9256620c1245",
+    "demos/site-refactor/workflow-replay.py": "78f3459438e90d7ee848443ff00f87567a26a7dafe981aef9ac995396c3e91fe",
+    "demos/site-refactor/test_harness.py": "c35701f54a348a0d99d04bd7fc43017ad4835842e8102b6d5cc174542c359d3a",
+    "demos/site-refactor/sample_process.py": "49acc649f76ce8f00fe41f5d05be9cda38d32518a67bf98fc6bb60aab7e31e59",
+    "demos/site-refactor/replay.py": "bd64671eb655623de47321c2cc6f5fc63854516a7ab46fcfa44b7933c00ae8d4",
+    "demos/site-refactor/watch.py": "59b196fff9a0582d2c035bc1b8e541575209c17f53a6bf394592119633dff0f3",
+    "demos/site-refactor/compare.py": "3c5f8f5ecab16b247f5b468ae791233cc898f81a3e970641291d6986ab8f7628",
+    "demos/site-refactor/report.py": "9d00ea6d66cafe2c83264ca5920c507e32a6a11d835a6ffd9166e3c46acec3f0",
+    "demos/site-refactor/analyze.py": "565bd2a9f550ecd7ecab0948a639b4842703efd07f470c96d69613122b47f452"
+  },
+  "code_commit": "24de3f3"
+}

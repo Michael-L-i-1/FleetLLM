@@ -1,0 +1,2 @@
+label,model,success,seconds,calls,error,prompt_tokens,completion_tokens,aggregate_completion_tokens_per_second,tool_errors,check_calls,write_calls,median_ttft_seconds
+qwen35-restart-combined,qwen35-4b-mlx4,False,161.90117954206653,33,coordinator exceeded 20 steps,79152,15299,94.49591437982627,5,2,5,1.0045851250179112

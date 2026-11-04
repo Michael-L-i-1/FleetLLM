@@ -1,0 +1,54 @@
+{
+  "first": {
+    "id": "chatcmpl-1",
+    "object": "chat.completion",
+    "created": 1793750511,
+    "model": "qwen35-4b-mlx4",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "4"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 26,
+      "completion_tokens": 2,
+      "total_tokens": 28,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  },
+  "second": {
+    "id": "chatcmpl-2",
+    "object": "chat.completion",
+    "created": 1793750511,
+    "model": "qwen35-4b-mlx4",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "4"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 46,
+      "completion_tokens": 2,
+      "total_tokens": 48,
+      "prompt_tokens_details": {
+        "cached_tokens": 19
+      }
+    }
+  },
+  "unsupported_errors": [
+    "{\"error\":{\"message\":\"Qwen3.5 native tool-call format is not implemented; use text/JSON actions\",\"type\":\"invalid_request_error\"}}",
+    "{\"error\":{\"message\":\"Qwen3.5 currently supports text messages and JSON actions; native tool calls and media are not implemented\",\"type\":\"invalid_request_error\"}}"
+  ]
+}

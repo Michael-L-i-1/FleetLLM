@@ -1,0 +1,221 @@
+diff --git a/src/engine.c b/src/engine.c
+index cedefe3..c31d934 100644
+--- a/src/engine.c
++++ b/src/engine.c
+@@ -13,6 +13,7 @@ double now_secs(void) {
+ }
+ 
+ static void append(int32_t **v, int *n, int *cap, const int32_t *x, int k) {
++    if (k <= 0) return;
+     if (*n + k > *cap) {
+         *cap = (*n + k) * 2 + 16;
+         *v = realloc(*v, sizeof(int32_t) * *cap);
+@@ -619,6 +620,7 @@ static void reuse_phase(engine *e, const int *ids, int n) {
+ 
+ // Prefill rows a sequence may take now: a planned move's start is a chunk boundary.
+ static int input_cap(const seq_t *s, int want) {
++    if (!s->checkpoint_saved && s->checkpoint_at > s->n_tokens && s->checkpoint_at - s->n_tokens < want) want = s->checkpoint_at - s->n_tokens;
+     if (s->sp_planned && s->sp_at > s->n_tokens && s->sp_at - s->n_tokens < want) return s->sp_at - s->n_tokens;
+     return want;
+ }
+@@ -868,6 +870,23 @@ bool engine_step(engine *e, const int *ids, int n) {
+         }
+         kv_trim_window(&e->kv, &s->pages);
+     }
++    // Save only a computed endpoint. The clone owns its recurrent state and
++    // shares attention pages through the existing COW mechanism.
++    if (e->prompt_checkpoints)
++        for (int i = 0; i < np; i++) {
++            int id = plan[i].seq, at = e->seqs[id].checkpoint_at;
++            if (at > 0 && !e->seqs[id].checkpoint_saved && e->seqs[id].pages.len == at) {
++                e->seqs[id].checkpoint_saved = true;
++                if (kv_can_fork_at(&e->kv, &e->seqs[id].pages, at)) {
++                    int32_t empty = 0;
++                    int saved = engine_fork_at(e, id, at, &empty, 0);
++                    e->st.shared_tokens -= at; // preserving a checkpoint is not a served cache hit
++                    e->seqs[saved].prefix_cached = 0;
++                    engine_retire(e, saved);
++                    e->st.checkpoints++;
++                }
++            }
++        }
+     free(pages);
+     free(plan);
+     return true;
+diff --git a/src/engine.h b/src/engine.h
+index cc796ca..70365bb 100644
+--- a/src/engine.h
++++ b/src/engine.h
+@@ -18,6 +18,8 @@
+ 
+ typedef struct {
+     bool live, cached, generating, done;
++    int checkpoint_at;
++    bool checkpoint_saved; // opt-in exact prompt-boundary state
+     int prefix_cached; // actual prefix tokens reused, excluding an unresolved leader wait
+     seq_pages pages;
+     int32_t *tokens; int n_tokens, cap_tokens;    // tokens whose KV is written
+@@ -44,6 +46,7 @@ typedef struct {
+ } seq_t;
+ 
+ typedef struct {
++    long checkpoints;
+     long steps, decode_rows, prefill_rows, shared_tokens, gen_tokens, deduped_tokens;
+     long spec_steps, spec_drafted, spec_accepted; // verify steps, drafts checked, drafts accepted
+     long ng_steps, ng_drafted, ng_accepted;       // the subset drafted from repeated text
+@@ -62,6 +65,7 @@ typedef struct {
+     seq_t *seqs; int n_seqs;
+     int *cached; int n_cached; // retired sequences kept for prefix reuse, oldest first
+     int row_budget;            // max rows per forward step (prefill chunking)
++    bool prompt_checkpoints;   // save exact hybrid state before the assistant generation header
+     int min_share;             // minimum common prefix worth forking
+     engine_stats st;
+     // speculative decoding (DFlash): drafter, its KV, drafts per verify step,
+diff --git a/src/kv.c b/src/kv.c
+index ef1dabb..49336f0 100644
+--- a/src/kv.c
++++ b/src/kv.c
+@@ -141,6 +141,7 @@ void kv_free_seq(kv_cache *kv, seq_pages *s) {
+         prelease(&kv->full, s->full[i]);
+         if (kv->window) prelease(&kv->swa, s->swa[i]);
+     }
++    if (s->recurrent_handle) s->release_recurrent_handle(s->recurrent_handle);
+     if (s->recurrent) kv->recurrent_used--;
+     free(s->recurrent);
+     free(s->full);
+diff --git a/src/kv.h b/src/kv.h
+index 5566b5a..0ce0250 100644
+--- a/src/kv.h
++++ b/src/kv.h
+@@ -27,6 +27,8 @@ typedef struct {
+ } kv_pool;
+ 
+ typedef struct {
++    void *recurrent_handle;
++    void (*release_recurrent_handle)(void *);
+     float *recurrent; // aligned f32 endpoint snapshot; owned by this sequence
+     size_t recurrent_bytes;
+     int recurrent_len;
+diff --git a/src/metal/kernels.metal b/src/metal/kernels.metal
+index 52755e3..e824a21 100644
+--- a/src/metal/kernels.metal
++++ b/src/metal/kernels.metal
+@@ -1087,8 +1087,8 @@ kernel void q35_linear_qk(device float *x [[buffer(0)]], constant DeltaArgs &a [
+ kernel void q35_delta(device const float *x [[buffer(0)]], device const float *av [[buffer(1)]], device const float *bv [[buffer(2)]],
+                       device const float *alog [[buffer(3)]], device const float *dt [[buffer(4)]], device float *mem [[buffer(5)]],
+                       device float *out [[buffer(6)]], constant DeltaArgs &a [[buffer(7)]], uint2 tg [[threadgroup_position_in_grid]],
+-                      ushort lane [[thread_index_in_simdgroup]]) {
+-    uint h = tg.y, v = tg.x, kh = h / (a.vh / a.kh), vd = a.vh * a.vd;
++                      ushort lane [[thread_index_in_simdgroup]], ushort sg [[simdgroup_index_in_threadgroup]]) {
++    uint h = tg.y, v = tg.x * 4 + sg, kh = h / (a.vh / a.kh), vd = a.vh * a.vd;
+     device float *s = mem + a.hist + (h * a.vd + v) * a.kd;
+     float st[4];
+     for (uint j = 0; j < 4; j++)
+diff --git a/src/metal/metal.m b/src/metal/metal.m
+index ed53bd7..03dd16d 100644
+--- a/src/metal/metal.m
++++ b/src/metal/metal.m
+@@ -444,6 +444,24 @@ typedef struct {
+     uint32_t first, count, kh, vh, kd, vd, cd, hist;
+ } DeltaArgs;
+ 
++static void metal_release_recurrent(void *handle) { CFRelease(handle); }
++
++// Keep the GPU wrapper for the lifetime of its sequence, rather than creating
++// one for every layer and every token. The KV owner releases it before host memory.
++static id<MTLBuffer> recurrent_buffer(CIMetal *mt, const seq_pages *pages) {
++    seq_pages *p = (seq_pages *)pages;
++    if (!p->recurrent_handle) {
++        id<MTLBuffer> b = [mt->dev newBufferWithBytesNoCopy:p->recurrent length:p->recurrent_bytes options:MTLResourceStorageModeShared deallocator:nil];
++        if (!b) {
++            fprintf(stderr, "Metal recurrent state wrapping failed\n");
++            exit(1);
++        }
++        p->recurrent_handle = (__bridge_retained void *)b;
++        p->release_recurrent_handle = metal_release_recurrent;
++    }
++    return (__bridge id<MTLBuffer>)p->recurrent_handle;
++}
++
+ static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const model *m, const layer *l, const seq_pages *const *pages, const row_t *rows, int n,
+                          id<MTLBuffer> h, id<MTLBuffer> ob) {
+     const model_cfg *c = &m->c;
+@@ -465,7 +483,7 @@ static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const mode
+         a.first = first;
+         a.count = end - first;
+         const seq_pages *pg = pages[rows[first].seq];
+-        id<MTLBuffer> state = [mt->dev newBufferWithBytesNoCopy:pg->recurrent length:pg->recurrent_bytes options:MTLResourceStorageModeShared deallocator:nil];
++        id<MTLBuffer> state = recurrent_buffer(mt, pg);
+         NSUInteger off = 4 * stride * l->recurrent_layer;
+         [e setComputePipelineState:P(mt, @"q35_conv")];
+         [e setBuffer:x offset:0 atIndex:0];
+@@ -487,7 +505,7 @@ static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const mode
+         a.first = first;
+         a.count = end - first;
+         const seq_pages *pg = pages[rows[first].seq];
+-        id<MTLBuffer> state = [mt->dev newBufferWithBytesNoCopy:pg->recurrent length:pg->recurrent_bytes options:MTLResourceStorageModeShared deallocator:nil];
++        id<MTLBuffer> state = recurrent_buffer(mt, pg);
+         [e setComputePipelineState:P(mt, @"q35_delta")];
+         [e setBuffer:cv offset:0 atIndex:0];
+         [e setBuffer:av offset:0 atIndex:1];
+@@ -497,7 +515,7 @@ static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const mode
+         [e setBuffer:state offset:4 * stride * l->recurrent_layer atIndex:5];
+         [e setBuffer:y offset:0 atIndex:6];
+         set_bytes(e, &a, sizeof a, 7);
+-        [e dispatchThreadgroups:MTLSizeMake(a.vd, a.vh, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
++        [e dispatchThreadgroups:MTLSizeMake(a.vd / 4, a.vh, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+         first = end;
+     }
+     [e setComputePipelineState:P(mt, @"q35_gate_norm")];
+diff --git a/src/server.c b/src/server.c
+index a2db1f4..ea2f503 100644
+--- a/src/server.c
++++ b/src/server.c
+@@ -69,6 +69,7 @@ typedef struct req {
+     buf text[2];      // content, reasoning (complete UTF-8 only)
+     buf raw[2];       // bytes not yet known to be complete UTF-8
+     int n_gen;        // generated tokens
++    int checkpoint_at;
+     int n_cached;     // prompt tokens whose KV was reused (prefix sharing)
+     bool done, cancelled, started;
+     bool tools;       // tools were offered: the reply is parsed for tool calls (and not streamed piecemeal)
+@@ -182,6 +183,7 @@ static void *engine_loop(void *arg) {
+             if (sv->n_active == sv->cap_active) { sv->cap_active = sv->cap_active ? sv->cap_active * 2 : 64; sv->active = realloc(sv->active, sizeof(req *) * sv->cap_active); }
+             r->seq = engine_create(e, r->prompt, r->n_prompt);
+             r->n_cached = e->seqs[r->seq].prefix_cached;
++            if (e->prompt_checkpoints) e->seqs[r->seq].checkpoint_at = r->checkpoint_at;
+             engine_start(e, r->seq, r->p);
+             r->started = true;
+             sv->active[sv->n_active++] = r;
+@@ -422,6 +424,19 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat)
+         text = strdup(p);
+     }
+     r->n_prompt = tok_encode(sv->tok, text, strlen(text), &r->prompt);
++    if (chat && sv->e->prompt_checkpoints && tok_qwen35(sv->tok)) {
++        const char *header = NULL, *next = text;
++        while ((next = strstr(next, "<|im_start|>assistant\n"))) {
++            header = next;
++            next++;
++        }
++        if (header) {
++            int32_t *ids;
++            int n = tok_encode(sv->tok, text, header - text, &ids);
++            if (n > 0 && n < r->n_prompt && !memcmp(ids, r->prompt, 4 * (size_t)n)) r->checkpoint_at = n;
++            free(ids);
++        }
++    }
+     free(text);
+     // sampling
+     r->p = sample_defaults();
+diff --git a/tools/common.h b/tools/common.h
+index 79268d0..3bc9a8d 100644
+--- a/tools/common.h
++++ b/tools/common.h
+@@ -108,6 +108,7 @@ static runtime load_runtime(int argc, char **argv) {
+         rt.be->kv_elem = 1;
+     }
+     rt.e = engine_new(rt.m, rt.be, rt.tok, kv);
++    rt.e->prompt_checkpoints = arg_flag(argc, argv, "--prompt-checkpoints");
+     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
+     int spec_k = (int)arg_num(argc, argv, "--spec-k", 0);
+     if (spec_k < 0 || spec_k > 31) { fprintf(stderr, "--spec-k must be 0..31\n"); exit(1); }

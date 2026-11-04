@@ -1,0 +1,56 @@
+.{"elapsed": 0.0, "event": "start", "config": {"output": "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/tmp_4eruu_1/run", "model": "fake", "base": "http://fake/v1", "max_tokens": 64, "reasoning": "low", "timeout": 1, "context_prune": true}, "fixture": {"app.js": "973b92d2fb5feb37a15b2273ed1bdffe6dac009018568bc2f7dd93f836aca06f", "index.html": "01a9ce1ef1ad6b9709ab69819ade09417a9ed3775db5187a33226dbbecebcfb3", "responsive.css": "417cdbb47967d929ae80522d75a22c126b00d557ec0d030d7a021e2c41f2ba03", "styles.css": "8097221305b2c4e09b5a8006ae724304dd8b0422fe1f553815d201eca9d3ba0e", "theme.css": "b18d3e20649d2a181f7f4e3c36b78909d73eddfc09a93fc8349deabad43a0c42"}}
+{"elapsed": 0.0, "event": "context_edit", "agent": "worker", "masked_indices": [5], "dropped_chars": 919, "original_messages": 10, "active_messages": 10, "active_history_sha256": "9712a14cd6e62384639fcf6d25bdd911b6ea1ba09421afcf787343e867a04e6e"}
+{"elapsed": 0.0, "event": "response", "agent": "worker", "seconds": 3.158417530357838e-05, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 158307.1253860954, "timings": {}}
+{"elapsed": 0.0, "event": "start", "config": {"output": "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/tmpxgg_8kxy/run", "model": "fake", "base": "http://fake/v1", "max_tokens": 64, "reasoning": "low", "timeout": 1, "context_prune": true}, "fixture": {"app.js": "973b92d2fb5feb37a15b2273ed1bdffe6dac009018568bc2f7dd93f836aca06f", "index.html": "01a9ce1ef1ad6b9709ab69819ade09417a9ed3775db5187a33226dbbecebcfb3", "responsive.css": "417cdbb47967d929ae80522d75a22c126b00d557ec0d030d7a021e2c41f2ba03", "styles.css": "8097221305b2c4e09b5a8006ae724304dd8b0422fe1f553815d201eca9d3ba0e", "theme.css": "b18d3e20649d2a181f7f4e3c36b78909d73eddfc09a93fc8349deabad43a0c42"}}
+{"elapsed": 0.0, "event": "response", "agent": "worker", "seconds": 2.0624836906790733e-05, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 242426.15942110788, "timings": {}}
+.{"elapsed": 0.0, "event": "start", "config": {"output": "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/tmp1uek6aoe/trial", "model": "fake", "label": "test", "base": "http://127.0.0.1:60951/v1", "max_steps": 8, "max_tokens": 100, "reasoning": "low", "timeout": 10}, "fixture": {"app.js": "973b92d2fb5feb37a15b2273ed1bdffe6dac009018568bc2f7dd93f836aca06f", "index.html": "01a9ce1ef1ad6b9709ab69819ade09417a9ed3775db5187a33226dbbecebcfb3", "responsive.css": "417cdbb47967d929ae80522d75a22c126b00d557ec0d030d7a021e2c41f2ba03", "styles.css": "8097221305b2c4e09b5a8006ae724304dd8b0422fe1f553815d201eca9d3ba0e", "theme.css": "b18d3e20649d2a181f7f4e3c36b78909d73eddfc09a93fc8349deabad43a0c42"}}
+{"elapsed": 0.0, "event": "request", "agent": "coordinator", "step": 0}
+{"elapsed": 0.008, "event": "response", "agent": "coordinator", "seconds": 0.008046166971325874, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 621.4139002855025, "timings": {}}
+{"elapsed": 0.008, "event": "action", "agent": "coordinator", "action": "read", "path": "../../README.md"}
+{"elapsed": 0.008, "event": "tool_error", "agent": "coordinator", "error": "Path must be an exact listed filename"}
+{"elapsed": 0.008, "event": "request", "agent": "coordinator", "step": 1}
+{"elapsed": 0.009, "event": "response", "agent": "coordinator", "seconds": 0.000587834045290947, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 8505.802003225694, "timings": {}}
+{"elapsed": 0.009, "event": "action", "agent": "coordinator", "action": "delegate", "path": null}
+{"elapsed": 0.009, "event": "delegated", "tasks": [{"name": "../escape", "files": ["index.html"], "task": "Improve layout"}, {"name": "style", "files": ["styles.css"], "task": "Improve style"}, {"name": "theme", "files": ["theme.css"], "task": "Improve theme"}, {"name": "responsive", "files": ["responsive.css"], "task": "Improve layout"}]}
+{"elapsed": 0.011, "event": "request", "agent": "worker-4", "step": 0}
+{"elapsed": 0.012, "event": "request", "agent": "worker-1", "step": 0}
+{"elapsed": 0.012, "event": "request", "agent": "worker-3", "step": 0}
+{"elapsed": 0.012, "event": "request", "agent": "worker-2", "step": 0}
+{"elapsed": 0.013, "event": "response", "agent": "worker-3", "seconds": 0.0013603330589830875, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 3675.5704545897997, "timings": {}}
+{"elapsed": 0.013, "event": "response", "agent": "worker-1", "seconds": 0.0015388750471174717, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 3249.1266976910824, "timings": {}}
+{"elapsed": 0.014, "event": "response", "agent": "worker-2", "seconds": 0.001345416996628046, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 3716.3199309442793, "timings": {}}
+{"elapsed": 0.014, "event": "action", "agent": "worker-3", "action": "write", "path": "theme.css"}
+{"elapsed": 0.014, "event": "response", "agent": "worker-4", "seconds": 0.001840915996581316, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 2716.03919423009, "timings": {}}
+{"elapsed": 0.014, "event": "action", "agent": "worker-1", "action": "write", "path": "index.html"}
+{"elapsed": 0.014, "event": "action", "agent": "worker-2", "action": "write", "path": "styles.css"}
+{"elapsed": 0.014, "event": "action", "agent": "worker-4", "action": "write", "path": "responsive.css"}
+{"elapsed": 0.014, "event": "request", "agent": "worker-1", "step": 1}
+{"elapsed": 0.014, "event": "request", "agent": "worker-2", "step": 1}
+{"elapsed": 0.014, "event": "request", "agent": "worker-3", "step": 1}
+{"elapsed": 0.014, "event": "request", "agent": "worker-4", "step": 1}
+{"elapsed": 0.015, "event": "response", "agent": "worker-1", "seconds": 0.001098833978176117, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 4550.277930337734, "timings": {}}
+{"elapsed": 0.016, "event": "response", "agent": "worker-2", "seconds": 0.001036458183079958, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 4824.1213023586815, "timings": {}}
+{"elapsed": 0.016, "event": "action", "agent": "worker-1", "action": "done", "path": null}
+{"elapsed": 0.016, "event": "finished", "agent": "worker-1", "summary": "Updated owned file"}
+{"elapsed": 0.016, "event": "action", "agent": "worker-2", "action": "done", "path": null}
+{"elapsed": 0.016, "event": "finished", "agent": "worker-2", "summary": "Updated owned file"}
+{"elapsed": 0.016, "event": "response", "agent": "worker-3", "seconds": 0.001253125024959445, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 3990.0248581834967, "timings": {}}
+{"elapsed": 0.016, "event": "response", "agent": "worker-4", "seconds": 0.0010529581923037767, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 4748.526614395254, "timings": {}}
+{"elapsed": 0.016, "event": "action", "agent": "worker-3", "action": "done", "path": null}
+{"elapsed": 0.016, "event": "finished", "agent": "worker-3", "summary": "Updated owned file"}
+{"elapsed": 0.016, "event": "action", "agent": "worker-4", "action": "done", "path": null}
+{"elapsed": 0.017, "event": "finished", "agent": "worker-4", "summary": "Updated owned file"}
+{"elapsed": 0.017, "event": "integrated", "files": ["index.html", "responsive.css", "styles.css", "theme.css"]}
+{"elapsed": 0.017, "event": "request", "agent": "coordinator", "step": 2}
+{"elapsed": 0.018, "event": "response", "agent": "coordinator", "seconds": 0.00043058302253484726, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 11612.162436328636, "timings": {}}
+{"elapsed": 0.018, "event": "action", "agent": "coordinator", "action": "check", "path": null}
+{"elapsed": 0.018, "event": "request", "agent": "coordinator", "step": 3}
+{"elapsed": 0.018, "event": "response", "agent": "coordinator", "seconds": 0.0004380829632282257, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 11413.363266069713, "timings": {}}
+{"elapsed": 0.018, "event": "action", "agent": "coordinator", "action": "done", "path": null}
+{"elapsed": 0.019, "event": "finished", "agent": "coordinator", "summary": "Integrated"}
+{"elapsed": 0.03, "event": "complete", "label": "test", "model": "fake", "success": true, "seconds": 0.01886720792390406, "calls": 12, "error": null, "prompt_tokens": 120, "completion_tokens": 60, "aggregate_completion_tokens_per_second": 3180.1207810924793, "tool_errors": 1, "check_calls": 1, "write_calls": 4, "median_ttft_seconds": null}
+..
+----------------------------------------------------------------------
+Ran 4 tests in 0.535s
+
+OK

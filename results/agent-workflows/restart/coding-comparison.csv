@@ -1,0 +1,3 @@
+run,success,seconds,calls,completion_tokens,aggregate_completion_tokens_per_second,prompt_tokens,cached_prompt_tokens,cached_fraction,median_ttft_seconds,tool_errors,error
+qwen35-restart-baseline,False,151.32552995881997,33,13286,87.79747874410552,91698,0,0.0,1.3392714590299875,4,coordinator exceeded 20 steps
+qwen35-restart-combined,False,161.90117954206653,33,15299,94.49591437982627,79152,5372,0.06786941580756013,1.0045851250179112,5,coordinator exceeded 20 steps

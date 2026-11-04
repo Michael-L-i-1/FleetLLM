@@ -1,0 +1,150 @@
+[
+  {
+    "label": "qwen35-replay-v2-control-1",
+    "returncode": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "demos/site-refactor/compare.py",
+      "--label",
+      "qwen35-replay-v2-control-1",
+      "--server-command",
+      "results/agent-workflows/baseline-server.json",
+      "--model",
+      "qwen35-4b-mlx4",
+      "--results",
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/agent-workflows/restart",
+      "--workflow-replay-source",
+      "demos/site-refactor/runs/qwen35-restart-baseline"
+    ]
+  },
+  {
+    "label": "qwen35-replay-v2-checkpoints-1",
+    "returncode": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "demos/site-refactor/compare.py",
+      "--label",
+      "qwen35-replay-v2-checkpoints-1",
+      "--server-command",
+      "results/agent-workflows/checkpoint-server.json",
+      "--model",
+      "qwen35-4b-mlx4",
+      "--results",
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/agent-workflows/restart",
+      "--workflow-replay-source",
+      "demos/site-refactor/runs/qwen35-restart-baseline"
+    ]
+  },
+  {
+    "label": "qwen35-replay-v2-mask-1",
+    "returncode": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "demos/site-refactor/compare.py",
+      "--label",
+      "qwen35-replay-v2-mask-1",
+      "--server-command",
+      "results/agent-workflows/baseline-server.json",
+      "--model",
+      "qwen35-4b-mlx4",
+      "--results",
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/agent-workflows/restart",
+      "--workflow-replay-source",
+      "demos/site-refactor/runs/qwen35-restart-baseline",
+      "--context-prune"
+    ]
+  },
+  {
+    "label": "qwen35-replay-v2-combined-1",
+    "returncode": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "demos/site-refactor/compare.py",
+      "--label",
+      "qwen35-replay-v2-combined-1",
+      "--server-command",
+      "results/agent-workflows/checkpoint-server.json",
+      "--model",
+      "qwen35-4b-mlx4",
+      "--results",
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/agent-workflows/restart",
+      "--workflow-replay-source",
+      "demos/site-refactor/runs/qwen35-restart-baseline",
+      "--context-prune"
+    ]
+  },
+  {
+    "label": "qwen35-replay-v2-combined-2",
+    "returncode": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "demos/site-refactor/compare.py",
+      "--label",
+      "qwen35-replay-v2-combined-2",
+      "--server-command",
+      "results/agent-workflows/checkpoint-server.json",
+      "--model",
+      "qwen35-4b-mlx4",
+      "--results",
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/agent-workflows/restart",
+      "--workflow-replay-source",
+      "demos/site-refactor/runs/qwen35-restart-baseline",
+      "--context-prune"
+    ]
+  },
+  {
+    "label": "qwen35-replay-v2-mask-2",
+    "returncode": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "demos/site-refactor/compare.py",
+      "--label",
+      "qwen35-replay-v2-mask-2",
+      "--server-command",
+      "results/agent-workflows/baseline-server.json",
+      "--model",
+      "qwen35-4b-mlx4",
+      "--results",
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/agent-workflows/restart",
+      "--workflow-replay-source",
+      "demos/site-refactor/runs/qwen35-restart-baseline",
+      "--context-prune"
+    ]
+  },
+  {
+    "label": "qwen35-replay-v2-checkpoints-2",
+    "returncode": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "demos/site-refactor/compare.py",
+      "--label",
+      "qwen35-replay-v2-checkpoints-2",
+      "--server-command",
+      "results/agent-workflows/checkpoint-server.json",
+      "--model",
+      "qwen35-4b-mlx4",
+      "--results",
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/agent-workflows/restart",
+      "--workflow-replay-source",
+      "demos/site-refactor/runs/qwen35-restart-baseline"
+    ]
+  },
+  {
+    "label": "qwen35-replay-v2-control-2",
+    "returncode": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "demos/site-refactor/compare.py",
+      "--label",
+      "qwen35-replay-v2-control-2",
+      "--server-command",
+      "results/agent-workflows/baseline-server.json",
+      "--model",
+      "qwen35-4b-mlx4",
+      "--results",
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/agent-workflows/restart",
+      "--workflow-replay-source",
+      "demos/site-refactor/runs/qwen35-restart-baseline"
+    ]
+  }
+]

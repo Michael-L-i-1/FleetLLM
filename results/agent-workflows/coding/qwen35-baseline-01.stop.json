@@ -1,0 +1,7 @@
+{
+  "status": "stopped_stalled_baseline",
+  "reason": "HTML worker repeated the same malformed-JSON edit across six repairs without accepting a write. Preserve failed baseline; investigate protocol reliability before more full runs.",
+  "server_pid": 64279,
+  "cache_metrics_valid": false,
+  "cache_metrics_note": "Initial binary reported pending prefix waits as cache hits; engine logs show zero actual shared tokens. Fixed in native-support commit."
+}

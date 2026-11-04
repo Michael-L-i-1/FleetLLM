@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "teacher_forced_cases": 4,
+  "configurations_checked": 24,
+  "minimum_argmax_match": 1.0,
+  "maximum_metal_mean_absolute_logit_error": 0.00798469502478838,
+  "optimized_cpu_max_kl": 0.011485481268401642,
+  "checkpoint_state_tests": "qwen35-checkpoints-metal.txt",
+  "legacy_speculation_regression": "regression-cpudraft.txt",
+  "harness_tests": "regression-harness.txt",
+  "template": "qwen35-chat-template.json"
+}

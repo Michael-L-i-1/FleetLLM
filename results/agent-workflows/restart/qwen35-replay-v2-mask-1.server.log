@@ -1,0 +1,18 @@
+[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s
+[recurrent] 18 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only
+[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 3.05 GB (5820 full + 0 swa pages), backend metal
+[serve] listening on http://127.0.0.1:8090/v1 (model "qwen35-4b-mlx4")
+[serve] chatcmpl-1: 15 prompt + 64 generated tokens, first token 0.15s, total 0.85s, length
+[serve] chatcmpl-3: 430 prompt + 68 generated tokens, first token 0.47s, total 1.75s, stop
+[serve] chatcmpl-5: 429 prompt + 67 generated tokens, first token 0.92s, total 2.04s, stop
+[serve] chatcmpl-2: 424 prompt + 83 generated tokens, first token 0.26s, total 2.40s, stop
+[serve] chatcmpl-4: 449 prompt + 128 generated tokens, first token 0.74s, total 3.56s, length
+[serve] chatcmpl-6: 477 prompt + 128 generated tokens, first token 0.28s, total 3.02s, length
+[serve] chatcmpl-7: 1002 prompt + 128 generated tokens, first token 0.59s, total 3.42s, length
+[serve] chatcmpl-8: 491 prompt + 128 generated tokens, first token 0.51s, total 3.40s, length
+[serve] 4 active | 94.1 tok/s generated | 8 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies
+[serve] chatcmpl-9: 509 prompt + 128 generated tokens, first token 0.32s, total 6.72s, length
+[serve] chatcmpl-12: 4397 prompt + 33 generated tokens, first token 4.50s, total 6.58s, stop
+[serve] chatcmpl-10: 2198 prompt + 128 generated tokens, first token 1.45s, total 8.29s, length
+[serve] chatcmpl-11: 1453 prompt + 128 generated tokens, first token 1.68s, total 7.75s, length
+[serve] chatcmpl-13: 2811 prompt + 128 generated tokens, first token 1.97s, total 3.63s, length

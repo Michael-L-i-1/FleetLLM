@@ -1,0 +1,8 @@
+{
+  "status": "resumed; preserved historical pause record",
+  "interrupted_run": "qwen35-checkpoint-context",
+  "native_support_commit": "5b203f1",
+  "branch": "experiment/agent-workflows",
+  "worktree": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows",
+  "note": "Model server stopped; partial transcripts and events retained. Inference state is not resumable; rerun a trial under a fresh label. Further wrapper/checkpoint/harness changes remain uncommitted."
+}

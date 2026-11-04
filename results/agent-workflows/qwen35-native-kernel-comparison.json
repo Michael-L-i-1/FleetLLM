@@ -1,0 +1,11 @@
+{
+  "native_support_commit": "5b203f1",
+  "old_decode_tps": 31.2,
+  "new_decode_tps": 90.26,
+  "ratio": 2.8929487179487183,
+  "generated_tokens": 128,
+  "timed_decode_tokens": 127,
+  "prompt": "Explain why the sky appears blue in simple terms.",
+  "same_output_bytes": true,
+  "comparison": "initial native Qwen3.5 implementation versus wrapper reuse + four value channels per SIMD-group bundle; NOT a comparison to llama.cpp/vLLM or a workflow result"
+}

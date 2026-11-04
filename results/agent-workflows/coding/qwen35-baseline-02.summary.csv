@@ -1,0 +1,2 @@
+label,model,success,seconds,calls,error,prompt_tokens,completion_tokens,aggregate_completion_tokens_per_second,tool_errors,check_calls,write_calls,median_ttft_seconds
+qwen35-baseline-02,qwen35-4b-mlx4,False,138.28104787506163,27,worker-1 failed 3 consecutive tool actions,48344,16061,116.14751440494783,6,1,7,1.0264291670173407

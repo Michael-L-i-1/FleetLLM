@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-1",
+  "object": "chat.completion",
+  "created": 1793752861,
+  "model": "qwen35-4b-mlx4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "Thinking Process:\n\n1.  **Analyze the Request:** The user is asking me to reply with exactly the word \"READY\".\n2.  **Determine the Constraint:** The constraint is \"exactly READY\". This means no extra text, no punctuation (unless part of the word, but usually \"ex"
+      },
+      "finish_reason": "length"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 15,
+    "completion_tokens": 64,
+    "total_tokens": 79,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}

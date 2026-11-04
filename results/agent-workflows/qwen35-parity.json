@@ -1,0 +1,449 @@
+{
+  "model": "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Qwen3.5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "cases": [
+    {
+      "prompt": "The capital of France is",
+      "tokens": [
+        760,
+        6511,
+        314,
+        9338,
+        369
+      ],
+      "checks": [
+        {
+          "device": "cpu",
+          "chunk": 128,
+          "kv_int8": false,
+          "mae": 0.03843483328819275,
+          "max_abs": 0.47505807876586914,
+          "argmax_match": 1.0,
+          "stderr": "[cpu] neon+dotprod, 6 threads; weights 2.37 GB -> 2.63 GB: 249 4-bit affine (err 0.0e+00)\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.5s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend cpu\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 128,
+          "kv_int8": false,
+          "mae": 0.019219687208533287,
+          "max_abs": 0.14946818351745605,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 1,
+          "kv_int8": false,
+          "mae": 0.01938769221305847,
+          "max_abs": 0.15249419212341309,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 17,
+          "kv_int8": false,
+          "mae": 0.019219687208533287,
+          "max_abs": 0.14946818351745605,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 17,
+          "kv_int8": true,
+          "mae": 0.033441364765167236,
+          "max_abs": 0.5205856561660767,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (1493 full + 0 swa pages), backend metal\n",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "prompt": "<|im_start|>user\nWhat is 2 + 2? Reply with only the number.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n4",
+      "tokens": [
+        248045,
+        846,
+        198,
+        3710,
+        369,
+        220,
+        17,
+        478,
+        220,
+        17,
+        30,
+        17308,
+        440,
+        1132,
+        279,
+        1324,
+        13,
+        248046,
+        198,
+        248045,
+        74455,
+        198,
+        248068,
+        271,
+        248069,
+        271,
+        19
+      ],
+      "checks": [
+        {
+          "device": "cpu",
+          "chunk": 128,
+          "kv_int8": false,
+          "mae": 0.05033817142248154,
+          "max_abs": 0.9971470832824707,
+          "argmax_match": 1.0,
+          "stderr": "[cpu] neon+dotprod, 6 threads; weights 2.37 GB -> 2.63 GB: 249 4-bit affine (err 0.0e+00)\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.5s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend cpu\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 128,
+          "kv_int8": false,
+          "mae": 0.028652992099523544,
+          "max_abs": 0.3896491527557373,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.3s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 1,
+          "kv_int8": false,
+          "mae": 0.028628956526517868,
+          "max_abs": 0.3825860023498535,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 17,
+          "kv_int8": false,
+          "mae": 0.028652992099523544,
+          "max_abs": 0.3896491527557373,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 17,
+          "kv_int8": true,
+          "mae": 0.03892926871776581,
+          "max_abs": 0.69446861743927,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (1493 full + 0 swa pages), backend metal\n",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "prompt": "def clamp(value, low, high):\n    \"\"\"Return value constrained to the inclusive bounds.\"\"\"\n    return max(low, min(value, high))\n\nassert clamp(9, 0, 5) == 5\n",
+      "tokens": [
+        727,
+        40523,
+        3553,
+        11,
+        3238,
+        11,
+        1496,
+        1590,
+        198,
+        262,
+        4071,
+        5423,
+        869,
+        51948,
+        310,
+        279,
+        27389,
+        13854,
+        71483,
+        198,
+        262,
+        460,
+        1866,
+        55860,
+        11,
+        1262,
+        3553,
+        11,
+        1496,
+        578,
+        271,
+        2138,
+        40523,
+        7,
+        24,
+        11,
+        220,
+        15,
+        11,
+        220,
+        20,
+        8,
+        606,
+        220,
+        20,
+        198
+      ],
+      "checks": [
+        {
+          "device": "cpu",
+          "chunk": 128,
+          "kv_int8": false,
+          "mae": 0.03476898744702339,
+          "max_abs": 0.38344836235046387,
+          "argmax_match": 1.0,
+          "stderr": "[cpu] neon+dotprod, 6 threads; weights 2.37 GB -> 2.63 GB: 249 4-bit affine (err 0.0e+00)\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.5s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend cpu\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 128,
+          "kv_int8": false,
+          "mae": 0.02006741426885128,
+          "max_abs": 0.19598865509033203,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 1,
+          "kv_int8": false,
+          "mae": 0.020069219172000885,
+          "max_abs": 0.19705629348754883,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 17,
+          "kv_int8": false,
+          "mae": 0.02006741426885128,
+          "max_abs": 0.19598865509033203,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": true
+        },
+        {
+          "device": "metal",
+          "chunk": 17,
+          "kv_int8": true,
+          "mae": 0.027124132961034775,
+          "max_abs": 0.4698753356933594,
+          "argmax_match": 1.0,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (1493 full + 0 swa pages), backend metal\n",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "prompt": "A page contains search filters and a signup form. Preserve the hidden attribute and accessible labels. A page contains search filters and a signup form. Preserve the hidden attribute and accessible labels. A page contains search filters and a signup form. Preserve the hidden attribute and accessible labels. A page contains search filters and a signup form. Preserve the hidden attribute and accessible labels. A page contains search filters and a signup form. Preserve the hidden attribute and accessible labels. ",
+      "tokens": [
+        32,
+        2081,
+        5435,
+        2624,
+        13019,
+        321,
+        264,
+        38717,
+        1304,
+        13,
+        78503,
+        279,
+        7920,
+        6816,
+        321,
+        15156,
+        8928,
+        13,
+        357,
+        2081,
+        5435,
+        2624,
+        13019,
+        321,
+        264,
+        38717,
+        1304,
+        13,
+        78503,
+        279,
+        7920,
+        6816,
+        321,
+        15156,
+        8928,
+        13,
+        357,
+        2081,
+        5435,
+        2624,
+        13019,
+        321,
+        264,
+        38717,
+        1304,
+        13,
+        78503,
+        279,
+        7920,
+        6816,
+        321,
+        15156,
+        8928,
+        13,
+        357,
+        2081,
+        5435,
+        2624,
+        13019,
+        321,
+        264,
+        38717,
+        1304,
+        13,
+        78503,
+        279,
+        7920,
+        6816,
+        321,
+        15156,
+        8928,
+        13,
+        357,
+        2081,
+        5435,
+        2624,
+        13019,
+        321,
+        264,
+        38717,
+        1304,
+        13,
+        78503,
+        279,
+        7920,
+        6816,
+        321,
+        15156,
+        8928,
+        13,
+        220
+      ],
+      "checks": [
+        {
+          "device": "cpu",
+          "chunk": 128,
+          "kv_int8": false,
+          "mae": 0.09356240183115005,
+          "max_abs": 5.183176517486572,
+          "argmax_match": 0.989010989010989,
+          "stderr": "[cpu] neon+dotprod, 6 threads; weights 2.37 GB -> 2.63 GB: 249 4-bit affine (err 0.0e+00)\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.5s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend cpu\n",
+          "passed": false
+        },
+        {
+          "device": "metal",
+          "chunk": 128,
+          "kv_int8": false,
+          "mae": 0.053186606615781784,
+          "max_abs": 3.798830032348633,
+          "argmax_match": 0.989010989010989,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.3s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": false
+        },
+        {
+          "device": "metal",
+          "chunk": 1,
+          "kv_int8": false,
+          "mae": 0.052550602704286575,
+          "max_abs": 3.8163928985595703,
+          "argmax_match": 0.989010989010989,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": false
+        },
+        {
+          "device": "metal",
+          "chunk": 17,
+          "kv_int8": false,
+          "mae": 0.053186606615781784,
+          "max_abs": 3.798830032348633,
+          "argmax_match": 0.989010989010989,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (752 full + 0 swa pages), backend metal\n",
+          "passed": false
+        },
+        {
+          "device": "metal",
+          "chunk": 17,
+          "kv_int8": true,
+          "mae": 0.05386882647871971,
+          "max_abs": 4.32633113861084,
+          "argmax_match": 0.989010989010989,
+          "stderr": "[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s\n[recurrent] 2 state slots, 52.69 MB each, reserved within KV budget; endpoint prefix snapshots only\n[load] 0.3s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 0.39 GB (1493 full + 0 swa pages), backend metal\n",
+          "passed": false
+        }
+      ]
+    }
+  ],
+  "passed": false,
+  "files": {
+    "model.safetensors": {
+      "bytes": 3034300695,
+      "sha256": "5fb9acd0246866381cf8c5c354c6db1019f6498eec4ccb4f5edcc71ffeacb2db"
+    },
+    "tokenizer_config.json": {
+      "bytes": 1139,
+      "sha256": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182"
+    },
+    "config.json": {
+      "bytes": 3366,
+      "sha256": "f3efc81b2ea8d96a45301037d3ccccbcccdef44a961845c87f286aaddbc6eaaa"
+    },
+    "tokenizer.json": {
+      "bytes": 19989343,
+      "sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4"
+    },
+    "processor_config.json": {
+      "bytes": 1300,
+      "sha256": "14932921ca485d458a04dafd8069fbb0a4505622a48208d19ed247115801385b"
+    },
+    "chat_template.jinja": {
+      "bytes": 7756,
+      "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+    },
+    ".gitattributes": {
+      "bytes": 1570,
+      "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930"
+    },
+    "vocab.json": {
+      "bytes": 6722759,
+      "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
+    },
+    "model.safetensors.index.json": {
+      "bytes": 101944,
+      "sha256": "52e534c41f7b97708329c85f762e5882bf48bd5955a422c6ae74eba321e6048a"
+    },
+    "video_preprocessor_config.json": {
+      "bytes": 385,
+      "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13"
+    },
+    "preprocessor_config.json": {
+      "bytes": 390,
+      "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516"
+    }
+  }
+}

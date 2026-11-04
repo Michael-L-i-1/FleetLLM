@@ -1,0 +1,24 @@
+{
+  "id": "chatcmpl-3",
+  "object": "chat.completion",
+  "created": 1793750511,
+  "model": "qwen35-4b-mlx4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"action\":\"write\",\"path\":\"index.html\",\"content\":\"<!doctype html>\\n<html lang=\\\"en\\\">\\n<head>\\n  <meta charset=\\\"utf-8\\\">\\n  <meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1\\\">\\n  <title>Fieldnotes \u2014 Local Workshops</title>\\n  <link rel=\\\"stylesheet\\\" href=\\\"theme.css\\\">\\n  <link rel=\\\"stylesheet\\\" href=\\\"styles.css\\\">\\n  <link rel=\\\"stylesheet\\\" href=\\\"responsive.css\\\">\\n</head>\\n<body>\\n  <header>\\n    <a href=\\\"#home\\\" id=\\\"home-link\\\">Fieldnotes</a>\\n    <nav aria-label=\\\"Main navigation\\\">\\n      <a href=\\\"#workshops\\\" id=\\\"workshops-link\\\">Workshops</a>\\n      <a href=\\\"#signup\\\" id=\\\"signup-link\\\">Get updates</a>\\n    </nav>\\n  </header>\\n  <main id=\\\"home\\\">\\n    <section aria-labelledby=\\\"hero-heading\\\">\\n      <h2 id=\\\"hero-heading\\\">Make room for a new skill.</h2>\\n      <p>Small, hands-on workshops led by people in your neighborhood.</p>\\n      <a href=\\\"#workshops\\\" id=\\\"explore-workshops\\\">Explore workshops</a>\\n    </section>\\n    <section id=\\\"workshops\\\" aria-labelledby=\\\"workshops-heading\\\">\\n      <h2 id=\\\"workshops-heading\\\">Upcoming workshops</h2>\\n      <label for=\\\"search-input\\\">Search workshops</label>\\n      <input id=\\\"search-input\\\" type=\\\"search\\\" placeholder=\\\"Try ceramics\\\" aria-describedby=\\\"search-count\\\">\\n      <p id=\\\"search-count\\\" role=\\\"status\\\" aria-live=\\\"polite\\\"></p>\\n      <div class=\\\"cards\\\" role=\\\"list\\\" aria-label=\\\"Workshop list\\\">\\n        <article class=\\\"workshop-card\\\" data-workshop role=\\\"listitem\\\">\\n          <p>Saturday \u00b7 Studio 4</p>\\n          <h3>Intro to ceramics</h3>\\n          <p>Shape your first bowl with local potter Maya.</p>\\n          <a href=\\\"#signup\\\" id=\\\"join-ceramics\\\">Join ceramics</a>\\n        </article>\\n        <article class=\\\"workshop-card\\\" data-workshop role=\\\"listitem\\\">\\n          <p>Sunday \u00b7 Community Garden</p>\\n          <h3>Grow a kitchen garden</h3>\\n          <p>Plant herbs and learn how to keep them thriving.</p>\\n          <a href=\\\"#signup\\\" id=\\\"join-gardening\\\">Join gardening</a>\\n        </article>\\n        <article class=\\\"workshop-card\\\" data-workshop role=\\\"listitem\\\">\\n          <p>Wednesday \u00b7 The Print Room</p>\\n          <h3>Print your own poster</h3>\\n          <p>Turn a simple sketch into a colorful screen print.</p>\\n          <a href=\\\"#signup\\\" id=\\\"join-printing\\\">Join printing</a>\\n        </article>\\n      </div>\\n    </section>\\n    <section id=\\\"signup\\\" aria-labelledby=\\\"signup-heading\\\">\\n      <h2 id=\\\"signup-heading\\\">Find your next Saturday.</h2>\\n      <p>Get new workshops in your inbox.</p>\\n      <form id=\\\"signup-form\\\" aria-describedby=\\\"signup-status\\\" novalidate>\\n        <label for=\\\"email-input\\\">Email address</label>\\n        <input id=\\\"email-input\\\" type=\\\"email\\\" required autocomplete=\\\"email\\\" aria-describedby=\\\"email-hint\\\">\\n        <span id=\\\"email-hint\\\" class=\\\"visually-hidden\\\">Enter a valid email address</span>\\n        <button type=\\\"submit\\\">Keep me posted</button>\\n        <p id=\\\"signup-status\\\" role=\\\"status\\\" aria-live=\\\"polite\\\"></p>\\n      </form>\\n    </section>\\n  </main>\\n  <footer>\\n    <span>Fieldnotes \u00b7 Made for curious neighbors.</span>\\n  </footer>\\n  <script src=\\\"app.js\\\"></script>\\n</body>\\n</html>\""
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1102,
+    "completion_tokens": 879,
+    "total_tokens": 1981,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}

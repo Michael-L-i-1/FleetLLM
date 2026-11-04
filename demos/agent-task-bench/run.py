@@ -111,10 +111,11 @@ class Benchmark:
     def make_shared(self):
         brief = self.spec.get('instructions', '')
         if self.spec.get('brief_file'):
-            brief += '\n'+(self.workspace/self.spec['brief_file']).read_text()
+            brief += '\n--- '+self.spec['brief_file']+' ---\n'+(self.workspace/self.spec['brief_file']).read_text()
         # A single identical prefix supplies contracts and initial state to every worker.
         sources = []
         for p in sorted(self.workspace.rglob('*')):
+            if str(p.relative_to(self.workspace)) == self.spec.get('brief_file'):continue
             if p.is_file() and p.suffix in {'.md','.rs','.c','.h','.html','.css','.js','.json'} and p.stat().st_size < 24000:
                 sources.append(f'\n--- {p.relative_to(self.workspace)} ---\n{p.read_text()}')
         return 'PROJECT TASK\n'+brief+'\n\nINITIAL PROJECT SNAPSHOT (subsequent tool reads are authoritative)\n'+''.join(sources)

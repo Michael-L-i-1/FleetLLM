@@ -86,6 +86,21 @@ class HarnessTest(unittest.TestCase):
         (task/'check.py').write_text('import json,pathlib,sys\np=pathlib.Path(sys.argv[1]);r=sys.argv[2];ok=all((p/f"module{i}.txt").read_text()=="OK"+r for i in range(8));print(json.dumps({"passed":ok,"round":r}));sys.exit(0 if ok else 1)\n')
         return task
 
+    def test_brief_included_once_in_identical_worker_prefix(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);task=self.fixture(root)
+            unique='Stakeholder contract: preserve local festival facts and accessible navigation.'
+            (task/'fixture/brief.md').write_text(unique)
+            spec=json.loads((task/'task.json').read_text());spec['brief_file']='brief.md'
+            (task/'task.json').write_text(json.dumps(spec))
+            base,_=self.server();b=runner.Benchmark(self.args(task,root/'run',base,8));s=b.run()
+            self.assertTrue(s['passed'])
+            self.assertEqual(b.shared.count(unique),1)
+            prefixes={request['messages'][1]['content'].split('YOUR ROLE:')[0] for request in self.observed}
+            self.assertEqual(len(prefixes),1)
+            self.assertEqual(next(iter(prefixes)).count(unique),1)
+            self.assertIn('--- brief.md ---',next(iter(prefixes)))
+
     def test_multiround_persistent_workers_and_same_shared_start(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);task=self.multiround_fixture(root);base,_=self.server(multiround=True)

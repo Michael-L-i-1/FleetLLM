@@ -127,7 +127,7 @@ class WorkflowsTest(unittest.TestCase):
             with patch.object(bench, 'ROOT', root):
                 workload = bench.prepare_workload(root/'workload.json', agents=1, turns=2, tool_seconds=0)
             base, _ = self.server(fail='truncate')
-            runner = bench.Runner(workload, root/'result', base, 'fake', concurrency=1)
+            runner = bench.Runner(workload, root/'result', base, 'fake', concurrency=1, qwen_thinking_template=True)
             with contextlib.redirect_stdout(io.StringIO()):
                 summary = runner.run()
             self.assertFalse(summary['complete'])
@@ -152,7 +152,7 @@ class WorkflowsTest(unittest.TestCase):
             self.assertGreater(len(requests[2]['messages']), len(requests[1]['messages']))
             self.assertNotIn('Continue the review', requests[2]['messages'][-1]['content'])
             base, recorded = self.server(quality='wrong')
-            runner = bench.Runner(workload, root/'result', base, 'fake', concurrency=1)
+            runner = bench.Runner(workload, root/'result', base, 'fake', concurrency=1, qwen_thinking_template=True)
             with contextlib.redirect_stdout(io.StringIO()):
                 summary = runner.run()
             self.assertTrue(summary['complete'])
@@ -161,6 +161,7 @@ class WorkflowsTest(unittest.TestCase):
             self.assertAlmostEqual(summary['graded_accuracy'], 1/3)
             self.assertFalse(summary['graded_all_correct'])
             self.assertTrue(all(r['reasoning_effort']=='none' for r in recorded))
+            self.assertTrue(all(r['chat_template_kwargs']=={'enable_thinking': False} for r in recorded))
             self.assertEqual([r['correct'] for r in runner.results], [True, False, False])
 
     def test_output_cap_clone_preserves_frozen_source_and_all_history(self):

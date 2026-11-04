@@ -209,13 +209,15 @@ def percentile(values, quantile):
 
 
 class Runner:
-    def __init__(self, workload, output, base, model, concurrency=8, sessions=None, mode='trace', timeout=300):
+    def __init__(self, workload, output, base, model, concurrency=8, sessions=None, mode='trace', timeout=300,
+                 qwen_thinking_template=False):
         self.workload = workload
         self.output = Path(output)
         self.output.mkdir(parents=True, exist_ok=False)
         (self.output/'responses').mkdir()
         self.base, self.model = base.rstrip('/'), model
         self.concurrency, self.mode, self.timeout = concurrency, mode, timeout
+        self.qwen_thinking_template = qwen_thinking_template
         if concurrency < 1:
             raise ValueError('Concurrency must be positive')
         self.sessions = workload['sessions'][:sessions] if sessions else workload['sessions']
@@ -232,6 +234,7 @@ class Runner:
                                     'reasoning': 'none' if mode == 'quality' else workload['settings']['reasoning']},
                        'history': 'fixed reference messages; generated replies never affect subsequent requests',
                        'output_work': 'capped, not fixed; actual generated token counts are reported'}
+        self.config['qwen_thinking_template'] = qwen_thinking_template
         save_json(self.output/'config.json', self.config)
         self.event('start', **self.config)
 
@@ -250,6 +253,8 @@ class Runner:
         body = {'model': self.model, 'messages': item['messages'], 'temperature': 0,
                 'max_tokens': item['max_tokens'], 'reasoning_effort': item['reasoning'],
                 'stream': True, 'stream_options': {'include_usage': True}}
+        if self.qwen_thinking_template:
+            body['chat_template_kwargs'] = {'enable_thinking': item['reasoning'] != 'none'}
         sent_hash = digest(body)
         self.event('request', id=identifier, session=session, turn=turn, request_sha256=sent_hash)
         started = time.monotonic()
@@ -422,6 +427,8 @@ def main(argv=None):
     run.add_argument('--sessions', type=int, help='Use the first N frozen sessions')
     run.add_argument('--concurrency', type=int, default=8)
     run.add_argument('--timeout', type=float, default=300)
+    run.add_argument('--qwen-thinking-template', action='store_true',
+                     help='Explicitly align Qwen enable_thinking with reasoning_effort for cross-engine serving')
     args = parser.parse_args(argv)
     if args.command == 'prepare':
         workload = prepare_workload(args.output, args.agents, args.turns, args.shared_chars,
@@ -435,7 +442,8 @@ def main(argv=None):
                           'derived_from': workload['derivation']}, indent=2))
         return 0
     workload = load_workload(args.workload)
-    runner = Runner(workload, args.output, args.base, args.model, args.concurrency, args.sessions, args.mode, args.timeout)
+    runner = Runner(workload, args.output, args.base, args.model, args.concurrency, args.sessions, args.mode, args.timeout,
+                    args.qwen_thinking_template)
     summary = runner.run()
     return 0 if summary['complete'] else 1
 

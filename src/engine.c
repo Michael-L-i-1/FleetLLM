@@ -400,6 +400,30 @@ static void evict_cached_state(engine *e, int id) {
     engine_release(e, id);
 }
 
+// Save an already-computed endpoint before it can advance. This is shared by
+// the pre-step resumed-endpoint case and the post-forward chunk-boundary case.
+static void capture_prompt_checkpoint(engine *e, int id) {
+    int at = e->seqs[id].checkpoint_at;
+    if (!e->prompt_checkpoints || !e->seqs[id].live || at <= 0 || e->seqs[id].checkpoint_saved || e->seqs[id].pages.len != at) return;
+    e->seqs[id].checkpoint_saved = true;
+    if (e->recurrent_cache_priority && e->kv.recurrent_bytes && kv_has_fork_at(&e->kv, &e->seqs[id].pages, at))
+        while (e->kv.recurrent_used >= e->kv.recurrent_limit) {
+            int victim = cached_state_victim(e, id, true);
+            if (victim < 0) break;
+            evict_cached_state(e, victim);
+        }
+    if (kv_can_fork_at(&e->kv, &e->seqs[id].pages, at)) {
+        int32_t empty = 0;
+        int saved = engine_fork_at(e, id, at, &empty, 0);
+        e->st.shared_tokens -= at; // preserving a checkpoint is not a served cache hit
+        e->seqs[saved].prefix_cached = 0;
+        e->seqs[saved].is_prompt_checkpoint = true;
+        engine_retire(e, saved);
+        e->st.checkpoints++;
+    } else
+        e->st.skipped_checkpoints++;
+}
+
 // ---- KV swap (agents' KV is state, not a cache: restoring beats recomputing)
 
 // Only pages no other sequence holds go to the file; shared pages (a common
@@ -802,6 +826,11 @@ bool engine_step(engine *e, const int *ids, int n) {
         seq_t *s = &e->seqs[ids[i]];
         if (s->swapped && !s->cached && !swap_in(e, ids[i])) break;
     }
+    // A server may attach checkpoint_at after engine_create has already reused
+    // that exact endpoint. Capture it before this step consumes any suffix.
+    if (e->prompt_checkpoints)
+        for (int i = 0; i < n; i++)
+            capture_prompt_checkpoint(e, ids[i]);
     for (int pass = 0; pass < 2 && !np; pass++) {
         if (pass) for (int i = 0; i < n; i++) resolve_wait(e, ids[i], true); // leaders not in this step: stop waiting
         budget = e->row_budget;
@@ -980,31 +1009,9 @@ bool engine_step(engine *e, const int *ids, int n) {
     if (e->recurrent_prefix_dedup && e->m->c.n_linear)
         for (int i = 0; i < e->n_seqs; i++)
             if (e->seqs[i].live && !e->seqs[i].done && !e->seqs[i].cached && e->seqs[i].wait_len) resolve_wait(e, i, false);
-    // Save only a computed endpoint. The clone owns its recurrent state and
-    // shares attention pages through the existing COW mechanism.
     if (e->prompt_checkpoints)
-        for (int i = 0; i < np; i++) {
-            int id = plan[i].seq, at = e->seqs[id].checkpoint_at;
-            if (at > 0 && !e->seqs[id].checkpoint_saved && e->seqs[id].pages.len == at) {
-                e->seqs[id].checkpoint_saved = true;
-                if (e->recurrent_cache_priority && e->kv.recurrent_bytes && kv_has_fork_at(&e->kv, &e->seqs[id].pages, at))
-                    while (e->kv.recurrent_used >= e->kv.recurrent_limit) {
-                        int victim = cached_state_victim(e, id, true);
-                        if (victim < 0) break;
-                        evict_cached_state(e, victim);
-                    }
-                if (kv_can_fork_at(&e->kv, &e->seqs[id].pages, at)) {
-                    int32_t empty = 0;
-                    int saved = engine_fork_at(e, id, at, &empty, 0);
-                    e->st.shared_tokens -= at; // preserving a checkpoint is not a served cache hit
-                    e->seqs[saved].prefix_cached = 0;
-                    e->seqs[saved].is_prompt_checkpoint = true;
-                    engine_retire(e, saved);
-                    e->st.checkpoints++;
-                } else
-                    e->st.skipped_checkpoints++;
-            }
-        }
+        for (int i = 0; i < np; i++)
+            capture_prompt_checkpoint(e, plan[i].seq);
     free(pages);
     free(plan);
     return true;

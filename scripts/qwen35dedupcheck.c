@@ -419,6 +419,57 @@ static void phase_priority_prefill(bool priority, bool waited_endpoint) {
     printf("phase prefill priority=%d waited-endpoint=%d: FIFO/default, endpoint preference, waiter protection PASS\n", priority, waited_endpoint);
 }
 
+static int phase_checkpoint_count(const engine *e, int at) {
+    int count = 0;
+    for (int i = 0; i < e->n_seqs; i++)
+        count += e->seqs[i].live && e->seqs[i].cached && e->seqs[i].is_prompt_checkpoint && e->seqs[i].n_tokens == at;
+    return count;
+}
+
+static void checkpoint_lifecycle(bool move, bool priority, bool growing, bool pressure) {
+    model m = fixture();
+    backend b = compute();
+    engine *e = engine_new(&m, &b, NULL, 2u << 20);
+    e->prompt_checkpoints = true;
+    e->recurrent_state_move = move;
+    e->recurrent_cache_priority = priority;
+    e->row_budget = 17;
+    if (pressure) e->kv.recurrent_limit = 2;
+    int32_t prompt[160];
+    for (int i = 0; i < 160; i++)
+        prompt[i] = (i * 3 + 7) % VOCAB;
+    released_handles = 0;
+    int reused[4];
+    for (int turn = 0; turn < 4; turn++) {
+        int length = growing ? 100 + 20 * turn : 100, at = length - 20;
+        int id = engine_create(e, prompt, length);
+        reused[turn] = e->seqs[id].n_tokens;
+        assert(e->seqs[id].n_tokens == (turn ? (growing ? at - 20 : at) : 0));
+        // Match the server lifecycle: attach this boundary AFTER create reused an endpoint.
+        e->seqs[id].checkpoint_at = at;
+        engine_start(e, id, params());
+        finish(e, &id, 1);
+        engine_retire(e, id);
+        int32_t out[OUTPUT];
+        expected(prompt, length, out);
+        assert(!memcmp(out, e->seqs[id].gen, sizeof out));
+        assert(phase_checkpoint_count(e, at) == 1 && e->st.checkpoints == turn + 1 && e->st.skipped_checkpoints == 0);
+        if (pressure) {
+            assert(e->kv.recurrent_used == 2 && e->st.endpoint_evictions == turn && e->st.checkpoint_evictions == 0 && released_handles == turn);
+            assert(!e->seqs[id].pages.recurrent_handle);
+            e->seqs[id].pages.recurrent_handle = malloc(8);
+            e->seqs[id].pages.release_recurrent_handle = release_fake_handle;
+        }
+    }
+    // Existing later-boundary captures do the same work; identical requests keep
+    // their warm checkpoint instead of alternating fresh and reused prefixes.
+    assert(e->st.prefill_rows + e->st.decode_rows == (growing ? 264 : 204));
+    release_engine(e);
+    if (pressure) assert(released_handles == 4);
+    printf("checkpoint lifecycle move=%d priority=%d growing=%d pressure=%d reused=%d,%d,%d,%d: exact replies, bounded capture PASS\n", move, priority, growing,
+           pressure, reused[0], reused[1], reused[2], reused[3]);
+}
+
 static void fractions(void) {
     model m = fixture();
     m.c.recurrent_floats = 8192;
@@ -453,6 +504,11 @@ int main(void) {
     phase_priority_prefill(false, false);
     phase_priority_prefill(true, false);
     phase_priority_prefill(true, true);
+    checkpoint_lifecycle(false, false, false, false);
+    checkpoint_lifecycle(true, false, false, false);
+    checkpoint_lifecycle(true, true, false, false);
+    checkpoint_lifecycle(true, true, true, false);
+    checkpoint_lifecycle(true, true, false, true);
     fractions();
     puts("ALL DEDUP SCHEDULER CHECKS PASS");
     return 0;

@@ -1,0 +1,313 @@
+{
+  "task": "coffee-site",
+  "agents": 8,
+  "model": "glimmer-mlx4",
+  "started_unix": 1793772813.1965828,
+  "finished_unix": 1793773009.3193972,
+  "passed": true,
+  "error": null,
+  "wall_seconds": 196.12218924984336,
+  "time_to_first_passing_check_seconds": 194.77611908386461,
+  "completion_tokens": 9758,
+  "prompt_tokens": 35293,
+  "calls": 16,
+  "failed_calls": 0,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": 3.785322312498465,
+  "workers": [
+    {
+      "agent": "Header designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Mission designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Impact designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Events designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Newsletter designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Visit designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Menu designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Hero designer",
+      "status": "done",
+      "turns": 2
+    }
+  ],
+  "checks": 2,
+  "final_check": {
+    "passed": true,
+    "returncode": 0,
+    "details": {
+      "passed": true,
+      "checks": [
+        {
+          "name": "01-header.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "01-header.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "01-header.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "02-hero.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "02-hero.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "02-hero.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "03-mission.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "03-mission.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "03-mission.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "05-impact.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "05-impact.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "05-impact.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "06-events.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "06-events.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "06-events.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "07-visit.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "07-visit.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "07-visit.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "08-footer.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "08-footer.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "08-footer.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "390px: one descriptive h1",
+          "passed": true
+        },
+        {
+          "name": "390px: hero typography",
+          "passed": true
+        },
+        {
+          "name": "390px: navigation",
+          "passed": true
+        },
+        {
+          "name": "390px: section headings",
+          "passed": true
+        },
+        {
+          "name": "390px: hero calls to action",
+          "passed": true
+        },
+        {
+          "name": "390px: mission disclosure",
+          "passed": true
+        },
+        {
+          "name": "390px: menu cards",
+          "passed": true
+        },
+        {
+          "name": "390px: labelled search",
+          "passed": true
+        },
+        {
+          "name": "390px: search behavior",
+          "passed": true
+        },
+        {
+          "name": "390px: impact facts",
+          "passed": true
+        },
+        {
+          "name": "390px: dated events",
+          "passed": true
+        },
+        {
+          "name": "390px: visit details",
+          "passed": true
+        },
+        {
+          "name": "390px: accessible newsletter",
+          "passed": true
+        },
+        {
+          "name": "390px: newsletter behavior",
+          "passed": true
+        },
+        {
+          "name": "390px: valid internal anchors",
+          "passed": true
+        },
+        {
+          "name": "390px: no horizontal overflow",
+          "passed": true
+        },
+        {
+          "name": "1440px: one descriptive h1",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero typography",
+          "passed": true
+        },
+        {
+          "name": "1440px: navigation",
+          "passed": true
+        },
+        {
+          "name": "1440px: section headings",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero calls to action",
+          "passed": true
+        },
+        {
+          "name": "1440px: mission disclosure",
+          "passed": true
+        },
+        {
+          "name": "1440px: menu cards",
+          "passed": true
+        },
+        {
+          "name": "1440px: labelled search",
+          "passed": true
+        },
+        {
+          "name": "1440px: search behavior",
+          "passed": true
+        },
+        {
+          "name": "1440px: impact facts",
+          "passed": true
+        },
+        {
+          "name": "1440px: dated events",
+          "passed": true
+        },
+        {
+          "name": "1440px: visit details",
+          "passed": true
+        },
+        {
+          "name": "1440px: accessible newsletter",
+          "passed": true
+        },
+        {
+          "name": "1440px: newsletter behavior",
+          "passed": true
+        },
+        {
+          "name": "1440px: valid internal anchors",
+          "passed": true
+        },
+        {
+          "name": "1440px: no horizontal overflow",
+          "passed": true
+        },
+        {
+          "name": "no JavaScript errors or external requests",
+          "passed": true
+        }
+      ],
+      "failures": [],
+      "errors": [],
+      "widths": [
+        390,
+        1440
+      ],
+      "browser_exit_code": 0,
+      "render": {
+        "index": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-vllm-eight-01/task/checks/002/site/index.html",
+        "sha256": "56bdd7b7605d743ae4426be25be956b1a223bc8064e322c59c8ed4decb0dfde3"
+      }
+    },
+    "seconds": 0.7996456250548363
+  },
+  "capture_exitcode": 0,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 49.75469648449172
+}

@@ -1,0 +1,591 @@
+{
+  "ledger-rust": {
+    "passed": false,
+    "returncode": 1,
+    "details": {
+      "success": false,
+      "passed": 0,
+      "total": 11,
+      "compile_errors": [],
+      "checks": [
+        {
+          "name": "money",
+          "passed": false,
+          "detail": "\nrunning 1 test\ntest money ... FAILED\n\nfailures:\n\nfailures:\n    money\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s\n\n\nthread 'money' (66706916) panicked at /var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/ledger-acceptance-61uldaxd/probe.rs:13:151:\nassertion `left == right` failed: parse 0\n  left: None\n right: Some(0)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+        },
+        {
+          "name": "date",
+          "passed": false,
+          "detail": "\nrunning 1 test\ntest date ... FAILED\n\nfailures:\n\nfailures:\n    date\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s\n\n\nthread 'date' (66706919) panicked at /var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/ledger-acceptance-61uldaxd/probe.rs:19:95:\nvalid 0001-01-01\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+        },
+        {
+          "name": "csv",
+          "passed": false,
+          "detail": "\nrunning 1 test\ntest csv ... FAILED\n\nfailures:\n\nfailures:\n    csv\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s\n\n\nthread 'csv' (66706922) panicked at /var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/ledger-acceptance-61uldaxd/probe.rs:23:206:\nassertion `left == right` failed: csv \n  left: None\n right: Some([\"\"])\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+        },
+        {
+          "name": "labels",
+          "passed": false,
+          "detail": "\nrunning 1 test\ntest labels ... FAILED\n\nfailures:\n\nfailures:\n    labels\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s\n\n\nthread 'labels' (66706925) panicked at /var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/ledger-acceptance-61uldaxd/probe.rs:27:257:\nassertion `left == right` failed: label \"  COFFEE   BAR  \"\n  left: \"\"\n right: \"coffee bar\"\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+        },
+        {
+          "name": "tags",
+          "passed": false,
+          "detail": "\nrunning 1 test\ntest tags ... FAILED\n\nfailures:\n\nfailures:\n    tags\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s\n\n\nthread 'tags' (66706928) panicked at /var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/ledger-acceptance-61uldaxd/probe.rs:30:147:\nassertion `left == right` failed: tags \n  left: None\n right: Some([])\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+        },
+        {
+          "name": "filter",
+          "passed": false,
+          "detail": "\nrunning 1 test\ntest filter ... FAILED\n\nfailures:\n\nfailures:\n    filter\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s\n\n\nthread 'filter' (66706931) panicked at /var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/ledger-acceptance-61uldaxd/probe.rs:35:5:\nassertion `left == right` failed\n  left: []\n right: [Record { id: \"late\", date: \"2024-03-31\", vendor: \"x\", cents: 1, tags: [\"sample\"] }, Record { id: \"first\", date: \"2024-03-01\", vendor: \"y\", cents: 2, tags: [\"sample\"] }, Record { id: \"middle\", date: \"2024-03-15\", vendor: \"z\", cents: 4, tags: [\"sample\"] }]\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+        },
+        {
+          "name": "summary",
+          "passed": false,
+          "detail": "\nrunning 1 test\ntest summary ... FAILED\n\nfailures:\n\nfailures:\n    summary\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s\n\n\nthread 'summary' (66706934) panicked at /var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/ledger-acceptance-61uldaxd/probe.rs:42:5:\nassertion `left == right` failed\n  left: []\n right: [(\"Beta\", 2, 0), (\"alpha\", 1, 101), (\"empty\", 1, 0)]\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+        },
+        {
+          "name": "audit",
+          "passed": false,
+          "detail": "\nrunning 1 test\ntest audit ... FAILED\n\nfailures:\n\nfailures:\n    audit\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s\n\n\nthread 'audit' (66706937) panicked at /var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/ledger-acceptance-61uldaxd/probe.rs:47:42:\nassertion `left == right` failed\n  left: []\n right: [Record { id: \"z\", date: \"2024-01-01\", vendor: \"one\", cents: 1, tags: [\"sample\"] }, Record { id: \"a\", date: \"2024-01-02\", vendor: \"two\", cents: 2, tags: [\"sample\"] }, Record { id: \"b\", date: \"2024-01-04\", vendor: \"three\", cents: 3, tags: [\"sample\"] }, Record { id: \"A\", date: \"2024-01-07\", vendor: \"four\", cents: 4, tags: [\"sample\"] }]\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+        },
+        {
+          "name": "integration-fixture",
+          "passed": false,
+          "expected": {
+            "accepted": 6,
+            "invalid": 4,
+            "duplicates": [
+              "r2"
+            ],
+            "selected": [
+              "r1",
+              "r2",
+              "r3",
+              "r4",
+              "r6"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 1,
+                "total": "-5.25"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 3,
+                "total": "0.00"
+              },
+              {
+                "vendor": "green market",
+                "count": 1,
+                "total": "0.25"
+              }
+            ]
+          },
+          "actual": {
+            "invalid_json": "ERR\n"
+          }
+        },
+        {
+          "name": "integration-generated-17",
+          "passed": false,
+          "expected": {
+            "accepted": 16,
+            "invalid": 4,
+            "duplicates": [
+              "id01",
+              "id02",
+              "id03",
+              "id05",
+              "id07",
+              "id09",
+              "id11",
+              "id12",
+              "id16",
+              "id17"
+            ],
+            "selected": [
+              "id09",
+              "id10",
+              "id04",
+              "id03",
+              "id16",
+              "id01",
+              "id00",
+              "id15",
+              "id12",
+              "id05"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 3,
+                "total": "16.06"
+              },
+              {
+                "vendor": "caf\u00e9 m\u00dcnchen",
+                "count": 3,
+                "total": "12.24"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 2,
+                "total": "15.27"
+              },
+              {
+                "vendor": "green market",
+                "count": 2,
+                "total": "8.71"
+              }
+            ]
+          },
+          "actual": {
+            "invalid_json": "ERR\n"
+          }
+        },
+        {
+          "name": "integration-generated-91",
+          "passed": false,
+          "expected": {
+            "accepted": 15,
+            "invalid": 4,
+            "duplicates": [
+              "id01",
+              "id03",
+              "id05",
+              "id06",
+              "id09",
+              "id10",
+              "id11",
+              "id12",
+              "id13",
+              "id14",
+              "id17"
+            ],
+            "selected": [
+              "id05",
+              "id14",
+              "id11",
+              "id12",
+              "id06",
+              "id02",
+              "id09",
+              "id01",
+              "id16",
+              "id17",
+              "id00",
+              "id13",
+              "id07",
+              "id10",
+              "id03"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 3,
+                "total": "26.92"
+              },
+              {
+                "vendor": "caf\u00e9 m\u00dcnchen",
+                "count": 3,
+                "total": "15.58"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 2,
+                "total": "19.14"
+              },
+              {
+                "vendor": "green market",
+                "count": 3,
+                "total": "47.81"
+              },
+              {
+                "vendor": "zero store",
+                "count": 4,
+                "total": "17.51"
+              }
+            ]
+          },
+          "actual": {
+            "invalid_json": "ERR\n"
+          }
+        }
+      ]
+    },
+    "seconds": 1.4299577500205487
+  },
+  "coffee-site-v2": {
+    "passed": false,
+    "returncode": 1,
+    "details": {
+      "passed": false,
+      "checks": [
+        {
+          "name": "01-header.html: custom styling supplied",
+          "passed": false
+        },
+        {
+          "name": "01-header.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "01-header.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "02-hero.html: custom styling supplied",
+          "passed": false
+        },
+        {
+          "name": "02-hero.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "02-hero.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "03-mission.html: custom styling supplied",
+          "passed": false
+        },
+        {
+          "name": "03-mission.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "03-mission.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "05-impact.html: custom styling supplied",
+          "passed": false
+        },
+        {
+          "name": "05-impact.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "05-impact.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "06-events.html: custom styling supplied",
+          "passed": false
+        },
+        {
+          "name": "06-events.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "06-events.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "07-visit.html: custom styling supplied",
+          "passed": false
+        },
+        {
+          "name": "07-visit.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "07-visit.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "08-footer.html: custom styling supplied",
+          "passed": false
+        },
+        {
+          "name": "08-footer.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "08-footer.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "390px: one descriptive h1",
+          "passed": true
+        },
+        {
+          "name": "390px: hero typography",
+          "passed": true
+        },
+        {
+          "name": "390px: navigation",
+          "passed": false
+        },
+        {
+          "name": "390px: section headings",
+          "passed": true
+        },
+        {
+          "name": "390px: hero calls to action",
+          "passed": false
+        },
+        {
+          "name": "390px: hero headline visible pixels",
+          "passed": true
+        },
+        {
+          "name": "390px: hero menu-cta visible pixels",
+          "passed": false
+        },
+        {
+          "name": "390px: hero mission-cta visible pixels",
+          "passed": false
+        },
+        {
+          "name": "390px: mission disclosure",
+          "passed": false
+        },
+        {
+          "name": "390px: menu cards",
+          "passed": false
+        },
+        {
+          "name": "390px: labelled search",
+          "passed": false
+        },
+        {
+          "name": "390px: search behavior",
+          "passed": false
+        },
+        {
+          "name": "390px: impact facts",
+          "passed": false
+        },
+        {
+          "name": "390px: dated events",
+          "passed": false
+        },
+        {
+          "name": "390px: visit details",
+          "passed": false
+        },
+        {
+          "name": "390px: accessible newsletter",
+          "passed": false
+        },
+        {
+          "name": "390px: newsletter behavior",
+          "passed": true
+        },
+        {
+          "name": "390px: valid internal anchors",
+          "passed": true
+        },
+        {
+          "name": "390px: no horizontal overflow",
+          "passed": false
+        },
+        {
+          "name": "1440px: one descriptive h1",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero typography",
+          "passed": false
+        },
+        {
+          "name": "1440px: navigation",
+          "passed": false
+        },
+        {
+          "name": "1440px: section headings",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero calls to action",
+          "passed": false
+        },
+        {
+          "name": "1440px: hero headline visible pixels",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero menu-cta visible pixels",
+          "passed": false
+        },
+        {
+          "name": "1440px: hero mission-cta visible pixels",
+          "passed": false
+        },
+        {
+          "name": "1440px: mission disclosure",
+          "passed": false
+        },
+        {
+          "name": "1440px: menu cards",
+          "passed": false
+        },
+        {
+          "name": "1440px: labelled search",
+          "passed": false
+        },
+        {
+          "name": "1440px: search behavior",
+          "passed": false
+        },
+        {
+          "name": "1440px: impact facts",
+          "passed": false
+        },
+        {
+          "name": "1440px: dated events",
+          "passed": false
+        },
+        {
+          "name": "1440px: visit details",
+          "passed": false
+        },
+        {
+          "name": "1440px: accessible newsletter",
+          "passed": false
+        },
+        {
+          "name": "1440px: newsletter behavior",
+          "passed": true
+        },
+        {
+          "name": "1440px: valid internal anchors",
+          "passed": true
+        },
+        {
+          "name": "1440px: no horizontal overflow",
+          "passed": true
+        },
+        {
+          "name": "no JavaScript errors or external requests",
+          "passed": true
+        }
+      ],
+      "failures": [
+        "01-header.html: custom styling supplied: requirement not met",
+        "02-hero.html: custom styling supplied: requirement not met",
+        "03-mission.html: custom styling supplied: requirement not met",
+        "05-impact.html: custom styling supplied: requirement not met",
+        "06-events.html: custom styling supplied: requirement not met",
+        "07-visit.html: custom styling supplied: requirement not met",
+        "08-footer.html: custom styling supplied: requirement not met",
+        "390px: navigation: requirement not met",
+        "390px: hero calls to action: requirement not met",
+        "390px: hero menu-cta visible pixels: Expected exactly one target for #hero a[href=\"#menu\"]",
+        "390px: hero mission-cta visible pixels: Expected exactly one target for #hero a[href=\"#mission\"]",
+        "390px: mission disclosure: requirement not met",
+        "390px: menu cards: requirement not met",
+        "390px: labelled search: requirement not met",
+        "390px: search behavior: requirement not met",
+        "390px: impact facts: requirement not met",
+        "390px: dated events: requirement not met",
+        "390px: visit details: requirement not met",
+        "390px: accessible newsletter: requirement not met",
+        "390px: no horizontal overflow: requirement not met",
+        "1440px: hero typography: requirement not met",
+        "1440px: navigation: requirement not met",
+        "1440px: hero calls to action: requirement not met",
+        "1440px: hero menu-cta visible pixels: Expected exactly one target for #hero a[href=\"#menu\"]",
+        "1440px: hero mission-cta visible pixels: Expected exactly one target for #hero a[href=\"#mission\"]",
+        "1440px: mission disclosure: requirement not met",
+        "1440px: menu cards: requirement not met",
+        "1440px: labelled search: requirement not met",
+        "1440px: search behavior: requirement not met",
+        "1440px: impact facts: requirement not met",
+        "1440px: dated events: requirement not met",
+        "1440px: visit details: requirement not met",
+        "1440px: accessible newsletter: requirement not met"
+      ],
+      "errors": [],
+      "visibilityProbes": [
+        {
+          "width": 390,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 16,
+            "y": 137,
+            "width": 358,
+            "height": 75
+          },
+          "stableChangedPixels": 4397,
+          "changedPixels": 4397,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 390,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "passed": false,
+          "error": "Expected exactly one target for #hero a[href=\"#menu\"]"
+        },
+        {
+          "width": 390,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "passed": false,
+          "error": "Expected exactly one target for #hero a[href=\"#mission\"]"
+        },
+        {
+          "width": 1440,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 16,
+            "y": 137,
+            "width": 1408,
+            "height": 38
+          },
+          "stableChangedPixels": 4397,
+          "changedPixels": 4397,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "passed": false,
+          "error": "Expected exactly one target for #hero a[href=\"#menu\"]"
+        },
+        {
+          "width": 1440,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "passed": false,
+          "error": "Expected exactly one target for #hero a[href=\"#mission\"]"
+        }
+      ],
+      "widths": [
+        390,
+        1440
+      ],
+      "browser_exit_code": 1,
+      "render": {
+        "index": "/private/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/tmpjogtwr_8/check/checks/001/site/index.html",
+        "sha256": "efaf6c8dcac165b1256d699fabe6ee26ecb8fe89d6e4aaa8cb185c008066b7bc"
+      }
+    },
+    "seconds": 0.955296125030145
+  }
+}

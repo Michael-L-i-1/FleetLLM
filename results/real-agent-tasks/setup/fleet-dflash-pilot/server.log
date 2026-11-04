@@ -1,0 +1,24 @@
+[metal] repacked 14.91 GB of 4-bit weights into NAX tiles in 12.2s
+[metal] drafter: 1.44 GB of 4-bit tiles in 0.5s
+[load] 15.0s muse-glimmer -30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710, 52 layers, weights 16.85 GB (pinned 0.00), KV 4.00 GB (6300 full + 4160 swa pages), backend metal
+[serve] listening on http://127.0.0.1:8090/v1 (model "glimmer-mlx4")
+[fleet_stats] served=1 rows=135 shared=0 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-1: 71 prompt + 50 generated tokens, first token 2.10s, total 3.39s, stop
+[serve] 8 active | 112.6 tok/s generated | 1 served | 0 preemptions | 5418 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 736/1113 accepted in 388 verifies | forward_rows 2702 checkpoints 0 skipped 0 state_moves 0 fullslot_misses 0 slot_preemptions 0
+[fleet_stats] served=2 rows=4491 shared=5418 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-3: 817 prompt + 303 generated tokens, first token 1.91s, total 11.97s, stop
+[fleet_stats] served=3 rows=4519 shared=5418 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-6: 817 prompt + 329 generated tokens, first token 2.22s, total 12.07s, stop
+[fleet_stats] served=4 rows=4591 shared=5418 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-2: 817 prompt + 327 generated tokens, first token 1.57s, total 12.33s, stop
+[fleet_stats] served=5 rows=5270 shared=5418 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-8: 817 prompt + 405 generated tokens, first token 2.22s, total 15.32s, stop
+[serve] 4 active | 217.5 tok/s generated | 5 served | 0 preemptions | 5418 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 2208/3221 accepted in 1103 verifies | forward_rows 5525 checkpoints 0 skipped 0 state_moves 0 fullslot_misses 0 slot_preemptions 0
+[fleet_stats] served=6 rows=5618 shared=5418 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-5: 820 prompt + 512 generated tokens, first token 1.91s, total 17.11s, length
+[fleet_stats] served=7 rows=5642 shared=5418 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-4: 820 prompt + 512 generated tokens, first token 1.91s, total 17.27s, length
+[fleet_stats] served=8 rows=5677 shared=5418 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-7: 820 prompt + 512 generated tokens, first token 2.22s, total 17.65s, length
+[fleet_stats] served=9 rows=5693 shared=5418 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-9: 820 prompt + 512 generated tokens, first token 2.42s, total 17.99s, length

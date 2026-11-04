@@ -1,0 +1,151 @@
+...
+----------------------------------------------------------------------
+Ran 3 tests in 1.643s
+
+OK
+{
+  "task": "fixture",
+  "agents": 8,
+  "model": "fake",
+  "started_unix": 1793772584.912714,
+  "finished_unix": 1793772585.068722,
+  "passed": true,
+  "error": null,
+  "wall_seconds": 0.15599179221317172,
+  "time_to_first_passing_check_seconds": 0.13411804218776524,
+  "completion_tokens": 160,
+  "prompt_tokens": 1600,
+  "calls": 16,
+  "failed_calls": 0,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": 0.051703021046705544,
+  "workers": [
+    {
+      "agent": "worker6",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker4",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker5",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker3",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker7",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker1",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker0",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker2",
+      "status": "done",
+      "turns": 2
+    }
+  ],
+  "checks": 2,
+  "final_check": {
+    "passed": true,
+    "returncode": 0,
+    "details": {
+      "passed": true
+    },
+    "seconds": 0.02143604215234518
+  },
+  "capture_exitcode": null,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 1025.6949915759083
+}
+{
+  "task": "fixture",
+  "agents": 1,
+  "model": "fake",
+  "started_unix": 1793772585.529634,
+  "finished_unix": 1793772585.581475,
+  "passed": true,
+  "error": null,
+  "wall_seconds": 0.05183249991387129,
+  "time_to_first_passing_check_seconds": 0.030547457979992032,
+  "completion_tokens": 90,
+  "prompt_tokens": 900,
+  "calls": 9,
+  "failed_calls": 0,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": 0.0005934999790042639,
+  "workers": [
+    {
+      "agent": "single",
+      "status": "done",
+      "turns": 9
+    }
+  ],
+  "checks": 2,
+  "final_check": {
+    "passed": true,
+    "returncode": 0,
+    "details": {
+      "passed": true
+    },
+    "seconds": 0.020798292011022568
+  },
+  "capture_exitcode": null,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 1736.3623238229036
+}
+{
+  "task": "fixture",
+  "agents": 1,
+  "model": "fake",
+  "started_unix": 1793772586.045444,
+  "finished_unix": 1793772586.066932,
+  "passed": false,
+  "error": null,
+  "wall_seconds": 0.021481333998963237,
+  "time_to_first_passing_check_seconds": null,
+  "completion_tokens": 0,
+  "prompt_tokens": 0,
+  "calls": 1,
+  "failed_calls": 1,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": null,
+  "workers": [
+    {
+      "agent": "single",
+      "status": "request_error",
+      "turns": 1
+    }
+  ],
+  "checks": 1,
+  "final_check": {
+    "passed": false,
+    "returncode": 1,
+    "details": {
+      "passed": false
+    },
+    "seconds": 0.019499042071402073
+  },
+  "capture_exitcode": null,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 0.0
+}

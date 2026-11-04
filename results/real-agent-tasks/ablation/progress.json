@@ -1,0 +1,13 @@
+{
+  "status": "cancelled_by_user",
+  "active_label": null,
+  "completed": [
+    {
+      "label": "ledger-rust-fleet-eight-no-drafter-01",
+      "driver_returncode": -2,
+      "driver_wall_seconds": 798.2401363749523
+    }
+  ],
+  "total": 1,
+  "note": "Partial Rust ablation stopped at user request; no completed ablation speedup is claimed."
+}

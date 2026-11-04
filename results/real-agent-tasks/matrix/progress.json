@@ -1,0 +1,48 @@
+{
+  "status": "superseded_after_infrastructure_failure",
+  "active_label": null,
+  "completed": [
+    {
+      "label": "coffee-site-fleet-eight-01",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 118.59193583298475,
+      "passed": true,
+      "wall_seconds": 102.13255649991333,
+      "time_to_first_passing_check_seconds": 100.58734762482345,
+      "completion_tokens": 9097,
+      "completion_tokens_per_wall_second": 89.07052081877261,
+      "calls": 16,
+      "failed_calls": 0,
+      "tool_errors": 0
+    },
+    {
+      "label": "coffee-site-vllm-eight-01",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 219.59124558395706,
+      "passed": true,
+      "wall_seconds": 196.12218924984336,
+      "time_to_first_passing_check_seconds": 194.77611908386461,
+      "completion_tokens": 9758,
+      "completion_tokens_per_wall_second": 49.75469648449172,
+      "calls": 16,
+      "failed_calls": 0,
+      "tool_errors": 0
+    },
+    {
+      "label": "coffee-site-vllm-single-01",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 315.72317987517454,
+      "passed": true,
+      "wall_seconds": 291.2965705001261,
+      "time_to_first_passing_check_seconds": 290.2890356250573,
+      "completion_tokens": 4655,
+      "completion_tokens_per_wall_second": 15.980277392239277,
+      "calls": 17,
+      "failed_calls": 0,
+      "tool_errors": 0
+    }
+  ],
+  "total": 6,
+  "interrupted_label": "ledger-rust-vllm-single-01",
+  "reason": "Rust checker expectsoutputJSONfile butharness supplieddirectory; originalwebgrader missedheroocclusion. Preservev1results; correctedprimaryphaseplanned."
+}

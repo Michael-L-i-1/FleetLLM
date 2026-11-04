@@ -1,0 +1,448 @@
+{
+  "task": "coffee-site-v2",
+  "agents": 8,
+  "model": "glimmer-mlx4",
+  "started_unix": 1793774343.564286,
+  "finished_unix": 1793774609.457912,
+  "passed": true,
+  "error": null,
+  "wall_seconds": 265.8948211250827,
+  "time_to_first_passing_check_seconds": 263.59645704203285,
+  "infrastructure_error": false,
+  "completion_tokens": 10759,
+  "prompt_tokens": 43060,
+  "calls": 18,
+  "failed_calls": 0,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": 2.5050521038938314,
+  "workers": [
+    {
+      "agent": "Header designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Impact designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Events designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Mission designer",
+      "status": "done",
+      "turns": 3
+    },
+    {
+      "agent": "Newsletter designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Menu designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Hero designer",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "Visit designer",
+      "status": "done",
+      "turns": 3
+    }
+  ],
+  "checks": 2,
+  "final_check": {
+    "passed": true,
+    "returncode": 0,
+    "details": {
+      "passed": true,
+      "checks": [
+        {
+          "name": "01-header.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "01-header.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "01-header.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "02-hero.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "02-hero.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "02-hero.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "03-mission.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "03-mission.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "03-mission.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "04-menu.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "05-impact.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "05-impact.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "05-impact.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "06-events.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "06-events.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "06-events.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "07-visit.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "07-visit.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "07-visit.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "08-footer.html: custom styling supplied",
+          "passed": true
+        },
+        {
+          "name": "08-footer.html: markup only",
+          "passed": true
+        },
+        {
+          "name": "08-footer.html: no remote assets",
+          "passed": true
+        },
+        {
+          "name": "390px: one descriptive h1",
+          "passed": true
+        },
+        {
+          "name": "390px: hero typography",
+          "passed": true
+        },
+        {
+          "name": "390px: navigation",
+          "passed": true
+        },
+        {
+          "name": "390px: section headings",
+          "passed": true
+        },
+        {
+          "name": "390px: hero calls to action",
+          "passed": true
+        },
+        {
+          "name": "390px: hero headline visible pixels",
+          "passed": true
+        },
+        {
+          "name": "390px: hero menu-cta visible pixels",
+          "passed": true
+        },
+        {
+          "name": "390px: hero mission-cta visible pixels",
+          "passed": true
+        },
+        {
+          "name": "390px: mission disclosure",
+          "passed": true
+        },
+        {
+          "name": "390px: menu cards",
+          "passed": true
+        },
+        {
+          "name": "390px: labelled search",
+          "passed": true
+        },
+        {
+          "name": "390px: search behavior",
+          "passed": true
+        },
+        {
+          "name": "390px: impact facts",
+          "passed": true
+        },
+        {
+          "name": "390px: dated events",
+          "passed": true
+        },
+        {
+          "name": "390px: visit details",
+          "passed": true
+        },
+        {
+          "name": "390px: accessible newsletter",
+          "passed": true
+        },
+        {
+          "name": "390px: newsletter behavior",
+          "passed": true
+        },
+        {
+          "name": "390px: valid internal anchors",
+          "passed": true
+        },
+        {
+          "name": "390px: no horizontal overflow",
+          "passed": true
+        },
+        {
+          "name": "1440px: one descriptive h1",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero typography",
+          "passed": true
+        },
+        {
+          "name": "1440px: navigation",
+          "passed": true
+        },
+        {
+          "name": "1440px: section headings",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero calls to action",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero headline visible pixels",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero menu-cta visible pixels",
+          "passed": true
+        },
+        {
+          "name": "1440px: hero mission-cta visible pixels",
+          "passed": true
+        },
+        {
+          "name": "1440px: mission disclosure",
+          "passed": true
+        },
+        {
+          "name": "1440px: menu cards",
+          "passed": true
+        },
+        {
+          "name": "1440px: labelled search",
+          "passed": true
+        },
+        {
+          "name": "1440px: search behavior",
+          "passed": true
+        },
+        {
+          "name": "1440px: impact facts",
+          "passed": true
+        },
+        {
+          "name": "1440px: dated events",
+          "passed": true
+        },
+        {
+          "name": "1440px: visit details",
+          "passed": true
+        },
+        {
+          "name": "1440px: accessible newsletter",
+          "passed": true
+        },
+        {
+          "name": "1440px: newsletter behavior",
+          "passed": true
+        },
+        {
+          "name": "1440px: valid internal anchors",
+          "passed": true
+        },
+        {
+          "name": "1440px: no horizontal overflow",
+          "passed": true
+        },
+        {
+          "name": "no JavaScript errors or external requests",
+          "passed": true
+        }
+      ],
+      "failures": [],
+      "errors": [],
+      "visibilityProbes": [
+        {
+          "width": 390,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 20,
+            "y": 169,
+            "width": 350,
+            "height": 71
+          },
+          "stableChangedPixels": 4565,
+          "changedPixels": 4565,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 390,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "clip": {
+            "x": 20,
+            "y": 344,
+            "width": 161,
+            "height": 52
+          },
+          "stableChangedPixels": 7718,
+          "changedPixels": 7718,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 390,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "clip": {
+            "x": 196,
+            "y": 344,
+            "width": 150,
+            "height": 52
+          },
+          "stableChangedPixels": 7610,
+          "changedPixels": 7610,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 24,
+            "y": 159,
+            "width": 1392,
+            "height": 53
+          },
+          "stableChangedPixels": 9751,
+          "changedPixels": 9751,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "clip": {
+            "x": 24,
+            "y": 301,
+            "width": 161,
+            "height": 52
+          },
+          "stableChangedPixels": 7723,
+          "changedPixels": 7723,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "clip": {
+            "x": 200,
+            "y": 301,
+            "width": 150,
+            "height": 52
+          },
+          "stableChangedPixels": 7610,
+          "changedPixels": 7610,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        }
+      ],
+      "widths": [
+        390,
+        1440
+      ],
+      "browser_exit_code": 0,
+      "render": {
+        "index": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/checks/002/site/index.html",
+        "sha256": "cb04f6b55501a8deb3fa2217f9924dc6889d340540d684375b291688641e8586"
+      }
+    },
+    "seconds": 1.7875351249240339
+  },
+  "capture_exitcode": 0,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 40.463368013244356
+}

@@ -1,0 +1,29 @@
+{
+  "title": "Muse Glimmer 30B four-bit \u2014 real website task",
+  "speed": 20,
+  "sample_seconds": 10,
+  "fps": 12,
+  "lanes": [
+    {
+      "label": "Fleet \u2014 8 workers",
+      "capture_dir": "results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture",
+      "duration_seconds": 190.40266162506305,
+      "status": "passed 63/63",
+      "metrics": "First pass 187.7s \u00b7 61.1 output tok/s"
+    },
+    {
+      "label": "vLLM-Metal \u2014 8 workers",
+      "capture_dir": "results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture",
+      "duration_seconds": 265.8948211250827,
+      "status": "passed 63/63",
+      "metrics": "First pass 263.6s \u00b7 40.5 output tok/s"
+    },
+    {
+      "label": "vLLM-Metal \u2014 1 agent",
+      "capture_dir": "results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture",
+      "duration_seconds": 566.7064697090536,
+      "status": "passed 63/63",
+      "metrics": "First pass 564.4s \u00b7 15.8 output tok/s"
+    }
+  ]
+}

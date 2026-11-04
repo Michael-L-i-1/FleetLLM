@@ -1,0 +1,9 @@
+{
+  "fleet": "target-verifiedDFlashk3+ngram, nativeNAX/exactprefixreuse/continuousbatching/pagedKV, targetKV4GB+draftKV.5GB; noapproximateSPAN becauseitdoesnotcomposewithdrafter",
+  "vllm": "nativeMetal/MLX,prefixcache,NAX,compiledMLP,targetKV4695blocks\u22484GB; promptlookupslowerinpilot54.1vs59.6tok/s so retainnativepipeline",
+  "pilot_fleet_same_outputs": 8,
+  "pilot_fleet_ngram_tokens_per_second": 116.52630674042376,
+  "pilot_fleet_dflash_tokens_per_second": 189.60995035306672,
+  "vllm_dflash_limit": "InstalledDFlashConfig.from_dict accepts z-labQwen3 DFlashDraftModel only; cachedMuseGlimmerAssistantModel architecture notsupported bythatloader. Thisisfeaturecoverage,notanexclusivealgorithm.",
+  "conditions": "SameexacttargetMLX4checkpoint, taskfixtures, protectedchecks, tools, lowreasoning,max4096tokens/call,global56calls/96000generatedtokenbudget,2700secondwalllimit. Up to8modelworkers vsone; sameKVtargetpool4GB; Fleethasadditionaldraftermemorywhichismeasured. No cross-rundonatedtaskcache."
+}

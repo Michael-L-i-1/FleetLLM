@@ -1,0 +1,41 @@
+{
+  "engine": "vllm-metal",
+  "model": "glimmer-mlx4",
+  "base": "http://127.0.0.1:8090/v1",
+  "command": [
+    "/opt/homebrew/bin/vllm",
+    "serve",
+    "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710",
+    "--served-model-name",
+    "glimmer-mlx4",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "8090",
+    "--max-num-seqs",
+    "1",
+    "--max-num-batched-tokens",
+    "2048",
+    "--gpu-memory-utilization",
+    "0.55",
+    "--num-gpu-blocks-override",
+    "4695",
+    "--max-model-len",
+    "32768",
+    "--enable-prefix-caching",
+    "--reasoning-parser",
+    "muse_glimmer",
+    "--language-model-only",
+    "--generation-config",
+    "vllm",
+    "--enable-prompt-tokens-details",
+    "--default-chat-template-kwargs",
+    "{\"reasoning_strength\":\"low\"}"
+  ],
+  "env": {
+    "PYTHONPATH": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/build/task-vllm-overlay",
+    "VLLM_METAL_MULTIMODAL_MODE": "text-only",
+    "VLLM_METAL_COMPILED_MLP": "1",
+    "VLLM_ENABLE_V1_MULTIPROCESSING": "1"
+  }
+}

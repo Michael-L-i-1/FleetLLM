@@ -1,0 +1,16 @@
+{
+  "primary_frozen_hashes_match": true,
+  "primary_cases": 6,
+  "primary_passed": 5,
+  "actual_peak_concurrency_matches_all_cases": true,
+  "harness_tests": 4,
+  "harness_tests_passed": true,
+  "website_capture_exit_codes": [
+    0,
+    0,
+    0
+  ],
+  "raw_archive_readback_verified": true,
+  "rust_ablation": "cancelled_by_user",
+  "video": "H264 1920x800 31.333s; shared20xclock plus3shold; poster visually inspected"
+}

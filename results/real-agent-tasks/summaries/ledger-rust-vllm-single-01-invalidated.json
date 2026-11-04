@@ -1,0 +1,6 @@
+{
+  "classification": "infrastructure_failure",
+  "reason": "Taskchecker--outputexpectsJSONfilename;harnessprovidedexistingdirectory. Validatorcomputedresultsbutcrashedonwritingthem. Interruptedratherthanlettingmodelspendbudgetonharnessbug.",
+  "scored_as_model_failure": false,
+  "remedy": "Manifestuses{output}/details.json;correctedgrader/harnesspreflightbeforeallthreefreshRustarms."
+}

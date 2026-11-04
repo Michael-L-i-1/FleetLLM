@@ -23,9 +23,11 @@ agent has all eight files and the same overall call/token/wall budgets.
 ## Common conditions
 
 All modes use `mlx-community/Muse-Glimmer-30B-4bit` revision
-`3e7677d7a40d348a3daba263a2b1c0aa41910710` (affine four-bit, group64),
-temperature0, low reasoning, a4096token response limit and the same JSON tools.
-Each complete task has56calls,96000generated tokens and2700seconds maximum.
+`3e7677d7a40d348a3daba263a2b1c0aa41910710` (affine four-bit, group size 64),
+temperature 0, low reasoning, a 4,096-token response limit and the same JSON tools.
+Each complete task has 56 calls, 96,000 generated tokens and 2,700 seconds maximum.
+The token threshold controls admission using completed usage; already active
+calls can overshoot it. Report actual usage, including capped responses.
 Eight workers have six calls each before integration. Context is bounded with
 the same logged history compaction in every mode. Generated histories naturally
 differ; initial eight-worker request bodies match exactly between engines.
@@ -41,12 +43,16 @@ from task time. Website capture initialization and check execution are included.
 Report time to the first passing check alongside total wall time. Failed attempts
 have no time-to-success. The primary demonstration is one trial per task/mode;
 per-call distributions are descriptive, not statistical proof of a general win.
+Fleet versus eight-worker vLLM compares the selected serving presets. Comparing
+Fleet with single-agent vLLM also changes orchestration. Reported completion
+tokens include reasoning; API-active throughput includes prefill and queueing,
+and is not a measurement of GPU decode-only throughput or useful source code.
 
 ## Serving presets and compatibility
 
-Both target engines use the exact same MLX target weights and4GB target KV
+Both target engines use the exact same MLX target weights and 4 GB target KV
 allowance. Fleet's selected preset adds the cached target-verified DFlash
-assistant (revision `c676cce91658f9568aaf264a416211e2782735b7`), k3 and0.5GB draft
+assistant (revision `c676cce91658f9568aaf264a416211e2782735b7`), k=3 and 0.5 GB draft
 KV. Its extra memory is measured rather than hidden. Approximate SPAN reuse is
 not combined with DFlash; that combination is unsupported. Qwen recurrent
 checkpoint switches are not advertised as Glimmer optimizations.
@@ -56,7 +62,7 @@ pipeline. Prompt lookup was tested and slower on the coding pilot. Its installed
 DFlash loader accepts the z-lab Qwen3 checkpoint format, not this Muse Glimmer
 assistant. That is implementation coverage, not an exclusive Fleet algorithm.
 
-Installed vLLM-Metal0.32.0 needs the small isolated patch in `compat/` for Glimmer
+Installed vLLM-Metal 0.32.0 needs the small isolated patch in `compat/` for Glimmer
 paged attention, normalization, scaling, gating and wrapper metadata. Both vLLM
 arms use the same patch; the global package is unchanged. Sixteen reference
 checks cover local/global attention, native BF16 and sliding windows. An initial
@@ -83,17 +89,17 @@ lanes on one equally accelerated timeline. It never fabricates a completed site
 or assumes Fleet wins. Chromium capture uses CPU rendering.
 
 Darwin memory sampling records per-process physical footprint (including charged
-GPU/IOKit memory), RSS, CPU and process coverage at1Hz. Model and whole-run trees
+GPU/IOKit memory), RSS, CPU and process coverage at 1 Hz. Model and whole-run trees
 are sampled separately. Sums may overlap shared allocations and miss brief
 transients; they are not total machine memory. RSS alone underreports some Metal
 allocations. Preserve both startup and task-window peaks.
 
 ## Visibility correction
 
-The initial coffee-sitev1grader allowed an opaque pseudo-element to hide hero
+The initial coffee-site v1 grader allowed an opaque pseudo-element to hide hero
 text while DOM/interaction tests passed. Those initial runs remain preserved.
 A corrected `coffee-site-v2` task adds neutral visible-pixel contribution checks
 for the hero heading and calls to action at both viewport widths. The corrected
 website comparison reruns every mode from the same plain starter and criteria.
-Do not mix v1automatic pass times with v2completion claims. Beauty, contrast
+Do not mix v1 automatic pass times with v2 completion claims. Beauty, contrast
 certification and broad coding ability remain separate from these bounded tests.

@@ -1,0 +1,419 @@
+{
+  "task": "ledger-rust",
+  "agents": 8,
+  "model": "glimmer-mlx4",
+  "started_unix": 1793777430.0024378,
+  "finished_unix": 1793778339.472735,
+  "passed": true,
+  "error": null,
+  "wall_seconds": 909.4661078329664,
+  "time_to_first_passing_check_seconds": 908.4458540419582,
+  "infrastructure_error": false,
+  "completion_tokens": 22644,
+  "prompt_tokens": 323312,
+  "calls": 37,
+  "failed_calls": 0,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": 14.378239333163947,
+  "workers": [
+    {
+      "agent": "summary",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "filter",
+      "status": "done",
+      "turns": 3
+    },
+    {
+      "agent": "audit",
+      "status": "done",
+      "turns": 3
+    },
+    {
+      "agent": "date",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "tags",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "labels",
+      "status": "done",
+      "turns": 3
+    },
+    {
+      "agent": "money",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "csv",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "integrator",
+      "status": "done",
+      "turns": 18
+    }
+  ],
+  "checks": 4,
+  "final_check": {
+    "passed": true,
+    "returncode": 0,
+    "details": {
+      "success": true,
+      "passed": 11,
+      "total": 11,
+      "compile_errors": [],
+      "checks": [
+        {
+          "name": "money",
+          "passed": true,
+          "detail": "module API acceptance passed"
+        },
+        {
+          "name": "date",
+          "passed": true,
+          "detail": "module API acceptance passed"
+        },
+        {
+          "name": "csv",
+          "passed": true,
+          "detail": "module API acceptance passed"
+        },
+        {
+          "name": "labels",
+          "passed": true,
+          "detail": "module API acceptance passed"
+        },
+        {
+          "name": "tags",
+          "passed": true,
+          "detail": "module API acceptance passed"
+        },
+        {
+          "name": "filter",
+          "passed": true,
+          "detail": "module API acceptance passed"
+        },
+        {
+          "name": "summary",
+          "passed": true,
+          "detail": "module API acceptance passed"
+        },
+        {
+          "name": "audit",
+          "passed": true,
+          "detail": "module API acceptance passed"
+        },
+        {
+          "name": "integration-fixture",
+          "passed": true,
+          "expected": {
+            "accepted": 6,
+            "invalid": 4,
+            "duplicates": [
+              "r2"
+            ],
+            "selected": [
+              "r1",
+              "r2",
+              "r3",
+              "r4",
+              "r6"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 1,
+                "total": "-5.25"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 3,
+                "total": "0.00"
+              },
+              {
+                "vendor": "green market",
+                "count": 1,
+                "total": "0.25"
+              }
+            ]
+          },
+          "actual": {
+            "accepted": 6,
+            "invalid": 4,
+            "duplicates": [
+              "r2"
+            ],
+            "selected": [
+              "r1",
+              "r2",
+              "r3",
+              "r4",
+              "r6"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 1,
+                "total": "-5.25"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 3,
+                "total": "0.00"
+              },
+              {
+                "vendor": "green market",
+                "count": 1,
+                "total": "0.25"
+              }
+            ]
+          }
+        },
+        {
+          "name": "integration-generated-17",
+          "passed": true,
+          "expected": {
+            "accepted": 16,
+            "invalid": 4,
+            "duplicates": [
+              "id01",
+              "id02",
+              "id03",
+              "id05",
+              "id07",
+              "id09",
+              "id11",
+              "id12",
+              "id16",
+              "id17"
+            ],
+            "selected": [
+              "id09",
+              "id10",
+              "id04",
+              "id03",
+              "id16",
+              "id01",
+              "id00",
+              "id15",
+              "id12",
+              "id05"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 3,
+                "total": "16.06"
+              },
+              {
+                "vendor": "café mÜnchen",
+                "count": 3,
+                "total": "12.24"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 2,
+                "total": "15.27"
+              },
+              {
+                "vendor": "green market",
+                "count": 2,
+                "total": "8.71"
+              }
+            ]
+          },
+          "actual": {
+            "accepted": 16,
+            "invalid": 4,
+            "duplicates": [
+              "id01",
+              "id02",
+              "id03",
+              "id05",
+              "id07",
+              "id09",
+              "id11",
+              "id12",
+              "id16",
+              "id17"
+            ],
+            "selected": [
+              "id09",
+              "id10",
+              "id04",
+              "id03",
+              "id16",
+              "id01",
+              "id00",
+              "id15",
+              "id12",
+              "id05"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 3,
+                "total": "16.06"
+              },
+              {
+                "vendor": "café mÜnchen",
+                "count": 3,
+                "total": "12.24"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 2,
+                "total": "15.27"
+              },
+              {
+                "vendor": "green market",
+                "count": 2,
+                "total": "8.71"
+              }
+            ]
+          }
+        },
+        {
+          "name": "integration-generated-91",
+          "passed": true,
+          "expected": {
+            "accepted": 15,
+            "invalid": 4,
+            "duplicates": [
+              "id01",
+              "id03",
+              "id05",
+              "id06",
+              "id09",
+              "id10",
+              "id11",
+              "id12",
+              "id13",
+              "id14",
+              "id17"
+            ],
+            "selected": [
+              "id05",
+              "id14",
+              "id11",
+              "id12",
+              "id06",
+              "id02",
+              "id09",
+              "id01",
+              "id16",
+              "id17",
+              "id00",
+              "id13",
+              "id07",
+              "id10",
+              "id03"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 3,
+                "total": "26.92"
+              },
+              {
+                "vendor": "café mÜnchen",
+                "count": 3,
+                "total": "15.58"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 2,
+                "total": "19.14"
+              },
+              {
+                "vendor": "green market",
+                "count": 3,
+                "total": "47.81"
+              },
+              {
+                "vendor": "zero store",
+                "count": 4,
+                "total": "17.51"
+              }
+            ]
+          },
+          "actual": {
+            "accepted": 15,
+            "invalid": 4,
+            "duplicates": [
+              "id01",
+              "id03",
+              "id05",
+              "id06",
+              "id09",
+              "id10",
+              "id11",
+              "id12",
+              "id13",
+              "id14",
+              "id17"
+            ],
+            "selected": [
+              "id05",
+              "id14",
+              "id11",
+              "id12",
+              "id06",
+              "id02",
+              "id09",
+              "id01",
+              "id16",
+              "id17",
+              "id00",
+              "id13",
+              "id07",
+              "id10",
+              "id03"
+            ],
+            "totals": [
+              {
+                "vendor": "book, shop",
+                "count": 3,
+                "total": "26.92"
+              },
+              {
+                "vendor": "café mÜnchen",
+                "count": 3,
+                "total": "15.58"
+              },
+              {
+                "vendor": "coffee bar",
+                "count": 2,
+                "total": "19.14"
+              },
+              {
+                "vendor": "green market",
+                "count": 3,
+                "total": "47.81"
+              },
+              {
+                "vendor": "zero store",
+                "count": 4,
+                "total": "17.51"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "seconds": 1.0192569999489933
+  },
+  "capture_exitcode": null,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 24.898124080681875
+}

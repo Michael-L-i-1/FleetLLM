@@ -1,0 +1,86 @@
+............FF..                                                         [100%]
+=================================== FAILURES ===================================
+_ test_windowed_prefill_matches_reference_beyond_window[dtype0-3e-05-local_rope] _
+
+layer_idx = 0, dtype = mlx.core.float32, tol = 3e-05
+
+    @_LAYERS
+    @pytest.mark.parametrize(("dtype", "tol"), [(mx.float32, 3e-5), (mx.bfloat16, 2e-2)])
+    def test_windowed_prefill_matches_reference_beyond_window(layer_idx, dtype, tol):
+        """Local windows must exclude old keys; global layers retain the full prefix."""
+        mx.random.seed(13)
+        attention = _mlx_lm_attention(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        count, window = 64, 16
+        x = mx.random.normal((1, count, 128)).astype(dtype)
+        cache = MetalPagedKVCache(num_layers=1, num_kv_heads=1, head_dim=64,
+                                 num_blocks=4, block_size=16, dtype=dtype,
+                                 sliding_window_per_layer=[window if layer_idx == 0 else -1])
+        context = PagedAttentionContext(slot_mapping=list(range(count)), block_tables=[[0,1,2,3]],
+                                       context_lens=[count], offsets=[], cu_seqlens=[0,count])
+        actual, _ = sdpa_forward(attention, x, context, cache, layer_idx=0,
+                                attention_contract=attention_contract_for(attention))
+        rows = mx.arange(count)[:, None]
+        cols = mx.arange(count)[None, :]
+        mask = rows >= cols
+        if layer_idx == 0:
+            mask = mask & ((rows-cols) < window)
+        expected = upstream(x, mask=mask)
+        mx.eval(actual, expected)
+>       assert mx.allclose(actual, expected, atol=tol, rtol=tol).item()
+E       assert False
+E        +  where False = <nanobind.nb_bound_method object at 0x1212ee300>()
+E        +    where <nanobind.nb_bound_method object at 0x1212ee300> = array(False, dtype=bool).item
+E        +      where array(False, dtype=bool) = <nanobind.nb_func object at 0x10931c700>(array([[[-0.0736554, -0.100531, -0.0825235, ..., -0.0605542, 0.102343, 0.200996],\n        [0.013281, 0.102807, -0.0469...50224, -0.00135221],\n        [-0.0387051, 0.109173, 0.0840482, ..., -0.150148, 0.0349271, -0.0436222]]], dtype=float32), array([[[-0.0735395, -0.10052, -0.0825704, ..., -0.0605683, 0.102273, 0.200982],\n        [0.013311, 0.102637, -0.04698...150148, -0.00135875],\n        [-0.0387243, 0.108983, 0.0839344, ..., -0.150202, 0.0349519, -0.043617]]], dtype=float32), atol=3e-05, rtol=3e-05)
+E        +        where <nanobind.nb_func object at 0x10931c700> = mx.allclose
+
+demos/agent-task-bench/compat/test_muse_glimmer_paged.py:169: AssertionError
+_ test_windowed_prefill_matches_reference_beyond_window[dtype0-3e-05-global_nope] _
+
+layer_idx = 3, dtype = mlx.core.float32, tol = 3e-05
+
+    @_LAYERS
+    @pytest.mark.parametrize(("dtype", "tol"), [(mx.float32, 3e-5), (mx.bfloat16, 2e-2)])
+    def test_windowed_prefill_matches_reference_beyond_window(layer_idx, dtype, tol):
+        """Local windows must exclude old keys; global layers retain the full prefix."""
+        mx.random.seed(13)
+        attention = _mlx_lm_attention(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        count, window = 64, 16
+        x = mx.random.normal((1, count, 128)).astype(dtype)
+        cache = MetalPagedKVCache(num_layers=1, num_kv_heads=1, head_dim=64,
+                                 num_blocks=4, block_size=16, dtype=dtype,
+                                 sliding_window_per_layer=[window if layer_idx == 0 else -1])
+        context = PagedAttentionContext(slot_mapping=list(range(count)), block_tables=[[0,1,2,3]],
+                                       context_lens=[count], offsets=[], cu_seqlens=[0,count])
+        actual, _ = sdpa_forward(attention, x, context, cache, layer_idx=0,
+                                attention_contract=attention_contract_for(attention))
+        rows = mx.arange(count)[:, None]
+        cols = mx.arange(count)[None, :]
+        mask = rows >= cols
+        if layer_idx == 0:
+            mask = mask & ((rows-cols) < window)
+        expected = upstream(x, mask=mask)
+        mx.eval(actual, expected)
+>       assert mx.allclose(actual, expected, atol=tol, rtol=tol).item()
+E       assert False
+E        +  where False = <nanobind.nb_bound_method object at 0x1223fda80>()
+E        +    where <nanobind.nb_bound_method object at 0x1223fda80> = array(False, dtype=bool).item
+E        +      where array(False, dtype=bool) = <nanobind.nb_func object at 0x10931c700>(array([[[-0.0736554, -0.100531, -0.0825235, ..., -0.0605542, 0.102343, 0.200996],\n        [0.0258688, 0.082814, -0.068..., 0.0555364, 0.0494722],\n        [-0.081706, 0.132171, 0.113089, ..., 0.155888, 0.00661021, -0.22782]]], dtype=float32), array([[[-0.0735395, -0.10052, -0.0825704, ..., -0.0605683, 0.102273, 0.200982],\n        [0.0258611, 0.0825789, -0.068...0.0555544, 0.0494843],\n        [-0.0814567, 0.132117, 0.113077, ..., 0.155647, 0.00653376, -0.227675]]], dtype=float32), atol=3e-05, rtol=3e-05)
+E        +        where <nanobind.nb_func object at 0x10931c700> = mx.allclose
+
+demos/agent-task-bench/compat/test_muse_glimmer_paged.py:169: AssertionError
+=============================== warnings summary ===============================
+../../../../../opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/metadata/__init__.py:948
+  /opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/metadata/__init__.py:948: DeprecationWarning: Implicit None on return values is deprecated and will raise KeyErrors.
+    pkg_to_dist[pkg].append(dist.metadata['Name'])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED demos/agent-task-bench/compat/test_muse_glimmer_paged.py::test_windowed_prefill_matches_reference_beyond_window[dtype0-3e-05-local_rope]
+FAILED demos/agent-task-bench/compat/test_muse_glimmer_paged.py::test_windowed_prefill_matches_reference_beyond_window[dtype0-3e-05-global_nope]
+2 failed, 14 passed, 1 warning in 4.25s

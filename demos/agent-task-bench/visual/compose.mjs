@@ -99,6 +99,6 @@ fs.writeFileSync(path.join(output,'timeline.ffconcat'),concat);
 fs.writeFileSync(path.join(output,'timeline.json'),JSON.stringify({speed, sample_seconds:step, fps, real_duration_seconds:maxDuration,
   note:'Same acceleration for all lanes; final states freeze at actual completion/failure. Last3video-seconds hold all final artifacts. Metrics are supplied from actual run summaries.',frames:index},null,2)+'\n');
 const video = spawnSync(config.ffmpeg || 'ffmpeg',['-hide_banner','-loglevel','error','-y','-f','concat','-safe','0','-i','timeline.ffconcat',
-  '-vf',`fps=${fps},format=yuv420p`,'-c:v','libx264','-preset','veryfast','-crf','20','-movflags','+faststart','comparison.mp4'],{cwd:output,encoding:'utf8',timeout:600000,maxBuffer:1e6});
+  '-vf',`fps=${fps},format=yuv420p`,'-t',String(maxDuration/speed+3),'-c:v','libx264','-preset','veryfast','-crf','20','-movflags','+faststart','comparison.mp4'],{cwd:output,encoding:'utf8',timeout:600000,maxBuffer:1e6});
 if (video.status !== 0) throw Error(video.stderr || String(video.error));
 console.log(JSON.stringify({video:path.join(output,'comparison.mp4'),poster:path.join(output,'poster.png'),real_duration_seconds:maxDuration,speed}));

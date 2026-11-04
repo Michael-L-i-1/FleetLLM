@@ -1,0 +1,188 @@
+....
+----------------------------------------------------------------------
+Ran 4 tests in 2.155s
+
+OK
+{
+  "task": "fixture",
+  "agents": 8,
+  "model": "fake",
+  "started_unix": 1793774109.717441,
+  "finished_unix": 1793774109.817678,
+  "passed": true,
+  "error": null,
+  "wall_seconds": 0.10022137500345707,
+  "time_to_first_passing_check_seconds": 0.08168500009924173,
+  "infrastructure_error": false,
+  "completion_tokens": 160,
+  "prompt_tokens": 1600,
+  "calls": 16,
+  "failed_calls": 0,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": 0.026139916386455297,
+  "workers": [
+    {
+      "agent": "worker6",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker3",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker7",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker4",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker2",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker0",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker1",
+      "status": "done",
+      "turns": 2
+    },
+    {
+      "agent": "worker5",
+      "status": "done",
+      "turns": 2
+    }
+  ],
+  "checks": 2,
+  "final_check": {
+    "passed": true,
+    "returncode": 0,
+    "details": {
+      "passed": true
+    },
+    "seconds": 0.018148208037018776
+  },
+  "capture_exitcode": null,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 1596.4658237275323
+}
+{
+  "task": "fixture",
+  "agents": 1,
+  "model": "fake",
+  "started_unix": 1793774110.295039,
+  "finished_unix": 1793774110.3650298,
+  "passed": true,
+  "error": null,
+  "wall_seconds": 0.06997745903208852,
+  "time_to_first_passing_check_seconds": 0.047842334024608135,
+  "infrastructure_error": false,
+  "completion_tokens": 90,
+  "prompt_tokens": 900,
+  "calls": 9,
+  "failed_calls": 0,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": 0.0008932920172810555,
+  "workers": [
+    {
+      "agent": "single",
+      "status": "done",
+      "turns": 9
+    }
+  ],
+  "checks": 2,
+  "final_check": {
+    "passed": true,
+    "returncode": 0,
+    "details": {
+      "passed": true
+    },
+    "seconds": 0.02163987490348518
+  },
+  "capture_exitcode": null,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 1286.1284368546455
+}
+{
+  "task": "fixture",
+  "agents": 1,
+  "model": "fake",
+  "started_unix": 1793774110.827072,
+  "finished_unix": 1793774110.859593,
+  "passed": false,
+  "error": null,
+  "wall_seconds": 0.032512125093489885,
+  "time_to_first_passing_check_seconds": null,
+  "infrastructure_error": false,
+  "completion_tokens": 0,
+  "prompt_tokens": 0,
+  "calls": 1,
+  "failed_calls": 1,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": null,
+  "workers": [
+    {
+      "agent": "single",
+      "status": "request_error",
+      "turns": 1
+    }
+  ],
+  "checks": 1,
+  "final_check": {
+    "passed": false,
+    "returncode": 1,
+    "details": {
+      "passed": false
+    },
+    "seconds": 0.02928920811973512
+  },
+  "capture_exitcode": null,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 0.0
+}
+{
+  "task": "fixture",
+  "agents": 1,
+  "model": "fake",
+  "started_unix": 1793774111.345325,
+  "finished_unix": 1793774111.428281,
+  "passed": false,
+  "error": "Protected checker failed to execute/return JSON",
+  "wall_seconds": 0.08294595894403756,
+  "time_to_first_passing_check_seconds": null,
+  "infrastructure_error": true,
+  "completion_tokens": 90,
+  "prompt_tokens": 900,
+  "calls": 9,
+  "failed_calls": 0,
+  "tool_errors": 0,
+  "length_capped_calls": 0,
+  "ttft_median_seconds": 0.0008784171659499407,
+  "workers": [],
+  "checks": 2,
+  "final_check": {
+    "passed": false,
+    "infrastructure_error": true,
+    "returncode": 1,
+    "details": {
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/private/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/tmph_2ksp_a/task/check.py\", line 1, in <module>\n    raise RuntimeError(\"broken grader interface\")\nRuntimeError: broken grader interface\n"
+    },
+    "seconds": 0.028775040991604328
+  },
+  "capture_exitcode": null,
+  "note": "Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.",
+  "completion_tokens_per_wall_second": 1085.0438182373864
+}

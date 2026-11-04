@@ -1,0 +1,5 @@
+{
+  "status": "cancelled_by_user",
+  "reason": "User requested skipping further Rust work; preserve partial run, exclude from completed comparisons.",
+  "unix_seconds": 1793779191.467975
+}

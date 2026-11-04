@@ -1,0 +1,12 @@
+............window-parity layer=0 dtype=mlx.core.float32 max_abs=0.000467286 tolerance=0.001
+.window-parity layer=3 dtype=mlx.core.float32 max_abs=0.000608504 tolerance=0.001
+.window-parity layer=0 dtype=mlx.core.bfloat16 max_abs=0.00561523 tolerance=0.02
+.window-parity layer=3 dtype=mlx.core.bfloat16 max_abs=0 tolerance=0.02
+.
+=============================== warnings summary ===============================
+../../../../../opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/metadata/__init__.py:948
+  /opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/metadata/__init__.py:948: DeprecationWarning: Implicit None on return values is deprecated and will raise KeyErrors.
+    pkg_to_dist[pkg].append(dist.metadata['Name'])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+16 passed, 1 warning in 2.60s

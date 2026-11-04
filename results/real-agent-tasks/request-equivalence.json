@@ -1,0 +1,14 @@
+[
+  {
+    "task": "coffee-site-v2",
+    "workers": 8,
+    "first_request_bodies_equal": true,
+    "first_prompt_token_counts_equal": true
+  },
+  {
+    "task": "ledger-rust",
+    "workers": 8,
+    "first_request_bodies_equal": true,
+    "first_prompt_token_counts_equal": true
+  }
+]

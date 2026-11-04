@@ -1,0 +1,2169 @@
+{
+  "speed": 20,
+  "sample_seconds": 10,
+  "fps": 12,
+  "real_duration_seconds": 566.7064697090536,
+  "note": "Same acceleration for all lanes; final states freeze at actual completion/failure. Last3video-seconds hold all final artifacts. Metrics are supplied from actual run summaries.",
+  "frames": [
+    {
+      "real_seconds": 0,
+      "file": "composite-frames/composite-000000.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 0,
+          "snapshot": 0.7450389862060547,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000000.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 0,
+          "snapshot": 0.6227140426635742,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000000.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 0,
+          "snapshot": 0.6257922649383545,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000000.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 10,
+      "file": "composite-frames/composite-000001.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 10,
+          "snapshot": 0.7450389862060547,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000000.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 10,
+          "snapshot": 0.6227140426635742,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000000.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 10,
+          "snapshot": 0.6257922649383545,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000000.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 20,
+      "file": "composite-frames/composite-000002.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 20,
+          "snapshot": 10.862038850784302,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000001.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 20,
+          "snapshot": 10.734714031219482,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000001.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 20,
+          "snapshot": 10.75979208946228,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000001.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 30,
+      "file": "composite-frames/composite-000003.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 30,
+          "snapshot": 20.977038860321045,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000002.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 30,
+          "snapshot": 20.837713956832886,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000002.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 30,
+          "snapshot": 20.857792139053345,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000002.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 40,
+      "file": "composite-frames/composite-000004.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 40,
+          "snapshot": 31.09403896331787,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000003.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 40,
+          "snapshot": 30.93571400642395,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000003.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 40,
+          "snapshot": 30.972792148590088,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000003.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 50,
+      "file": "composite-frames/composite-000005.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 50,
+          "snapshot": 45.78403902053833,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000005.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 50,
+          "snapshot": 41.03671407699585,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000004.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 50,
+          "snapshot": 41.08779215812683,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000004.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 60,
+      "file": "composite-frames/composite-000006.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 60,
+          "snapshot": 58.98803901672363,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000007.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 60,
+          "snapshot": 51.13671398162842,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000005.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 60,
+          "snapshot": 51.190792083740234,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000005.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 70,
+      "file": "composite-frames/composite-000007.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 70,
+          "snapshot": 63.08603882789612,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000008.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 70,
+          "snapshot": 61.23471403121948,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000006.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 70,
+          "snapshot": 61.28979229927063,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000006.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 80,
+      "file": "composite-frames/composite-000008.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 80,
+          "snapshot": 78.31203889846802,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000010.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 80,
+          "snapshot": 71.33771395683289,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000007.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 80,
+          "snapshot": 71.40579223632812,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000007.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 90,
+      "file": "composite-frames/composite-000009.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 90,
+          "snapshot": 86.41503882408142,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000011.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 90,
+          "snapshot": 85.52071404457092,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000009.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 90,
+          "snapshot": 81.52179217338562,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000008.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 100,
+      "file": "composite-frames/composite-000010.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 100,
+          "snapshot": 95.02803897857666,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000012.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 100,
+          "snapshot": 95.61771392822266,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000010.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 100,
+          "snapshot": 91.63879227638245,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000009.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 110,
+      "file": "composite-frames/composite-000011.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 110,
+          "snapshot": 105.14503884315491,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000013.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 110,
+          "snapshot": 101.20671391487122,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000011.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 110,
+          "snapshot": 101.77079224586487,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000010.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 120,
+      "file": "composite-frames/composite-000012.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 120,
+          "snapshot": 112.28903889656067,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000014.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 120,
+          "snapshot": 111.31771397590637,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000012.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 120,
+          "snapshot": 111.87079215049744,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000011.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 130,
+      "file": "composite-frames/composite-000013.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 130,
+          "snapshot": 125.56103897094727,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000016.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 130,
+          "snapshot": 124.50071406364441,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000014.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 130,
+          "snapshot": 121.98779225349426,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000012.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 140,
+      "file": "composite-frames/composite-000014.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 140,
+          "snapshot": 135.71103882789612,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000017.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 140,
+          "snapshot": 137.6867139339447,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000016.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 140,
+          "snapshot": 132.10079216957092,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000013.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 150,
+      "file": "composite-frames/composite-000015.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 150,
+          "snapshot": 145.85003900527954,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000018.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 150,
+          "snapshot": 147.90871405601501,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000018.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 150,
+          "snapshot": 142.2187922000885,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000014.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 160,
+      "file": "composite-frames/composite-000016.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 160,
+          "snapshot": 159.12703895568848,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000020.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 160,
+          "snapshot": 152.52771401405334,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000019.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 160,
+          "snapshot": 152.334792137146,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000015.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 170,
+      "file": "composite-frames/composite-000017.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 170,
+          "snapshot": 169.29703903198242,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000021.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 170,
+          "snapshot": 165.77271389961243,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000021.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 170,
+          "snapshot": 162.4337921142578,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000016.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 180,
+      "file": "composite-frames/composite-000018.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 180,
+          "snapshot": 179.44803881645203,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000022.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 180,
+          "snapshot": 175.90971398353577,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000022.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 180,
+          "snapshot": 172.5497922897339,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000017.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 190,
+      "file": "composite-frames/composite-000019.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 190,
+          "snapshot": 189.59103894233704,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000023.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 190,
+          "snapshot": 186.04271411895752,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000023.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 190,
+          "snapshot": 182.65179228782654,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000018.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 190.40266162506305,
+      "file": "composite-frames/composite-000020.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 186.04271411895752,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000023.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 182.65179228782654,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000018.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 200,
+      "file": "composite-frames/composite-000021.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 200,
+          "snapshot": 196.17271399497986,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 200,
+          "snapshot": 192.7847921848297,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000019.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 210,
+      "file": "composite-frames/composite-000022.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 210,
+          "snapshot": 206.32871389389038,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000025.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 210,
+          "snapshot": 202.88479208946228,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000020.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 220,
+      "file": "composite-frames/composite-000023.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 220,
+          "snapshot": 216.46071410179138,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000026.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 220,
+          "snapshot": 212.99779224395752,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000021.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 230,
+      "file": "composite-frames/composite-000024.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 230,
+          "snapshot": 226.5927140712738,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000027.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 230,
+          "snapshot": 223.1157922744751,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000022.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 240,
+      "file": "composite-frames/composite-000025.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 240,
+          "snapshot": 236.75171399116516,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000028.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 240,
+          "snapshot": 233.2147922515869,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000023.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 250,
+      "file": "composite-frames/composite-000026.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 250,
+          "snapshot": 242.86971402168274,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000029.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 250,
+          "snapshot": 243.31579208374023,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 260,
+      "file": "composite-frames/composite-000027.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 260,
+          "snapshot": 253.00371408462524,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000030.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 260,
+          "snapshot": 253.42979216575623,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000025.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 265.8948211250827,
+      "file": "composite-frames/composite-000028.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 263.5297923088074,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000026.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 270,
+      "file": "composite-frames/composite-000029.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 270,
+          "snapshot": 266.6157922744751,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000027.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 280,
+      "file": "composite-frames/composite-000030.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 280,
+          "snapshot": 276.7447922229767,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000028.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 290,
+      "file": "composite-frames/composite-000031.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 290,
+          "snapshot": 286.8477921485901,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000029.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 300,
+      "file": "composite-frames/composite-000032.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 300,
+          "snapshot": 296.96279215812683,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000030.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 310,
+      "file": "composite-frames/composite-000033.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 310,
+          "snapshot": 304.56179213523865,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000031.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 320,
+      "file": "composite-frames/composite-000034.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 320,
+          "snapshot": 314.6797921657562,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 330,
+      "file": "composite-frames/composite-000035.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 330,
+          "snapshot": 323.2797923088074,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000033.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 340,
+      "file": "composite-frames/composite-000036.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 340,
+          "snapshot": 333.3987922668457,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000034.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 350,
+      "file": "composite-frames/composite-000037.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 350,
+          "snapshot": 348.59479212760925,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000036.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 360,
+      "file": "composite-frames/composite-000038.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 360,
+          "snapshot": 358.7107923030853,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000037.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 370,
+      "file": "composite-frames/composite-000039.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 370,
+          "snapshot": 368.31379222869873,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000038.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 380,
+      "file": "composite-frames/composite-000040.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 380,
+          "snapshot": 378.4247922897339,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000039.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 390,
+      "file": "composite-frames/composite-000041.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 390,
+          "snapshot": 388.52679228782654,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000040.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 400,
+      "file": "composite-frames/composite-000042.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 400,
+          "snapshot": 397.62579226493835,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000041.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 410,
+      "file": "composite-frames/composite-000043.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 410,
+          "snapshot": 407.72479224205017,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000042.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 420,
+      "file": "composite-frames/composite-000044.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 420,
+          "snapshot": 415.32479214668274,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000043.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 430,
+      "file": "composite-frames/composite-000045.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 430,
+          "snapshot": 425.45679211616516,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000044.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 440,
+      "file": "composite-frames/composite-000046.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 440,
+          "snapshot": 435.573792219162,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000045.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 450,
+      "file": "composite-frames/composite-000047.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 450,
+          "snapshot": 445.7077922821045,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000046.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 460,
+      "file": "composite-frames/composite-000048.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 460,
+          "snapshot": 455.80779218673706,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000047.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 470,
+      "file": "composite-frames/composite-000049.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 470,
+          "snapshot": 465.9207921028137,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000048.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 480,
+      "file": "composite-frames/composite-000050.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 480,
+          "snapshot": 476.0237922668457,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000049.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 490,
+      "file": "composite-frames/composite-000051.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 490,
+          "snapshot": 486.13879227638245,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000050.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 500,
+      "file": "composite-frames/composite-000052.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 500,
+          "snapshot": 496.27079224586487,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000051.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 510,
+      "file": "composite-frames/composite-000053.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 510,
+          "snapshot": 506.38679218292236,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000052.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 520,
+      "file": "composite-frames/composite-000054.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 520,
+          "snapshot": 516.5047922134399,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000053.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 530,
+      "file": "composite-frames/composite-000055.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 530,
+          "snapshot": 526.6057922840118,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000054.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 540,
+      "file": "composite-frames/composite-000056.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 540,
+          "snapshot": 536.7357921600342,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000055.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 550,
+      "file": "composite-frames/composite-000057.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 550,
+          "snapshot": 546.8367922306061,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000056.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 560,
+      "file": "composite-frames/composite-000058.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": false,
+          "status": "passed 63/63",
+          "effective": 560,
+          "snapshot": 556.9527921676636,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000057.png",
+          "final_capture_failed": false,
+          "metrics": "Run metrics appear at finish"
+        }
+      ]
+    },
+    {
+      "real_seconds": 566.7064697090536,
+      "file": "composite-frames/composite-000059.png",
+      "lanes": [
+        {
+          "label": "Fleet — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 190.40266162506305,
+          "snapshot": 190.20903897285461,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-fleet-eight-02/task/capture/frames/frame-000024.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 187.7s · 61.1 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 8 workers",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 265.8948211250827,
+          "snapshot": 265.7527139186859,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-eight-02/task/capture/frames/frame-000032.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 263.6s · 40.5 output tok/s"
+        },
+        {
+          "label": "vLLM-Metal — 1 agent",
+          "ended": true,
+          "status": "passed 63/63",
+          "effective": 566.7064697090536,
+          "snapshot": 566.5667922496796,
+          "image": "file:///Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/results/real-agent-tasks/runs/coffee-site-v2-vllm-single-02/task/capture/frames/frame-000058.png",
+          "final_capture_failed": false,
+          "metrics": "First pass 564.4s · 15.8 output tok/s"
+        }
+      ]
+    }
+  ]
+}

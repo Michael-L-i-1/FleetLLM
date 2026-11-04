@@ -1,0 +1,40 @@
+{
+  "registered_before_primary_rust_runs": true,
+  "purpose": "Actual Rust task withsameFleetbinary,targetweights,KVbudget,ngram,spec-k3,spec-rows64,harnessandtests;removeonlydrafteranditsKV. Mustcomparecorrectnessandtime-to-passing,nottokensalone.",
+  "jobs": [
+    {
+      "label": "ledger-rust-fleet-eight-no-drafter-01",
+      "config_sha256": "76b97343b386b9c0357ee319834f11cb7abd6ff86303d07a295f1b38b625dd2d",
+      "task_file_hashes": {
+        "probe.rs.template": "f596506b078442b038ac6915d48e332436e78ded0cd6c96a5c5153af98b7fe3f",
+        "check.py": "a9e2fd6c057ae7460aa7270813c1361310503134eadd6d710c29bae72406e9ad",
+        "task.json": "29ff059b2dd1fc9b095f265649e999089b579f5f12e424d28eb4dc3309611a5e",
+        "fixture/money.rs": "1b5884caa7189ad35cd9dff18171b220d45cedc030d5f175d4d454ceb6b8a2dc",
+        "fixture/audit.rs": "283e44ef063f771c5d5cf25a2164d77b94dfa13c0053efbc6fd5334145aa7886",
+        "fixture/reference.c": "ca015b0a4c04f3b282e370f104783ab43197faf5aef4ee7146df5ea2d3d9d657",
+        "fixture/tags.rs": "f8e6591fd14c09fc2300c4c369c03bd720ee192e808a919d68a37825a765a816",
+        "fixture/labels.rs": "d6166b7ef5b59a75983ac096068a10b65af57ee2be7f0a8967bd0cc5d45cee5c",
+        "fixture/README.md": "600967a11d057158343e7b9f90b5a199fd68ba532b049d0633abe8f88015fb74",
+        "fixture/date.rs": "56e1012b3b762c56a9039798d59bdb8ad46b967e7f1c30ba17f7934001e4aa38",
+        "fixture/main.rs": "11d54b8aff2ded27c7e87a20583c9c52fdf860ffea04aea32919b4a7fb394466",
+        "fixture/csv.rs": "12d1cd555bb7e4bb0da94d6465ffe88efbdb9a10a50ae29479e39ba0789ca8ef",
+        "fixture/filter.rs": "6ab73ba01487b3f82f6b75c15633cb7e80d8e3f57a32e33f201bf895e9491a35",
+        "fixture/summary.rs": "771c4a75622a1b11c2664447a2a6ef56f21c1452308e2de4f9c21f16b4c3da87",
+        "fixture/fixtures/ledger.csv": "849e885499a33085c28049f5ffb26699b0491a0bb2caa262d2e7bd3bc2c4ab6d"
+      },
+      "command": [
+        "python3",
+        "demos/agent-task-bench/serve.py",
+        "--config",
+        "results/real-agent-tasks/configs/fleet-eight-no-drafter.json",
+        "--task",
+        "demos/agent-task-bench/tasks/ledger-rust",
+        "--output",
+        "results/real-agent-tasks/runs/ledger-rust-fleet-eight-no-drafter-01",
+        "--agents",
+        "8"
+      ]
+    }
+  ],
+  "harness_contract_correction": "OutputargumentnowJSONfilepath, notdirectory; grader/testcasesandablationhypothesisunchanged"
+}

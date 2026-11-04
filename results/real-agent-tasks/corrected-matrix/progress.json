@@ -1,0 +1,85 @@
+{
+  "status": "complete",
+  "active_label": null,
+  "completed": [
+    {
+      "label": "coffee-site-v2-fleet-eight-02",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 208.4313779999502,
+      "passed": true,
+      "wall_seconds": 190.40266162506305,
+      "time_to_first_passing_check_seconds": 187.68121870816685,
+      "completion_tokens": 11636,
+      "completion_tokens_per_wall_second": 61.112591077709666,
+      "calls": 22,
+      "failed_calls": 0,
+      "tool_errors": 2
+    },
+    {
+      "label": "coffee-site-v2-vllm-eight-02",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 289.47857783408836,
+      "passed": true,
+      "wall_seconds": 265.8948211250827,
+      "time_to_first_passing_check_seconds": 263.59645704203285,
+      "completion_tokens": 10759,
+      "completion_tokens_per_wall_second": 40.463368013244356,
+      "calls": 18,
+      "failed_calls": 0,
+      "tool_errors": 0
+    },
+    {
+      "label": "coffee-site-v2-vllm-single-02",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 589.3918143329211,
+      "passed": true,
+      "wall_seconds": 566.7064697090536,
+      "time_to_first_passing_check_seconds": 564.4162655840628,
+      "completion_tokens": 8980,
+      "completion_tokens_per_wall_second": 15.845945793790426,
+      "calls": 10,
+      "failed_calls": 0,
+      "tool_errors": 1
+    },
+    {
+      "label": "ledger-rust-vllm-single-02",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 539.8617791249417,
+      "passed": true,
+      "wall_seconds": 516.8452219588216,
+      "time_to_first_passing_check_seconds": 515.8056041249074,
+      "completion_tokens": 7355,
+      "completion_tokens_per_wall_second": 14.230565917055129,
+      "calls": 23,
+      "failed_calls": 0,
+      "tool_errors": 0
+    },
+    {
+      "label": "ledger-rust-vllm-eight-02",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 1672.7572057920042,
+      "passed": false,
+      "wall_seconds": 1649.7097403751686,
+      "time_to_first_passing_check_seconds": null,
+      "completion_tokens": 30705,
+      "completion_tokens_per_wall_second": 18.612365101885878,
+      "calls": 56,
+      "failed_calls": 0,
+      "tool_errors": 4
+    },
+    {
+      "label": "ledger-rust-fleet-eight-02",
+      "driver_returncode": 0,
+      "driver_wall_seconds": 927.8875222918577,
+      "passed": true,
+      "wall_seconds": 909.4661078329664,
+      "time_to_first_passing_check_seconds": 908.4458540419582,
+      "completion_tokens": 22644,
+      "completion_tokens_per_wall_second": 24.898124080681875,
+      "calls": 37,
+      "failed_calls": 0,
+      "tool_errors": 0
+    }
+  ],
+  "total": 6
+}

@@ -1,0 +1,60 @@
+{
+  "config": {
+    "engine": "vllm-metal",
+    "model": "glimmer-mlx4",
+    "base": "http://127.0.0.1:8090/v1",
+    "command": [
+      "/opt/homebrew/bin/vllm",
+      "serve",
+      "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710",
+      "--served-model-name",
+      "glimmer-mlx4",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "8090",
+      "--max-num-seqs",
+      "8",
+      "--max-num-batched-tokens",
+      "2048",
+      "--gpu-memory-utilization",
+      "0.55",
+      "--num-gpu-blocks-override",
+      "4695",
+      "--max-model-len",
+      "32768",
+      "--enable-prefix-caching",
+      "--reasoning-parser",
+      "muse_glimmer",
+      "--language-model-only",
+      "--generation-config",
+      "vllm",
+      "--enable-prompt-tokens-details",
+      "--default-chat-template-kwargs",
+      "{\"reasoning_strength\":\"low\"}",
+      "--no-async-scheduling",
+      "--speculative-config",
+      "{\"method\":\"ngram\",\"num_speculative_tokens\":5,\"prompt_lookup_min\":2,\"prompt_lookup_max\":5}"
+    ],
+    "env": {
+      "PYTHONPATH": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/build/task-vllm-overlay",
+      "VLLM_METAL_MULTIMODAL_MODE": "text-only",
+      "VLLM_METAL_COMPILED_MLP": "1",
+      "VLLM_ENABLE_V1_MULTIPROCESSING": "1"
+    }
+  },
+  "config_sha256": "a0b5d77a368042af0d90d9a6fe8cc7bd3d60c998c27fe3cadd7007d16920243d",
+  "source_commit": "34f964f07c50e16f9883229c5df89fdc9a16d09b",
+  "model_binary_sha256": "88e9a9555d5879273df8271a496032e333fb571f74181e9f6d962984b287340a",
+  "complete": true,
+  "pilot": true,
+  "agents": 8,
+  "task": null,
+  "server_pid": 53565,
+  "startup_seconds": 19.10604270780459,
+  "pilot_summary": {
+    "wall_seconds": 63.4256592921447,
+    "completion_tokens": 3432,
+    "tokens_per_second": 54.11059243691701
+  }
+}

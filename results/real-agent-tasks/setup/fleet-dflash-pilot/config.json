@@ -1,0 +1,57 @@
+{
+  "config": {
+    "engine": "fleet",
+    "model": "glimmer-mlx4",
+    "base": "http://127.0.0.1:8090/v1",
+    "command": [
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/build/fleet-serve",
+      "--model",
+      "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710",
+      "--device",
+      "metal",
+      "--name",
+      "glimmer-mlx4",
+      "--budget-gb",
+      "28",
+      "--kv-gb",
+      "4",
+      "--max-active",
+      "8",
+      "--admit",
+      "--row-budget",
+      "128",
+      "--ngram",
+      "--reasoning",
+      "low",
+      "--max-tokens",
+      "4096",
+      "--port",
+      "8090",
+      "--draft",
+      "/Users/michaelli/.cache/huggingface/hub/models--meta-models--Muse-Glimmer-30B-assistant/snapshots/c676cce91658f9568aaf264a416211e2782735b7",
+      "--draft-kv-gb",
+      "0.5",
+      "--spec-k",
+      "3",
+      "--spec-rows",
+      "64"
+    ],
+    "env": {
+      "FLEET_TRACE_STATS": "1"
+    }
+  },
+  "config_sha256": "8b8ac8b5aceca528dd92bb6a3b8ff24b463672c4a57efa6f9f809db544b913d1",
+  "source_commit": "34f964f07c50e16f9883229c5df89fdc9a16d09b",
+  "model_binary_sha256": "71f920eec446622a4516e9afaf3e4595216c9217855997a4ebf2ff49e28820f8",
+  "complete": true,
+  "pilot": true,
+  "agents": 8,
+  "task": null,
+  "server_pid": 40881,
+  "startup_seconds": 15.127396625000983,
+  "pilot_summary": {
+    "wall_seconds": 17.9948362079449,
+    "completion_tokens": 3412,
+    "tokens_per_second": 189.60995035306672
+  }
+}

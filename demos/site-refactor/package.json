@@ -1,0 +1,6 @@
+{
+  "name": "fleet-site-refactor-demo",
+  "private": true,
+  "type": "module",
+  "devDependencies": { "@playwright/test": "1.56.1" }
+}

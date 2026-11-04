@@ -1,0 +1,9 @@
+Restyle Fieldnotes into a polished, warm editorial website for local creative workshops.
+Use cream, deep green, and a restrained bright accent, strong typography, generous spacing,
+and responsive workshop cards. Work without external assets, fonts, frameworks, or network requests.
+Preserve the workshop names, all existing IDs, data-workshop attributes, search filtering,
+newsletter validation and submission confirmation. Keep app.js unchanged.
+Make it usable at 390px and 1440px widths, with visible keyboard focus, semantic headings,
+labeled inputs, readable contrast, and a reduced-motion preference if adding animation.
+The coordinator may delegate exactly four tasks in parallel; each file has one worker owner.
+Assign one file each: index.html for structure/accessibility, theme.css for colors/type/tokens, styles.css for component styling, responsive.css for layout/mobile. Workers should agree on selectors already present in the fixture; the coordinator resolves integration mismatches. Integrate and run checks before finishing.

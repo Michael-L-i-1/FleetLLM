@@ -1,0 +1,17 @@
+cc -O1 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -D_GNU_SOURCE -D_DARWIN_C_SOURCE -fsanitize=address,undefined -fno-omit-frame-pointer -c src/server.c -o build-fleetpi-asan/server.o
+ar rcs build-fleetpi-asan/libfleetllm.a build-fleetpi-asan/chat.o build-fleetpi-asan/cpu.o build-fleetpi-asan/cpuq.o build-fleetpi-asan/engine.o build-fleetpi-asan/gguf.o build-fleetpi-asan/json.o build-fleetpi-asan/kv.o build-fleetpi-asan/model.o build-fleetpi-asan/ngram.o build-fleetpi-asan/quant.o build-fleetpi-asan/safetensors.o build-fleetpi-asan/sampler.o build-fleetpi-asan/server.o build-fleetpi-asan/spans.o build-fleetpi-asan/threadpool.o build-fleetpi-asan/tokenizer.o build-fleetpi-asan/unicode_data.o
+scripts/chatglimmercheck.c:31:19: warning: unused variable 'PE' [-Wunused-const-variable]
+   31 | static const char PE[] = "</atem" ":parameter>";
+      |                   ^~
+1 warning generated.
+Glimmer formatter/parser checks: passed
+Server reply/routing/cancellation/telemetry checks: passed
+Assertion failed: (e->seqs[active].n_tokens==2500), function stale_leader, file swacoalescecheck.c, line 182.
+fanout enabled=0 prefix=6000 staggered=0 shared=0 prefill=48128
+fanout enabled=1 prefix=6000 staggered=0 shared=42000 prefill=6128
+fanout enabled=0 prefix=6016 staggered=0 shared=42112 prefill=6144
+fanout enabled=1 prefix=6016 staggered=0 shared=42112 prefill=6144
+fanout enabled=1 prefix=6003 staggered=0 shared=42021 prefill=6131
+fanout enabled=1 prefix=6080 staggered=1 shared=42196 prefill=6572
+pressure cached-leader-evicted=1 preemptions=0 shared=3000
+results/fleetpi/setup/run-native-checks.sh: line 7:  9373 Abort trap: 6           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 "build-fleetpi-asan/$name"

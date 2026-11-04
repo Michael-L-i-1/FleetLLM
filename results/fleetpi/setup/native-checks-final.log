@@ -1,0 +1,15 @@
+make: `build-fleetpi-asan/libfleetllm.a' is up to date.
+Glimmer formatter/parser checks: passed
+Server reply/routing/cancellation/telemetry checks: passed
+fanout enabled=0 prefix=6000 staggered=0 shared=0 prefill=48128
+fanout enabled=1 prefix=6000 staggered=0 shared=42000 prefill=6128
+fanout enabled=0 prefix=6016 staggered=0 shared=42112 prefill=6144
+fanout enabled=1 prefix=6016 staggered=0 shared=42112 prefill=6144
+fanout enabled=1 prefix=6003 staggered=0 shared=42021 prefill=6131
+fanout enabled=1 prefix=6080 staggered=1 shared=42196 prefill=6572
+pressure cached-leader-evicted=1 preemptions=0 shared=3000
+stale leader retired=0 future=0 reused=2500
+stale leader retired=0 future=1 reused=2500
+stale leader retired=1 future=0 reused=2500
+stale leader retired=1 future=1 reused=2500
+SWA scheduling, output/KV parity, COW and release checks passed

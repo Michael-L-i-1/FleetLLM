@@ -1,0 +1,24 @@
+CPU-only compile: 0
+/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/fleetpi-template-parity-au4sll36/chat.c:538:19: warning: variable 'INVOKE_END' is not needed and will not be emitted [-Wunneeded-internal-declaration]
+  538 | static const char INVOKE_END[] = "</atem:invoke>";
+      |                   ^~~~~~~~~~
+1 warning generated.
+
+PASS tool-definitions: 2317 identical bytes
+PASS historical-calls-reversed-results: 3191 identical bytes
+PASS adjacent-assistant-and-explicit-tool-name: 2661 identical bytes
+PASS text-only-regression: 271 identical bytes
+PASS extra-nested-json-unicode: 2553 identical bytes
+PASS extra-tool-call-followed-by-assistant: 2599 identical bytes
+PASS extra-empty-reasoning: 186 identical bytes
+PASS extra-explicit-end-turn-false: 279 identical bytes
+PASS extra-explicit-end-turn-true: 270 identical bytes
+PASS extra-no-system-date: 2370 identical bytes
+PASS extra-late-system: 2356 identical bytes
+PASS extra-explicit-tool-name-overrides-id: 2729 identical bytes
+PASS extra-text-content-array: 171 identical bytes
+PASS extra-shared-namespace-and-bare-schema: 1817 identical bytes
+PASS extra-float-values: 2622 identical bytes
+PASS actual-pi-tool-definitions: 4757 identical bytes
+PASS actual-pi-historical-calls-reversed-results: 5631 identical bytes
+Result: 17/17 exact-byte fixtures passed. Sources changed during run: []

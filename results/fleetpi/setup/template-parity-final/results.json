@@ -1,0 +1,226 @@
+{
+  "scope": "formatter bytes only; helper resolves tool names; server ingestion, tokenization, parsing and execution are not tested",
+  "inputs": {
+    "results/fleetpi/setup/reference/template-golden-fixtures.json": "b72adaf4f4779f82a9c8263863ed3b0e7d8170c1da1ce4aac509a3b5182080eb",
+    "results/fleetpi/setup/reference/template-extra-golden-fixtures.json": "8fa24ac50a5e47ce30f5a39efadf70dff12c4b858133224626412df298be4e74",
+    "results/fleetpi/setup/reference/template-pi-golden-fixtures.json": "67fb3f5914aa4d198595372836e6db9ad3aa341fb56da3ca349a3aa4d1d1ed7e"
+  },
+  "source_sha256": {
+    "backend.h": "dc97e7c3c16bea216d50d49a947322752194b713f437ef91e88b78e43d6acb7b",
+    "chat.h": "ed3c173748c34a1669e7ebda19c2e2574344c9a93f087e877721e1490a6dd348",
+    "cpuq.h": "f124323615b37d130fe47c2d9285f1e898ee453b41f00e35383a76e9e484fd6c",
+    "engine.h": "12fe415ced7e1617d05722ba21b04ac39758913ab977548a751c997c374a96a8",
+    "gguf.h": "15b7c1a14918ffe23d70af178baf307768618283e5d7216a2245be0906509db7",
+    "json.h": "7262494d62d97fec57402622d8aee279d61478052fae97bfa3f6b84ff94c81ab",
+    "kv.h": "cdd943443847e50c96c6814942a76190a79fa262fe6297b97af693ef16dbd2c3",
+    "model.h": "14d9235cbd85b6a7a6f675b16943f1a4eda8f035fc489e658f6e7b80aa8f927d",
+    "ngram.h": "4a9c40cea369a36bf01e187e408b695fcba039ba646978ee7183303cbaeabfee",
+    "quant.h": "b368d94f7bc9ba8acd957bf7feca99d12ae653ee83d82155a0439b5d6336a345",
+    "safetensors.h": "a70dccac732c364bca10edf886bc653bd5b1a897af570a6e14196479ac142fe5",
+    "sampler.h": "a4e59cc2b9fe100558f61e22fb9535b65531c07fb655989f0ae047510182d026",
+    "server.h": "2cd79d8087c00afb8b3c7b638d287169a30b3a294743c5659b3b09fba3557baf",
+    "spans.h": "b7a10a815cd104616d225fdf0a804ec8c965ad62f3eb80bbfb79060305f6fa32",
+    "threadpool.h": "3c5114c1226a036cc544ced2fc0d89d129aa1229a492e7d90ce9f42beb5d597b",
+    "tokenizer.h": "27d31f8d4c28e4e21f5d7115828ba85b0323f38262fd7de0371bbc3d83a053cc",
+    "unicode.h": "b9d5d03e68f0e41cbde2199022a68aa9e6960a4f8c903b65882bfafa77a5e077",
+    "chat.c": "fa3bfe9a99e511a726154ef27314fed69f6ad0c1de42027e37b19439273397df",
+    "json.c": "29e37e1305112834e1df1f4e589552caa08e1eb33d49621b871128d567bfa9e4"
+  },
+  "results": [
+    {
+      "name": "tool-definitions",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 2317,
+      "actual_bytes": 2317,
+      "expected_sha256": "5da55729b18c9c2a879671e297703a3e642e99d2022a3aa1fb505f1b533031d2",
+      "actual_sha256": "5da55729b18c9c2a879671e297703a3e642e99d2022a3aa1fb505f1b533031d2",
+      "stderr": ""
+    },
+    {
+      "name": "historical-calls-reversed-results",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 3191,
+      "actual_bytes": 3191,
+      "expected_sha256": "02cf8019841e0c7be665abfc7916e5dbd73a4793ba507c93ffb650df71006935",
+      "actual_sha256": "02cf8019841e0c7be665abfc7916e5dbd73a4793ba507c93ffb650df71006935",
+      "stderr": ""
+    },
+    {
+      "name": "adjacent-assistant-and-explicit-tool-name",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 2661,
+      "actual_bytes": 2661,
+      "expected_sha256": "0c48c701abc96828b1dd7e99237169e85b2bd2925ddd2cd376eef4f18173e7b5",
+      "actual_sha256": "0c48c701abc96828b1dd7e99237169e85b2bd2925ddd2cd376eef4f18173e7b5",
+      "stderr": ""
+    },
+    {
+      "name": "text-only-regression",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 271,
+      "actual_bytes": 271,
+      "expected_sha256": "4489913cb545165723bf9323e60e71c9c67ad5abac88b2122da319f6bca78b05",
+      "actual_sha256": "4489913cb545165723bf9323e60e71c9c67ad5abac88b2122da319f6bca78b05",
+      "stderr": ""
+    },
+    {
+      "name": "extra-nested-json-unicode",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 2553,
+      "actual_bytes": 2553,
+      "expected_sha256": "963a02ece2165f66dd1f16856743aee1360e880cde8edf3e05bfd4d5b27a2ebd",
+      "actual_sha256": "963a02ece2165f66dd1f16856743aee1360e880cde8edf3e05bfd4d5b27a2ebd",
+      "stderr": ""
+    },
+    {
+      "name": "extra-tool-call-followed-by-assistant",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 2599,
+      "actual_bytes": 2599,
+      "expected_sha256": "91287e2e4bff7102f64ca8a3f17709e423f42cd9a3b0257d721a3a531a447899",
+      "actual_sha256": "91287e2e4bff7102f64ca8a3f17709e423f42cd9a3b0257d721a3a531a447899",
+      "stderr": ""
+    },
+    {
+      "name": "extra-empty-reasoning",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 186,
+      "actual_bytes": 186,
+      "expected_sha256": "937fe73bfda6db83bcb77e3ea7be15b08d927764eca7a2c6344fdf6d1c1b13ff",
+      "actual_sha256": "937fe73bfda6db83bcb77e3ea7be15b08d927764eca7a2c6344fdf6d1c1b13ff",
+      "stderr": ""
+    },
+    {
+      "name": "extra-explicit-end-turn-false",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 279,
+      "actual_bytes": 279,
+      "expected_sha256": "ac662d7292c8eca5f66c24580f34712efefb66414eed5ba5809d5e18a1f01c88",
+      "actual_sha256": "ac662d7292c8eca5f66c24580f34712efefb66414eed5ba5809d5e18a1f01c88",
+      "stderr": ""
+    },
+    {
+      "name": "extra-explicit-end-turn-true",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 270,
+      "actual_bytes": 270,
+      "expected_sha256": "929974ed4deff5cded03d87aa4c294914ece87ef8eb8abddbf0f9167406fd4d3",
+      "actual_sha256": "929974ed4deff5cded03d87aa4c294914ece87ef8eb8abddbf0f9167406fd4d3",
+      "stderr": ""
+    },
+    {
+      "name": "extra-no-system-date",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 2370,
+      "actual_bytes": 2370,
+      "expected_sha256": "94ec4bec07393fc78e51c47ce9ff3e17f5574fcc7d4bf014f547f1e10b86dab0",
+      "actual_sha256": "94ec4bec07393fc78e51c47ce9ff3e17f5574fcc7d4bf014f547f1e10b86dab0",
+      "stderr": ""
+    },
+    {
+      "name": "extra-late-system",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 2356,
+      "actual_bytes": 2356,
+      "expected_sha256": "6e3edd7f995584e6c5f585df42721cc82a8e29f0e3804d1312d8b8e36ce555bb",
+      "actual_sha256": "6e3edd7f995584e6c5f585df42721cc82a8e29f0e3804d1312d8b8e36ce555bb",
+      "stderr": ""
+    },
+    {
+      "name": "extra-explicit-tool-name-overrides-id",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 2729,
+      "actual_bytes": 2729,
+      "expected_sha256": "671a46040b2e6d97ba612a571ae66cd150364125c74820da882e36777146212d",
+      "actual_sha256": "671a46040b2e6d97ba612a571ae66cd150364125c74820da882e36777146212d",
+      "stderr": ""
+    },
+    {
+      "name": "extra-text-content-array",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 171,
+      "actual_bytes": 171,
+      "expected_sha256": "022dc8d7eeb536890f1623dc5bfb82d8e8258b55be53e7755fd8e8b5e1335815",
+      "actual_sha256": "022dc8d7eeb536890f1623dc5bfb82d8e8258b55be53e7755fd8e8b5e1335815",
+      "stderr": ""
+    },
+    {
+      "name": "extra-shared-namespace-and-bare-schema",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 1817,
+      "actual_bytes": 1817,
+      "expected_sha256": "624a341f359fe0ce1c32b9e873a0060daa2827d9063341adb0068213f4227b9b",
+      "actual_sha256": "624a341f359fe0ce1c32b9e873a0060daa2827d9063341adb0068213f4227b9b",
+      "stderr": ""
+    },
+    {
+      "name": "extra-float-values",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 2622,
+      "actual_bytes": 2622,
+      "expected_sha256": "a29d142a4fb42fd0573d0d95fd6ba5ba5fe9856a58477fad966ac94c19bf8702",
+      "actual_sha256": "a29d142a4fb42fd0573d0d95fd6ba5ba5fe9856a58477fad966ac94c19bf8702",
+      "stderr": ""
+    },
+    {
+      "name": "actual-pi-tool-definitions",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 4757,
+      "actual_bytes": 4757,
+      "expected_sha256": "0fdba49939d0a48423110ada9e94c6a5564341035f049deb62a49d3838ced69d",
+      "actual_sha256": "0fdba49939d0a48423110ada9e94c6a5564341035f049deb62a49d3838ced69d",
+      "stderr": ""
+    },
+    {
+      "name": "actual-pi-historical-calls-reversed-results",
+      "passed": true,
+      "returncode": 0,
+      "expected_bytes": 5631,
+      "actual_bytes": 5631,
+      "expected_sha256": "bddcba517cd44b0d1662480cb87d833abdf15751863cc08ecc3a0f86ee416bfb",
+      "actual_sha256": "bddcba517cd44b0d1662480cb87d833abdf15751863cc08ecc3a0f86ee416bfb",
+      "stderr": ""
+    }
+  ],
+  "compile": {
+    "command": [
+      "cc",
+      "-std=c11",
+      "-D_POSIX_C_SOURCE=200809L",
+      "-O0",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-I",
+      "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/fleetpi-template-parity-au4sll36",
+      "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/fleetpi-template-parity-au4sll36/runner.c",
+      "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/fleetpi-template-parity-au4sll36/chat.c",
+      "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/fleetpi-template-parity-au4sll36/json.c",
+      "-o",
+      "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/fleetpi-template-parity-au4sll36/formatter"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/fleetpi-template-parity-au4sll36/chat.c:538:19: warning: variable 'INVOKE_END' is not needed and will not be emitted [-Wunneeded-internal-declaration]\n  538 | static const char INVOKE_END[] = \"</atem:invoke>\";\n      |                   ^~~~~~~~~~\n1 warning generated.\n"
+  },
+  "sources_changed_during_run": [],
+  "passed": 17,
+  "total": 17,
+  "all_passed": true
+}

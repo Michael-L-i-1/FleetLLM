@@ -15,6 +15,7 @@ typedef struct jnode {
     const char *key; int key_len; // set on object members
     const char *s;                // STR: unescaped bytes (NUL-terminated)
     double num;                   // NUM, BOOL (0/1)
+    bool is_float;                // NUM token contained '.' or exponent (template rendering)
 } jnode;
 
 typedef struct {

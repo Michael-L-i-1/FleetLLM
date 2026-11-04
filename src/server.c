@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +56,7 @@ static void bjson(buf *b, const char *s, size_t n) {
 
 // ---------------------------------------------------------------- requests
 
-enum { CH_CONTENT, CH_REASONING };
+enum { CH_CONTENT, CH_REASONING, CH_TOOL }; // Glimmer tool-recipient channel
 enum { PS_HEADER, PS_MESSAGE, PS_EXPECT_START }; // Glimmer channel parser
 
 typedef struct req {
@@ -66,18 +67,20 @@ typedef struct req {
     // output, guarded by mu
     pthread_mutex_t mu;
     pthread_cond_t cv;
-    buf text[2];      // content, reasoning (complete UTF-8 only)
-    buf raw[2];       // bytes not yet known to be complete UTF-8
+    buf text[3];      // content, reasoning, tool-channel (complete UTF-8 only)
+    buf raw[3];       // bytes not yet known to be complete UTF-8
     int n_gen;        // generated tokens
     int checkpoint_at;
     int n_cached;     // prompt tokens whose KV was reused (prefix sharing)
-    bool done, cancelled, started;
+    bool done, started;
+    atomic_bool cancelled;
     bool tools;       // tools were offered: the reply is parsed for tool calls (and not streamed piecemeal)
+    char **tool_names; int n_tool_names;
     const char *finish;
     double t_submit, t_first, t_done;
     // parser (engine thread only)
     int pstate, channel, seen;
-    char header[96]; int header_len;
+    char header[256]; int header_len;
     struct req *next;
 } req;
 
@@ -93,6 +96,17 @@ typedef struct {
     long served, gen_tokens, prompt_tokens;
     double t_start;
     int32_t t_start_id, t_message, t_eom, t_eot, t_think, t_end_think, t_eos;
+    // Engine-owned counters, copied here by the engine thread after every
+    // step under mu so telemetry readers never race the engine.
+    struct {
+        int active;
+        long served, prompt_tokens, generated_tokens;
+        size_t kv_total_bytes, kv_free_bytes;
+        uint32_t full_free, full_total, swa_free, swa_total;
+        int recurrent_used, recurrent_limit;
+        long shared_tokens, prefill_rows, decode_rows, gen_tokens, deduped_tokens;
+        long preemptions, swap_outs, swap_ins;
+    } snap;
 } server;
 
 static double wall(void) {
@@ -119,11 +133,32 @@ static void out_bytes(req *r, int ch, const char *p, size_t n) {
     raw->n -= ok;
 }
 
-// Route one generated token into content / reasoning (engine thread, r->mu held).
+// Classify a Glimmer message header ("<|start|>assistant to=NAME" or the bare
+// " to=NAME" opening a turn). Only an exact "self" is reasoning and only an
+// exact "user" (or no recipient) is content; anything else addresses a tool,
+// so its ATEM is parsed for calls while echoes in other channels never are.
+static int glimmer_channel(const char *header) {
+    const char *to = strstr(header, "to=");
+    if (!to) return CH_CONTENT;
+    to += 3;
+    size_t n = 0;
+    while ((to[n] >= 'A' && to[n] <= 'Z') || (to[n] >= 'a' && to[n] <= 'z') || (to[n] >= '0' && to[n] <= '9') ||
+           to[n] == '_' || to[n] == '.' || to[n] == '-') n++;
+    if (n == 4 && !memcmp(to, "self", 4)) return CH_REASONING;
+    if (n == 0 || (n == 4 && !memcmp(to, "user", 4))) return CH_CONTENT;
+    return CH_TOOL;
+}
+
+// Route one generated token into content / reasoning / tool text (engine thread, r->mu held).
 static void route_token(server *sv, req *r, int32_t t) {
     char piece[256];
     if (sv->fam == CHAT_GLIMMER) {
-        if (t == sv->t_eot || t == sv->t_eos) return;
+        if (t == sv->t_eot || t == sv->t_eos) {
+            if (r->channel == CH_TOOL) out_bytes(r, CH_TOOL, "<|eot|>", 7);
+            return;
+        }
+        if (t == sv->t_start_id && r->channel == CH_TOOL)
+            out_bytes(r, CH_TOOL, "<|eom|>", 7);
         switch (r->pstate) {
         case PS_EXPECT_START:
             if (t == sv->t_start_id) { r->pstate = PS_HEADER; r->header_len = 0; return; }
@@ -132,16 +167,31 @@ static void route_token(server *sv, req *r, int32_t t) {
         case PS_HEADER:
             if (t == sv->t_message) {
                 r->header[r->header_len] = 0;
-                const char *to = strstr(r->header, "to=");
-                r->channel = to && !strncmp(to + 3, "self", 4) ? CH_REASONING : CH_CONTENT;
+                r->channel = glimmer_channel(r->header);
+                if (r->channel == CH_TOOL) {
+                    // Preserve channel boundaries for the strict ATEM parser;
+                    // stripped/unframed markup is never executable.
+                    const char *to = strstr(r->header, "to=");
+                    out_bytes(r, CH_TOOL, "<|start|>assistant ", 19);
+                    out_bytes(r, CH_TOOL, to, strlen(to));
+                    out_bytes(r, CH_TOOL, "<|message|>", 11);
+                }
                 r->pstate = PS_MESSAGE;
             } else {
                 size_t k = tok_piece(sv->tok, t, piece, sizeof piece);
                 if (r->header_len + k < sizeof r->header - 1) { memcpy(r->header + r->header_len, piece, k); r->header_len += (int)k; }
             }
             return;
+        default:
+            // A fresh header inside a message (the direct-answer prefix ends
+            // with <|message|>, but the model may still open channels).
+            if (t == sv->t_start_id) { r->pstate = PS_HEADER; r->header_len = 0; return; }
+            break;
         }
-        if (t == sv->t_eom) { r->pstate = PS_EXPECT_START; return; }
+        if (t == sv->t_eom) {
+            if (r->channel == CH_TOOL) out_bytes(r, CH_TOOL, "<|eom|>", 7);
+            r->pstate = PS_EXPECT_START; return;
+        }
         if (t == sv->t_start_id || t == sv->t_message) return;
     } else if (t == sv->t_think) { r->channel = CH_REASONING; return; }
     else if (t == sv->t_end_think) { r->channel = CH_CONTENT; return; }
@@ -162,6 +212,49 @@ static bool hit_stop_string(req *r) {
 
 // ---------------------------------------------------------------- engine thread
 
+// Copy engine-owned counters into the telemetry snapshot (mu held).
+static void snap_engine(server *sv) {
+    engine *e = sv->e;
+    sv->snap.active = sv->n_active;
+    sv->snap.served = sv->served;
+    sv->snap.prompt_tokens = sv->prompt_tokens;
+    sv->snap.generated_tokens = sv->gen_tokens;
+    sv->snap.kv_total_bytes = e->kv.full.bytes + e->kv.swa.bytes;
+    sv->snap.kv_free_bytes = (size_t)e->kv.full.n_free * kv_page_bytes(&e->kv.full) +
+                            (size_t)e->kv.swa.n_free * kv_page_bytes(&e->kv.swa);
+    sv->snap.full_free = e->kv.full.n_free;
+    sv->snap.full_total = e->kv.full.n_pages;
+    sv->snap.swa_free = e->kv.window ? e->kv.swa.n_free : 0;
+    sv->snap.swa_total = e->kv.window ? e->kv.swa.n_pages : 0;
+    sv->snap.recurrent_used = e->kv.recurrent_used;
+    sv->snap.recurrent_limit = e->kv.recurrent_limit;
+    sv->snap.shared_tokens = e->st.shared_tokens;
+    sv->snap.prefill_rows = e->st.prefill_rows;
+    sv->snap.decode_rows = e->st.decode_rows;
+    sv->snap.gen_tokens = e->st.gen_tokens;
+    sv->snap.deduped_tokens = e->st.deduped_tokens;
+    sv->snap.preemptions = e->st.preemptions;
+    sv->snap.swap_outs = e->st.swap_outs;
+    sv->snap.swap_ins = e->st.swap_ins;
+}
+
+// sv->mu held. Detach before acknowledgment: waiters may free the request
+// immediately after done. Cancellation must not wait for an admission slot.
+static void drain_cancelled(server *sv) {
+    req **at = &sv->queue;
+    while (*at) {
+        req *r = *at;
+        if (!r->cancelled) { at = &r->next; continue; }
+        *at = r->next;
+        pthread_mutex_lock(&r->mu);
+        r->finish = "cancelled";
+        r->t_done = wall();
+        r->done = true;
+        pthread_cond_broadcast(&r->cv);
+        pthread_mutex_unlock(&r->mu);
+    }
+}
+
 static void *engine_loop(void *arg) {
     server *sv = arg;
     engine *e = sv->e;
@@ -171,6 +264,7 @@ static void *engine_loop(void *arg) {
     for (;;) {
         pthread_mutex_lock(&sv->mu);
         while (!sv->n_active && !sv->queue) pthread_cond_wait(&sv->cv, &sv->mu);
+        drain_cancelled(sv);
         // admit queued requests (prefix sharing: a new agent forks the longest matching KV)
         while (sv->queue && (sv->o->max_active <= 0 || sv->n_active < sv->o->max_active)) {
             req *r = sv->queue;
@@ -214,7 +308,7 @@ static void *engine_loop(void *arg) {
             }
             bool fin = r->cancelled || stopped || s->done;
             if (fin) {
-                r->finish = stopped || (s->done && s->n_gen < s->p.max_new) ? "stop" : "length";
+                r->finish = r->cancelled ? "cancelled" : stopped || (s->done && s->n_gen < s->p.max_new) ? "stop" : "length";
                 r->done = true;
                 r->t_done = wall();
                 engine_retire(e, r->seq); // keep the KV for prefix reuse (multi-turn agents) until memory is needed
@@ -230,6 +324,9 @@ static void *engine_loop(void *arg) {
             if (!fin) sv->active[k++] = r;
         }
         sv->n_active = k;
+        pthread_mutex_lock(&sv->mu); // publish engine-owned counters for telemetry (this thread owns the engine)
+        snap_engine(sv);
+        pthread_mutex_unlock(&sv->mu);
         double t = now_secs();
         if (t - t_log > 10) {
             fprintf(stderr, "[serve] %d active | %.1f tok/s generated | %ld served | %ld preemptions | %ld shared prompt tokens | swap %ld out %ld in (%.2fs, %.2f GB held)"
@@ -293,33 +390,64 @@ static void sse(int fd, bool *ok, buf *ev) {
     ev->n = 0;
 }
 
-// Text of a message's content: a string, or an array of {type: "text", text}.
-static void content_text(const json *j, const jnode *c, buf *out) {
+// Text of a message's content: a string, or an array of parts. Text parts
+// pass through; with media enabled (Glimmer render_content) image and video
+// parts become their channel placeholders, anything else is ignored.
+static void content_text(const json *j, const jnode *c, buf *out, bool media) {
     if (!c) return;
     if (c->type == J_STR) { bput(out, c->s, c->n); return; }
     for (const jnode *p = c->type == J_ARR ? json_first(j, c) : NULL; p; p = json_next(j, p)) {
         const char *ty = json_str(j, p, "type"), *tx = json_str(j, p, "text");
-        if (tx && (!ty || !strcmp(ty, "text"))) bstr(out, tx);
+        if (!ty || !strcmp(ty, "text")) { if (tx) bstr(out, tx); }
+        else if (media && !strcmp(ty, "image")) bstr(out, "<|patch|>");
+        else if (media && !strcmp(ty, "video")) bstr(out, "<|video|>");
     }
 }
 
-// The fields of a finished chat reply's message (or delta): content, reasoning
-// and, when tools were offered, the tool calls parsed from it. Returns the
-// finish reason.
+// The fields of a finished chat reply's message (or delta): content,
+// reasoning and, when tools were offered, the tool calls parsed from it.
+// Returns the finish reason.
+static pthread_once_t call_nonce_once = PTHREAD_ONCE_INIT;
+static char call_nonce[80];
+static void init_call_nonce(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    snprintf(call_nonce, sizeof call_nonce, "%lx_%lx_%lx", (unsigned long)getpid(),
+             (unsigned long)ts.tv_sec, (unsigned long)ts.tv_nsec);
+}
+
 static const char *reply_fields(server *sv, req *r, buf *b) {
     static long next_call;
-    const char *content = r->text[0].s ? r->text[0].s : "", *finish = r->finish;
-    chat_call calls[8];
+    const char *content = r->text[CH_CONTENT].s ? r->text[CH_CONTENT].s : "";
+    size_t content_n = r->text[CH_CONTENT].n;
+    const char *finish = r->finish;
     char *rest = NULL;
-    int nc = r->tools ? chat_parse_calls(sv->fam, content, calls, 8, &rest) : 0;
+    // Glimmer calls come from the tool-recipient channel only (echoes in
+    // reasoning or the final answer stay text); other families parse the
+    // answer. A capped response must not execute even a complete earlier
+    // call: later arguments may be truncated. Keep the original stop reason.
+    const char *src = sv->fam == CHAT_GLIMMER ? (r->text[CH_TOOL].s ? r->text[CH_TOOL].s : "") : content;
+    int capacity = 1;
+    const char *marker = sv->fam == CHAT_GLIMMER ? "<atem:invoke" : "<tool_call>";
+    for (const char *p = src; (p = strstr(p, marker)); p += strlen(marker)) capacity++;
+    chat_call *calls = calloc((size_t)capacity, sizeof *calls);
+    int nc = r->tools && !r->cancelled && !strcmp(finish, "stop")
+        ? chat_parse_calls_tools(sv->fam, src, calls, capacity, &rest,
+                                 (const char *const *)r->tool_names, r->n_tool_names) : 0;
     if (nc) {
-        const char *p = rest;
-        while (*p == ' ' || *p == '\n') p++;
-        if (*p) { bstr(b, "\"content\":"); bjson(b, rest, strlen(rest)); }
-        else bstr(b, "\"content\":null");
+        pthread_once(&call_nonce_once, init_call_nonce);
+        if (sv->fam == CHAT_GLIMMER) {
+            if (content_n) { bstr(b, "\"content\":"); bjson(b, content, content_n); }
+            else bstr(b, "\"content\":null");
+        } else {
+            const char *p = rest;
+            while (*p == ' ' || *p == '\n') p++;
+            if (*p) { bstr(b, "\"content\":"); bjson(b, rest, strlen(rest)); }
+            else bstr(b, "\"content\":null");
+        }
         bstr(b, ",\"tool_calls\":[");
         for (int i = 0; i < nc; i++) {
-            bfmt(b, "%s{\"index\":%d,\"id\":\"call_%ld\",\"type\":\"function\",\"function\":{\"name\":", i ? "," : "", i, __sync_add_and_fetch(&next_call, 1));
+            bfmt(b, "%s{\"index\":%d,\"id\":\"call_%s_%ld\",\"type\":\"function\",\"function\":{\"name\":", i ? "," : "", i, call_nonce, __sync_add_and_fetch(&next_call, 1));
             bjson(b, calls[i].name, strlen(calls[i].name));
             bstr(b, ",\"arguments\":");
             bjson(b, calls[i].arguments, strlen(calls[i].arguments));
@@ -331,20 +459,110 @@ static const char *reply_fields(server *sv, req *r, buf *b) {
         finish = "tool_calls";
     } else {
         bstr(b, "\"content\":");
-        bjson(b, content, r->text[0].n);
+        bjson(b, content, content_n);
     }
     free(rest);
-    if (r->text[1].n) { bstr(b, ",\"reasoning_content\":"); bjson(b, r->text[1].s, r->text[1].n); }
+    free(calls);
+    if (r->text[CH_REASONING].n) { bstr(b, ",\"reasoning_content\":"); bjson(b, r->text[CH_REASONING].s, r->text[CH_REASONING].n); }
     return finish;
 }
 
 static void free_req(req *r) {
     free(r->prompt);
-    for (int i = 0; i < 2; i++) { free(r->text[i].s); free(r->raw[i].s); }
+    for (int i = 0; i < 3; i++) { free(r->text[i].s); free(r->raw[i].s); }
     for (int i = 0; i < r->n_stop_str; i++) free(r->stop[i]);
+    for (int i = 0; i < r->n_tool_names; i++) free(r->tool_names[i]);
+    free(r->tool_names);
     pthread_mutex_destroy(&r->mu);
     pthread_cond_destroy(&r->cv);
     free(r);
+}
+
+// True when the client is gone: the socket read EOF, or failed for a reason
+// other than "no data right now". A nonblocking peek, so it never disturbs a
+// live keep-alive connection.
+bool fleet_peer_gone(int fd) {
+    char b;
+    ssize_t k = recv(fd, &b, 1, MSG_PEEK | MSG_DONTWAIT);
+    if (k == 0) return true;
+    if (k < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) return true;
+    return false;
+}
+
+// Wait for r->done, polling for a vanished client in between: a cancelled
+// request stops costing engine work (active) or is skipped before admission
+// (queued, including buffered tool responses that only finish at the end).
+static void wait_done(req *r, int fd) {
+    pthread_mutex_lock(&r->mu);
+    while (!r->done) {
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_nsec += 50 * 1000000;
+        if (ts.tv_nsec >= 1000000000) { ts.tv_sec++; ts.tv_nsec -= 1000000000; }
+        pthread_cond_timedwait(&r->cv, &r->mu, &ts);
+        if (!r->done && fleet_peer_gone(fd)) r->cancelled = true;
+    }
+    pthread_mutex_unlock(&r->mu);
+}
+
+// Structured telemetry for supervisor hardware admission and terminal
+// display. capabilities states what this server supports (incremental tool
+// streaming is false: tool calls buffer to completion and stream once, while
+// engine activity stays visible through stats). stats reports live numbers
+// only: server active/queued/served plus the engine thread's snapshot (KV
+// free/total for the full and SWA pools, shared/generated/prefill counters).
+// Queued requests are queued, never reported as decoding.
+static void handle_fleet(server *sv, int fd, const char *path) {
+    buf b = { 0 };
+    if (!strcmp(path, "/v1/fleet/capabilities")) {
+        const char *fam = sv->fam == CHAT_GLIMMER ? "glimmer" : sv->fam == CHAT_CHATML ? "chatml" : sv->fam == CHAT_LLAMA3 ? "llama3" : "plain";
+        const char *tools = sv->fam == CHAT_GLIMMER ? "atem" : sv->fam == CHAT_CHATML ? "tool_call" : sv->fam == CHAT_LLAMA3 ? "llama_json" : "none";
+        const char *reason = sv->fam == CHAT_GLIMMER ? "to_self" : sv->t_think >= 0 ? "think" : "none";
+        engine *e = sv->e;
+        bstr(&b, "{\"engine\":\"fleet\",\"context_window\":null,\"model\":");
+        bjson(&b, sv->o->model_id, strlen(sv->o->model_id));
+        bstr(&b, ",\"family\":");
+        bjson(&b, fam, strlen(fam));
+        bstr(&b, ",\"tools\":{\"format\":");
+        bjson(&b, tools, strlen(tools));
+        bfmt(&b, ",\"multi_call\":true,\"incremental_streaming\":false,\"auto_parse\":%s},\"reasoning\":{\"channel\":", sv->fam == CHAT_PLAIN ? "false" : "true");
+        bjson(&b, reason, strlen(reason));
+        bfmt(&b, ",\"direct_supported\":true},\"streaming\":true,\"usage\":true,\"prefix_sharing\":true,\"swa_coalescing\":%s,",
+             e->recurrent_prefix_dedup && e->kv.window && !e->draft ? "true" : "false");
+        bfmt(&b, "\"learned_drafter\":%s,\"ngram_drafts\":%s,\"prompt_checkpoints\":%s,\"admission\":{\"max_active\":%d,\"memory_aware\":%s}",
+             e->draft ? "true" : "false", e->ngram ? "true" : "false", e->prompt_checkpoints ? "true" : "false",
+             sv->o->max_active, sv->o->admit ? "true" : "false");
+        bfmt(&b, ",\"max_active\":%d,\"features\":{\"native_tools\":%s,\"tool_streaming\":\"buffered\",\"shared_prefix_coalescing\":%s,\"ngram_spec\":%s,\"learned_drafter\":%s}}",
+             sv->o->max_active, sv->fam != CHAT_PLAIN && !tok_qwen35(sv->tok) ? "true" : "false",
+             e->recurrent_prefix_dedup && e->kv.window && !e->draft ? "true" : "false",
+             e->ngram ? "true" : "false", e->draft ? "true" : "false");
+    } else if (!strcmp(path, "/v1/fleet/stats")) {
+        pthread_mutex_lock(&sv->mu);
+        int queued = 0;
+        for (req *r = sv->queue; r; r = r->next) queued++;
+        int active = sv->snap.active;
+        long served = sv->snap.served, ptok = sv->snap.prompt_tokens, gtok = sv->snap.generated_tokens;
+        double uptime = now_secs() - sv->t_start;
+        uint32_t ff = sv->snap.full_free, ft = sv->snap.full_total, sf = sv->snap.swa_free, st = sv->snap.swa_total;
+        size_t total_bytes = sv->snap.kv_total_bytes, free_bytes = sv->snap.kv_free_bytes;
+        int ru = sv->snap.recurrent_used, rl = sv->snap.recurrent_limit;
+        long shared = sv->snap.shared_tokens, pre = sv->snap.prefill_rows, dec = sv->snap.decode_rows;
+        long egen = sv->snap.gen_tokens, dedup = sv->snap.deduped_tokens;
+        long preempt = sv->snap.preemptions, sout = sv->snap.swap_outs, sin = sv->snap.swap_ins;
+        pthread_mutex_unlock(&sv->mu);
+        bfmt(&b, "{\"active\":%d,\"queued\":%d,\"served\":%ld,\"prompt_tokens\":%ld,\"generated_tokens\":%ld,\"uptime_s\":%.1f", active, queued, served, ptok, gtok, uptime);
+        bfmt(&b, ",\"engine\":{\"shared_tokens\":%ld,\"prefill_rows\":%ld,\"decode_rows\":%ld,\"gen_tokens\":%ld,\"deduped_tokens\":%ld,\"preemptions\":%ld,\"swap_outs\":%ld,\"swap_ins\":%ld}",
+             shared, pre, dec, egen, dedup, preempt, sout, sin);
+        bfmt(&b, ",\"tokens\":{\"prefill\":%ld,\"generated\":%ld,\"shared_prefix\":%ld},\"requests\":{\"completed\":%ld}", pre, gtok, shared, served);
+        bfmt(&b, ",\"kv\":{\"total_bytes\":%zu,\"free_bytes\":%zu,\"full\":%s,\"full_free\":%u,\"full_total\":%u,\"swa_free\":%u,\"swa_total\":%u,\"recurrent_used\":%d,\"recurrent_limit\":%d},\"memory\":{\"rss_bytes\":null,\"physical_footprint_bytes\":null}}",
+             total_bytes, free_bytes, (ft && !ff) || (st && !sf) ? "true" : "false",
+             ff, ft, sf, st, ru, rl);
+    } else {
+        respond_error(fd, 404, "unknown endpoint");
+        return;
+    }
+    respond(fd, 200, "application/json", b.s ? b.s : "{}", b.s ? b.n : 2);
+    free(b.s);
 }
 
 static void handle_completion(conn *c, const char *body, size_t len, bool chat) {
@@ -353,10 +571,12 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
     if (!j) { respond_error(c->fd, 400, "invalid JSON"); return; }
     const jnode *root = json_root(j);
     req *r = calloc(1, sizeof *r);
+    atomic_init(&r->cancelled, false);
     pthread_mutex_init(&r->mu, NULL);
     pthread_cond_init(&r->cv, NULL);
     // prompt
     char *text = NULL;
+    bool direct = false; // "none" reasoning: the prompt ends inside the answer channel
     if (chat) {
         const jnode *msgs = json_get(j, root, "messages");
         if (!msgs || msgs->type != J_ARR || !msgs->n) { respond_error(c->fd, 400, "messages must be a non-empty array"); json_free(j); free_req(r); return; }
@@ -380,18 +600,34 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
             n_calls += tc && tc->type == J_ARR ? tc->n : 0;
         }
         chat_call *calls = calloc(n_calls ? n_calls : 1, sizeof(chat_call));
+        char **argdump = calloc(n_calls ? n_calls : 1, sizeof(char *));
+        bool glimmer_media = sv->fam == CHAT_GLIMMER;
         n_calls = 0;
         for (const jnode *m = json_first(j, msgs); m; m = json_next(j, m), k++) {
-            content_text(j, json_get(j, m, "content"), &bodies[k]);
+            content_text(j, json_get(j, m, "content"), &bodies[k], glimmer_media);
             const char *role = json_str(j, m, "role");
             cm[k].role = role ? role : "user";
             cm[k].content = bodies[k].s ? bodies[k].s : "";
+            cm[k].reasoning_content = json_str(j, m, "reasoning_content");
+            if (!cm[k].reasoning_content) cm[k].reasoning_content = json_str(j, m, "reasoning");
+            cm[k].recipient = json_str(j, m, "recipient");
+            const jnode *end_turn = json_get(j, m, "end_turn");
+            if (end_turn && end_turn->type == J_BOOL) cm[k].end_turn = end_turn->num ? 1 : -1;
+            if (!strcmp(cm[k].role, "tool")) {
+                cm[k].tool_call_id = json_str(j, m, "tool_call_id");
+                cm[k].name = json_str(j, m, "name");
+            }
             const jnode *tc = json_get(j, m, "tool_calls"); // [{id, type, function: {name, arguments}}]
             cm[k].calls = calls + n_calls;
             for (const jnode *c = tc && tc->type == J_ARR ? json_first(j, tc) : NULL; c; c = json_next(j, c)) {
                 const jnode *fn = json_get(j, c, "function");
                 if (!json_str(j, fn, "name")) continue;
-                calls[n_calls++] = (chat_call){ json_str(j, fn, "name"), json_str(j, fn, "arguments") };
+                const jnode *ag = json_get(j, fn, "arguments");
+                const char *as = NULL;
+                if (!ag) as = "{}";
+                else if (ag->type == J_STR) as = ag->s;
+                else if (ag->type == J_OBJ) as = argdump[n_calls] = json_dump(j, ag);
+                calls[n_calls++] = (chat_call){ .name = json_str(j, fn, "name"), .arguments = as, .id = json_str(j, c, "id") };
                 cm[k].n_calls++;
             }
         }
@@ -403,17 +639,25 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         n_tools = 0;
         for (const jnode *t = tl && tl->type == J_ARR && !(choice && !strcmp(choice, "none")) ? json_first(j, tl) : NULL; t; t = json_next(j, t)) tools[n_tools++] = json_dump(j, t);
         r->tools = n_tools > 0;
+        r->tool_names = calloc(n_tools ? n_tools : 1, sizeof *r->tool_names);
+        for (const jnode *t = r->tools ? json_first(j, tl) : NULL; t; t = json_next(j, t)) {
+            const jnode *fn = json_get(j, t, "function");
+            const char *name = json_str(j, fn ? fn : t, "name");
+            if (name) r->tool_names[r->n_tool_names++] = strdup(name);
+        }
         time_t now = time(NULL);
         char date[16];
         strftime(date, sizeof date, "%Y-%m-%d", localtime(&now));
         const char *effort = json_str(j, root, "reasoning_effort");
         const char *reasoning = effort ? effort : sv->o->reasoning;
-        bool direct = reasoning && !strcmp(reasoning, "none");
+        direct = reasoning && !strcmp(reasoning, "none");
         chat_opts o = { direct, reasoning, date, (const char **)tools, n_tools };
         text = chat_format_opts(sv->tok, cm, k, &o);
         if (tok_qwen35(sv->tok) && !direct) r->channel = CH_REASONING;
         for (int i = 0; i < k; i++) free(bodies[i].s);
         for (int i = 0; i < n_tools; i++) free(tools[i]);
+        for (int i = 0; i < n_calls; i++) free(argdump[i]);
+        free(argdump);
         free(tools);
         free(calls);
         free(bodies);
@@ -457,7 +701,9 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
     if (chat && sv->fam == CHAT_GLIMMER) { // reasoning ends a message (<|eom|>), not the turn
         r->p.stop[r->p.n_stop++] = sv->t_eot;
         if (sv->t_eos >= 0) r->p.stop[r->p.n_stop++] = sv->t_eos;
-        r->pstate = PS_HEADER;
+        // A direct answer opens no channel: the prompt already ends with
+        // <|message|>, so the first tokens are answer text, not a header.
+        r->pstate = direct ? PS_MESSAGE : PS_HEADER;
     }
     const jnode *st = json_get(j, root, "stop");
     if (st && st->type == J_STR && st->n) r->stop[r->n_stop_str++] = strdup(st->s);
@@ -483,9 +729,8 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
     if (stream && r->tools) { // a tool call is only known once the reply is complete: send it whole
         const char *h = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nTransfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\n";
         ok = send_all(c->fd, h, strlen(h));
-        pthread_mutex_lock(&r->mu);
-        while (!r->done) pthread_cond_wait(&r->cv, &r->mu);
-        pthread_mutex_unlock(&r->mu);
+        wait_done(r, c->fd); // tool calls buffer to completion; a client that left cancels here
+        if (r->cancelled) { free_req(r); return; }
         buf ev = { 0 };
         bfmt(&ev, "{\"id\":\"%s\",\"object\":\"chat.completion.chunk\",\"created\":%ld,\"model\":", id, created);
         bjson(&ev, sv->o->model_id, strlen(sv->o->model_id));
@@ -520,7 +765,14 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         }
         pthread_mutex_lock(&r->mu);
         for (;;) {
-            while (ok && !r->done && r->text[0].n == sent[0] && r->text[1].n == sent[1]) pthread_cond_wait(&r->cv, &r->mu);
+            while (ok && !r->done && r->text[CH_CONTENT].n == sent[0] && r->text[CH_REASONING].n == sent[1]) {
+                struct timespec tw;
+                clock_gettime(CLOCK_REALTIME, &tw);
+                tw.tv_nsec += 50 * 1000000;
+                if (tw.tv_nsec >= 1000000000) { tw.tv_sec++; tw.tv_nsec -= 1000000000; }
+                pthread_cond_timedwait(&r->cv, &r->mu, &tw);
+                if (!r->done && fleet_peer_gone(c->fd)) r->cancelled = true;
+            }
             for (int ch = 0; ch < 2 && ok; ch++) {
                 if (r->text[ch].n == sent[ch]) continue;
                 if (ch == CH_REASONING && !chat) { sent[ch] = r->text[ch].n; continue; }
@@ -541,10 +793,11 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
                 pthread_mutex_lock(&r->mu);
             }
             if (!ok) { r->cancelled = true; break; } // client went away
-            if (r->done && r->text[0].n == sent[0] && r->text[1].n == sent[1]) break;
+            if (r->done && r->text[CH_CONTENT].n == sent[0] && r->text[CH_REASONING].n == sent[1]) break;
         }
         while (!r->done) pthread_cond_wait(&r->cv, &r->mu);
         pthread_mutex_unlock(&r->mu);
+        if (r->cancelled) { free(ev.s); free_req(r); return; }
         bfmt(&ev, "{\"id\":\"%s\",\"object\":\"%s\",\"created\":%ld,\"model\":", id, chat ? "chat.completion.chunk" : "text_completion", created);
         bjson(&ev, sv->o->model_id, strlen(sv->o->model_id));
         bfmt(&ev, chat ? ",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"%s\"}]}" : ",\"choices\":[{\"index\":0,\"text\":\"\",\"finish_reason\":\"%s\"}]}", r->finish);
@@ -560,9 +813,8 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         if (ok) ok = chunk(c->fd, done, strlen(done)) && send_all(c->fd, "0\r\n\r\n", 5);
         free(ev.s);
     } else {
-        pthread_mutex_lock(&r->mu);
-        while (!r->done) pthread_cond_wait(&r->cv, &r->mu);
-        pthread_mutex_unlock(&r->mu);
+        wait_done(r, c->fd);
+        if (r->cancelled) { free_req(r); return; }
         buf b = { 0 };
         bfmt(&b, "{\"id\":\"%s\",\"object\":\"%s\",\"created\":%ld,\"model\":", id, obj, created);
         bjson(&b, sv->o->model_id, strlen(sv->o->model_id));
@@ -572,7 +824,7 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
             bfmt(&b, "},\"finish_reason\":\"%s\"}]", finish);
         } else {
             bstr(&b, ",\"choices\":[{\"index\":0,\"text\":");
-            bjson(&b, r->text[0].s ? r->text[0].s : "", r->text[0].n);
+            bjson(&b, r->text[CH_CONTENT].s ? r->text[CH_CONTENT].s : "", r->text[CH_CONTENT].n);
             bfmt(&b, ",\"finish_reason\":\"%s\"}]", r->finish);
         }
         bfmt(&b, ",\"usage\":{\"prompt_tokens\":%d,\"completion_tokens\":%d,\"total_tokens\":%d,\"prompt_tokens_details\":{\"cached_tokens\":%d}}}", r->n_prompt, r->n_gen,
@@ -624,6 +876,7 @@ static void *conn_loop(void *arg) {
             free(b.s);
         } else if (!strcmp(method, "POST") && !strcmp(path, "/v1/chat/completions")) handle_completion(c, body, clen, true);
         else if (!strcmp(method, "POST") && !strcmp(path, "/v1/completions")) handle_completion(c, body, clen, false);
+        else if (!strcmp(method, "GET") && (!strcmp(path, "/v1/fleet/capabilities") || !strcmp(path, "/v1/fleet/stats"))) handle_fleet(c->sv, c->fd, path);
         else respond_error(c->fd, 404, "unknown endpoint");
         memmove(in.s, in.s + hlen + clen, in.n - hlen - clen);
         in.n -= hlen + clen;
@@ -653,6 +906,7 @@ int server_run(engine *e, const server_opts *o) {
     sv->t_eos = tok_lookup(e->tok, "<|end_of_text|>");
     sv->t_think = tok_lookup(e->tok, "<think>");
     sv->t_end_think = tok_lookup(e->tok, "</think>");
+    snap_engine(sv); // telemetry reads live numbers even before the first step
     pthread_t th;
     pthread_create(&th, NULL, engine_loop, sv);
     int fd = socket(AF_INET, SOCK_STREAM, 0), one = 1;

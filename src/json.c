@@ -137,6 +137,8 @@ static int parse_value(parser *ps) {
         char *e;
         ps->j->nodes[id].num = strtod(ps->p, &e);
         if (e == ps->p) return -1;
+        for (const char *q = ps->p; q < e; q++)
+            if (*q == '.' || *q == 'e' || *q == 'E') ps->j->nodes[id].is_float = true;
         ps->p = e;
         return id;
     }

@@ -1,0 +1,791 @@
+{
+  "source": "Independent review cases rendered by HF _compile_jinja_template; no native formatter output",
+  "template_sha256": "114f55ebdc1804c1af371197b9fdf2d6bb925966c9dfe46b73782a71bc07965e",
+  "cases": [
+    {
+      "name": "extra-nested-json-unicode",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Résumé 雪"
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call-nested",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": {
+                  "z": [
+                    "café",
+                    "<tag>&'",
+                    true,
+                    null,
+                    {
+                      "β": "雪"
+                    }
+                  ],
+                  "a": {
+                    "count": 3,
+                    "enabled": false
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "Read a local UTF-8 file.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "offset": {
+                  "type": "number"
+                },
+                "limit": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "edit",
+            "description": "Replace exact text; preserve whitespace and Unicode.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "oldText": {
+                  "type": "string"
+                },
+                "newText": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "oldText",
+                "newText"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "Write complete file contents.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ]
+            }
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>Résumé 雪\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"read\", \"description\": \"\"}\n{\"name\": \"edit\", \"description\": \"\"}\n{\"name\": \"write\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"read\", \"description\": \"Read a local UTF-8 file.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"offset\": {\"type\": \"number\"}, \"limit\": {\"type\": \"number\"}}, \"required\": [\"path\"]}}\n{\"name\": \"edit\", \"description\": \"Replace exact text; preserve whitespace and Unicode.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"oldText\": {\"type\": \"string\"}, \"newText\": {\"type\": \"string\"}}, \"required\": [\"path\", \"oldText\", \"newText\"]}}\n{\"name\": \"write\", \"description\": \"Write complete file contents.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"content\": {\"type\": \"string\"}}, \"required\": [\"path\", \"content\"]}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"read.*\", \"edit.*\", \"write.*\", \"user\".<|eot|><|start|>assistant to=write<|message|><atem:function_calls>\n<atem:invoke name=\"write\">\n<atem:parameter name=\"z\">[\"café\", \"<tag>&'\", true, null, {\"β\": \"雪\"}]</atem:parameter>\n<atem:parameter name=\"a\">{\"count\": 3, \"enabled\": false}</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-tool-call-followed-by-assistant",
+      "messages": [
+        {
+          "role": "system",
+          "content": "System"
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call-nested",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": {
+                  "z": [
+                    "café",
+                    "<tag>&'",
+                    true,
+                    null,
+                    {
+                      "β": "雪"
+                    }
+                  ],
+                  "a": {
+                    "count": 3,
+                    "enabled": false
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "Continue"
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "Read a local UTF-8 file.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "offset": {
+                  "type": "number"
+                },
+                "limit": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "edit",
+            "description": "Replace exact text; preserve whitespace and Unicode.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "oldText": {
+                  "type": "string"
+                },
+                "newText": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "oldText",
+                "newText"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "Write complete file contents.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ]
+            }
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>System\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"read\", \"description\": \"\"}\n{\"name\": \"edit\", \"description\": \"\"}\n{\"name\": \"write\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"read\", \"description\": \"Read a local UTF-8 file.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"offset\": {\"type\": \"number\"}, \"limit\": {\"type\": \"number\"}}, \"required\": [\"path\"]}}\n{\"name\": \"edit\", \"description\": \"Replace exact text; preserve whitespace and Unicode.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"oldText\": {\"type\": \"string\"}, \"newText\": {\"type\": \"string\"}}, \"required\": [\"path\", \"oldText\", \"newText\"]}}\n{\"name\": \"write\", \"description\": \"Write complete file contents.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"content\": {\"type\": \"string\"}}, \"required\": [\"path\", \"content\"]}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"read.*\", \"edit.*\", \"write.*\", \"user\".<|eot|><|start|>assistant to=write<|message|><atem:function_calls>\n<atem:invoke name=\"write\">\n<atem:parameter name=\"z\">[\"café\", \"<tag>&'\", true, null, {\"β\": \"雪\"}]</atem:parameter>\n<atem:parameter name=\"a\">{\"count\": 3, \"enabled\": false}</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|><|start|>assistant to=user<|message|>Continue<|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-empty-reasoning",
+      "messages": [
+        {
+          "role": "system",
+          "content": "System"
+        },
+        {
+          "role": "assistant",
+          "reasoning_content": "",
+          "content": "Hello"
+        }
+      ],
+      "tools": [],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>System\n\nReasoning strength: low.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>assistant to=user<|message|>Hello<|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-explicit-end-turn-false",
+      "messages": [
+        {
+          "role": "assistant",
+          "recipient": "user",
+          "end_turn": false,
+          "content": "Continued message"
+        }
+      ],
+      "tools": [],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\nCurrent date: 2026-11-04.\n\nReasoning strength: low.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>assistant to=user<|message|>Continued message<|eom|><|start|>assistant"
+    },
+    {
+      "name": "extra-explicit-end-turn-true",
+      "messages": [
+        {
+          "role": "assistant",
+          "recipient": "self",
+          "end_turn": true,
+          "content": "Planning"
+        }
+      ],
+      "tools": [],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\nCurrent date: 2026-11-04.\n\nReasoning strength: low.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>assistant to=self<|message|>Planning<|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-no-system-date",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hello"
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "Read a local UTF-8 file.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "offset": {
+                  "type": "number"
+                },
+                "limit": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "edit",
+            "description": "Replace exact text; preserve whitespace and Unicode.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "oldText": {
+                  "type": "string"
+                },
+                "newText": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "oldText",
+                "newText"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "Write complete file contents.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ]
+            }
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\nCurrent date: 2026-11-04.\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"read\", \"description\": \"\"}\n{\"name\": \"edit\", \"description\": \"\"}\n{\"name\": \"write\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"read\", \"description\": \"Read a local UTF-8 file.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"offset\": {\"type\": \"number\"}, \"limit\": {\"type\": \"number\"}}, \"required\": [\"path\"]}}\n{\"name\": \"edit\", \"description\": \"Replace exact text; preserve whitespace and Unicode.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"oldText\": {\"type\": \"string\"}, \"newText\": {\"type\": \"string\"}}, \"required\": [\"path\", \"oldText\", \"newText\"]}}\n{\"name\": \"write\", \"description\": \"Write complete file contents.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"content\": {\"type\": \"string\"}}, \"required\": [\"path\", \"content\"]}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"read.*\", \"edit.*\", \"write.*\", \"user\".<|eot|><|start|>user<|message|>Hello<|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-late-system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hello"
+        },
+        {
+          "role": "system",
+          "content": "Updated instruction"
+        },
+        {
+          "role": "assistant",
+          "content": "Understood"
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "Read a local UTF-8 file.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "offset": {
+                  "type": "number"
+                },
+                "limit": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "edit",
+            "description": "Replace exact text; preserve whitespace and Unicode.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "oldText": {
+                  "type": "string"
+                },
+                "newText": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "oldText",
+                "newText"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "Write complete file contents.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ]
+            }
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>user<|message|>Hello<|eot|><|start|>system<|message|>Updated instruction\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"read\", \"description\": \"\"}\n{\"name\": \"edit\", \"description\": \"\"}\n{\"name\": \"write\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"read\", \"description\": \"Read a local UTF-8 file.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"offset\": {\"type\": \"number\"}, \"limit\": {\"type\": \"number\"}}, \"required\": [\"path\"]}}\n{\"name\": \"edit\", \"description\": \"Replace exact text; preserve whitespace and Unicode.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"oldText\": {\"type\": \"string\"}, \"newText\": {\"type\": \"string\"}}, \"required\": [\"path\", \"oldText\", \"newText\"]}}\n{\"name\": \"write\", \"description\": \"Write complete file contents.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"content\": {\"type\": \"string\"}}, \"required\": [\"path\", \"content\"]}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"read.*\", \"edit.*\", \"write.*\", \"user\".<|eot|><|start|>assistant to=user<|message|>Understood<|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-explicit-tool-name-overrides-id",
+      "messages": [
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call-nested",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": {
+                  "z": [
+                    "café",
+                    "<tag>&'",
+                    true,
+                    null,
+                    {
+                      "β": "雪"
+                    }
+                  ],
+                  "a": {
+                    "count": 3,
+                    "enabled": false
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "name": "explicit_name",
+          "tool_call_id": "call-nested",
+          "content": "Result"
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "Read a local UTF-8 file.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "offset": {
+                  "type": "number"
+                },
+                "limit": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "edit",
+            "description": "Replace exact text; preserve whitespace and Unicode.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "oldText": {
+                  "type": "string"
+                },
+                "newText": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "oldText",
+                "newText"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "Write complete file contents.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ]
+            }
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\nCurrent date: 2026-11-04.\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"read\", \"description\": \"\"}\n{\"name\": \"edit\", \"description\": \"\"}\n{\"name\": \"write\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"read\", \"description\": \"Read a local UTF-8 file.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"offset\": {\"type\": \"number\"}, \"limit\": {\"type\": \"number\"}}, \"required\": [\"path\"]}}\n{\"name\": \"edit\", \"description\": \"Replace exact text; preserve whitespace and Unicode.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"oldText\": {\"type\": \"string\"}, \"newText\": {\"type\": \"string\"}}, \"required\": [\"path\", \"oldText\", \"newText\"]}}\n{\"name\": \"write\", \"description\": \"Write complete file contents.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"content\": {\"type\": \"string\"}}, \"required\": [\"path\", \"content\"]}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"read.*\", \"edit.*\", \"write.*\", \"user\".<|eot|><|start|>assistant to=write<|message|><atem:function_calls>\n<atem:invoke name=\"write\">\n<atem:parameter name=\"z\">[\"café\", \"<tag>&'\", true, null, {\"β\": \"雪\"}]</atem:parameter>\n<atem:parameter name=\"a\">{\"count\": 3, \"enabled\": false}</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|><|start|>tool explicit_name<|message|><tool_output name=\"explicit_name\">\nResult\n</tool_output><|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-text-content-array",
+      "messages": [
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "A"
+            },
+            {
+              "type": "text",
+              "text": "B"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": " café "
+            }
+          ]
+        }
+      ],
+      "tools": [],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>AB\n\nReasoning strength: low.\n\n# Valid recipients: \"self\", \"user\".<|eot|><|start|>user<|message|> café <|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-shared-namespace-and-bare-schema",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Inspect"
+        }
+      ],
+      "tools": [
+        {
+          "name": "files.read",
+          "description": "Read café <p>&'",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "name": "files.write",
+          "description": "Write",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\nCurrent date: 2026-11-04.\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"files\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"files.read\", \"description\": \"Read café <p>&'\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}}}}\n{\"name\": \"files.write\", \"description\": \"Write\", \"parameters\": {\"type\": \"object\", \"properties\": {}}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"files.*\", \"user\".<|eot|><|start|>user<|message|>Inspect<|eot|><|start|>assistant"
+    },
+    {
+      "name": "extra-float-values",
+      "messages": [
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "float-call",
+              "type": "function",
+              "function": {
+                "name": "read",
+                "arguments": {
+                  "one": 1.0,
+                  "negative_zero": -0.0,
+                  "small": 1e-07
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "Read a local UTF-8 file.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "offset": {
+                  "type": "number"
+                },
+                "limit": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "edit",
+            "description": "Replace exact text; preserve whitespace and Unicode.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "oldText": {
+                  "type": "string"
+                },
+                "newText": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "oldText",
+                "newText"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "Write complete file contents.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ]
+            }
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>You are a helpful AI assistant.\nKnowledge cutoff: 2026-01-04.\nCurrent date: 2026-11-04.\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"read\", \"description\": \"\"}\n{\"name\": \"edit\", \"description\": \"\"}\n{\"name\": \"write\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"read\", \"description\": \"Read a local UTF-8 file.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"offset\": {\"type\": \"number\"}, \"limit\": {\"type\": \"number\"}}, \"required\": [\"path\"]}}\n{\"name\": \"edit\", \"description\": \"Replace exact text; preserve whitespace and Unicode.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"oldText\": {\"type\": \"string\"}, \"newText\": {\"type\": \"string\"}}, \"required\": [\"path\", \"oldText\", \"newText\"]}}\n{\"name\": \"write\", \"description\": \"Write complete file contents.\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"content\": {\"type\": \"string\"}}, \"required\": [\"path\", \"content\"]}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"read.*\", \"edit.*\", \"write.*\", \"user\".<|eot|><|start|>assistant to=read<|message|><atem:function_calls>\n<atem:invoke name=\"read\">\n<atem:parameter name=\"one\">1.0</atem:parameter>\n<atem:parameter name=\"negative_zero\">-0.0</atem:parameter>\n<atem:parameter name=\"small\">1e-07</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|><|start|>assistant"
+    }
+  ]
+}

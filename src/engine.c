@@ -262,7 +262,14 @@ int engine_create(engine *e, const int32_t *prompt, int n) {
             fullslot_match = true;
         if (l >= e->min_share && l > best_len && forkable) { best = i; best_len = l; }
         bool future_endpoint = !s->cached && !s->done && !s->swapped && w > s->n_tokens && (!s->generating || s->n_gen == 0);
-        bool can_wait = !e->m->c.n_linear || (e->recurrent_prefix_dedup && e->kv.recurrent_limit >= 2 && future_endpoint);
+        // Waiting needs a leader that will actually write the shared prefix.
+        // A cached, finished, swapped, or already-generating source is stale:
+        // pure attention used to wait on it anyway, then abandon the wait and
+        // prefill everything itself instead of forking a fresh shorter match.
+        // Recurrent models additionally need the opt-in dedup window with
+        // room for two states. The best forkable-source lookup above is
+        // unchanged: it still prefers whatever is actually reusable now.
+        bool can_wait = future_endpoint && (!e->m->c.n_linear || (e->recurrent_prefix_dedup && e->kv.recurrent_limit >= 2));
         if (can_wait && w > lead_len) {
             lead = i;
             lead_len = w;

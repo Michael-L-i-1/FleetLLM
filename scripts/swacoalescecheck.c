@@ -164,12 +164,40 @@ static void memory_pressure(void) {
     printf("pressure cached-leader-evicted=1 preemptions=%ld shared=%ld\n",e->st.preemptions,e->st.shared_tokens);
     cleanup(e);
 }
+
+// An older, longer textual match has already discarded its required SWA
+// pages. It must not hide a younger usable source or a live future endpoint.
+static void stale_leader(bool retired, bool future) {
+    model m=fixture();backend b=compute();engine *e=engine_new(&m,&b,NULL,2u<<20);
+    e->recurrent_prefix_dedup=true;e->row_budget=128;
+    int32_t old[6016],fresh[6016],child[6016];
+    make_prompt(old,6016,6016,0);make_prompt(fresh,6016,2500,1);make_prompt(child,6016,3000,2);
+    int stale=engine_create(e,old,6016);engine_start(e,stale,params());finish(e,&stale,1);
+    assert(!kv_can_fork_at(&e->kv,&e->seqs[stale].pages,3000));
+    if(retired) engine_retire(e,stale);
+    int active_len=future?6016:2500;
+    int active=engine_create(e,fresh,active_len);engine_start(e,active,params());
+    if(!future) {
+        e->row_budget=100;
+        while(e->seqs[active].n_tokens<2500) assert(engine_step(e,&active,1));
+        assert(e->seqs[active].n_tokens==2500);
+        assert(kv_can_fork_at(&e->kv,&e->seqs[active].pages,2500));
+    }
+    int id=engine_create(e,child,6016);engine_start(e,id,params());
+    if(future) assert(e->seqs[id].wait_len==2500 && e->seqs[id].wait_for==active);
+    else assert(!e->seqs[id].wait_len && e->seqs[id].prefix_cached==2500);
+    int ids[]={active,id};finish(e,ids,2);
+    assert(e->seqs[id].prefix_cached==2500);
+    verify(e,active,fresh,active_len);verify(e,id,child,6016);
+    printf("stale leader retired=%d future=%d reused=2500\n",retired,future);cleanup(e);
+}
 int main(void) {
     assert(fanout(false,6000,false)==0);
     assert(fanout(true,6000,false)==7*6000);
     fanout(false,6016,false);fanout(true,6016,false);
     fanout(true,6003,false);fanout(true,6080,true);
     boundary_and_cow();missing_leader(true);missing_leader(false);cancelled_waiter();memory_pressure();
+    stale_leader(false,false);stale_leader(false,true);stale_leader(true,false);stale_leader(true,true);
     assert(cows==1);
     puts("SWA scheduling, output/KV parity, COW and release checks passed");
 }

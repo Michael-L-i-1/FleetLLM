@@ -4,7 +4,7 @@
 // Honesty rules enforced here (same as compose.mjs):
 //  * Every lane shares one real-time axis and one acceleration factor.
 //  * Each lane shows the genuine per-page screenshot (config.page, default the home
-//    page) from the latest captured manifest frame whose elapsed <= t; once t reaches
+//    page), or follows the original capture-selected page, from the latest manifest frame whose elapsed <= t; once t reaches
 //    the lane's real duration it freezes on the final captured frame.
 //  * Throughput numbers are read from summary.json at render time (workflow average
 //    output tokens/s over the whole run), never animated or interpolated.
@@ -39,6 +39,7 @@ const resolveCfg = p => path.resolve(configDir, p);
 const speed = Number(config.speed ?? 40), fps = Number(config.fps ?? 30), hold = Number(config.end_hold_seconds ?? 3);
 const W = Number(config.width ?? 1920), H = Number(config.height ?? 1080);
 const pageName = config.page || 'index.html';
+const followCapture = config.page_mode === 'follow-capture';
 if (![speed, fps, hold, W, H].every(x => Number.isFinite(x) && x > 0)) throw Error('Invalid timeline settings');
 if (!Array.isArray(config.lanes) || config.lanes.length !== 3) throw Error('Exactly three lanes are required');
 
@@ -64,12 +65,13 @@ const lanes = config.lanes.map((cfg, li) => {
   const frames = [];
   let lastGood = null;
   for (const r of records.filter(r => r.captured).sort((a, b) => a.elapsed - b.elapsed)) {
-    const pg = (r.pages || []).find(p => p.name === pageName);
+    const selectedPage = followCapture ? (r.selected_page || pageName) : pageName;
+    const pg = (r.pages || []).find(p => p.name === selectedPage);
     let image = null, fallback = false;
     if (pg && pg.file && !pg.error) {
       const abs = path.resolve(dir, pg.file);
       if (!fs.existsSync(abs)) throw Error(`Missing page screenshot ${abs}`);
-      image = {abs, file: pg.file, page_html_sha256: pg.sha256 ?? null, page_elapsed: pg.elapsed ?? null};
+      image = {abs, page: pg.name, file: pg.file, page_html_sha256: pg.sha256 ?? null, page_elapsed: pg.elapsed ?? null};
       lastGood = image;
     } else if (lastGood) { image = lastGood; fallback = true; }
     if (!image) continue;
@@ -165,7 +167,7 @@ footer{flex:none;display:flex;justify-content:space-between;gap:32px;font-size:1
     <div class="time" id="time${i}">0:00</div>
   </section>`).join('')}
 </main>
-<footer><div>${esc(config.footnote_mark || '')}</div><div>${esc(config.footnote_method || '')}</div></footer>
+${config.footnote_mark || config.footnote_method ? `<footer><div>${esc(config.footnote_mark || '')}</div><div>${esc(config.footnote_method || '')}</div></footer>` : ''}
 </div>`;
 const htmlFile = path.join(output, 'presentation.html');
 fs.writeFileSync(htmlFile, html);
@@ -212,14 +214,14 @@ try {
       lanes: states.map((s, i) => {
         const im = s.frame.image, l = lanes[i];
         let u = used.get(im.abs);
-        if (!u) used.set(im.abs, u = {lane: l.mode, page: pageName, path: rel(im.abs), sha256: sha256(im.abs),
+        if (!u) used.set(im.abs, u = {lane: l.mode, page: im.page, path: rel(im.abs), sha256: sha256(im.abs),
           page_html_sha256: im.page_html_sha256, page_screenshot_elapsed: im.page_elapsed,
           first_shown_real_seconds: +t.toFixed(3), last_shown_real_seconds: +t.toFixed(3), source_frames: []});
         u.last_shown_real_seconds = +t.toFixed(3);
         if (!u.source_frames.includes(s.frame.manifest_line)) u.source_frames.push(s.frame.manifest_line);
         return {mode: l.mode, ended: s.ended, shown_real_seconds: +s.shown_seconds.toFixed(3),
           manifest_line: s.frame.manifest_line, manifest_elapsed: +s.frame.elapsed.toFixed(3), reason: s.frame.reason,
-          image: rel(im.abs), fallback_to_last_good: s.frame.fallback};
+          page: im.page, image: rel(im.abs), fallback_to_last_good: s.frame.fallback};
       })});
   }
   fs.copyFileSync(path.join(renderDir, `${String(K).padStart(6, '0')}.png`), path.join(output, 'poster.png'));
@@ -227,7 +229,7 @@ try {
 
 const videoSeconds = (K + 1) / fps + hold;
 const suffix = stillsOnly ? '-stills' : '';   // a stills preview never overwrites full-render metadata
-const common = {speed, fps, end_hold_seconds: hold, page: pageName, real_duration_seconds: maxDuration,
+const common = {speed, fps, end_hold_seconds: hold, page: pageName, page_mode: followCapture ? 'follow-capture' : 'fixed', real_duration_seconds: maxDuration,
   comparison_video_seconds: +((K + 1) / fps).toFixed(4), total_video_seconds: +videoSeconds.toFixed(4)};
 fs.writeFileSync(path.join(output, `timeline${suffix}.json`), JSON.stringify({...common,
   rule: 'Video frame k shows real time min(k*speed/fps, max). Each lane shows its latest manifest frame with elapsed <= t; at t >= lane duration it freezes on the final capture. Same speed for every lane; last frame held end_hold_seconds.',
@@ -244,7 +246,8 @@ fs.writeFileSync(path.join(output, `provenance${suffix}.json`), JSON.stringify({
     'TPS is the workflow-average output tokens/s over each full run (summary.json workflow_output_tokens_per_second), shown statically; it is not live decode speed.',
     'Lane clocks use the capture clock (summary capture_seconds), identical to the original comparison video; task_seconds excludes the initial screenshot hook.',
     'Only real per-page screenshots from the capture manifests are shown; no page is recaptured, restyled or synthesised. Sampling skips intermediate states.',
-    'vllm1 missed rounds 1-2 (passed=false) and only its final cumulative check passed; it is footnoted and no speed-to-success claim is made against it.'
+    'vllm1 missed rounds 1-2 (passed=false) and only its final cumulative check passed; the full report retains this result. No speed-to-success claim is made against it.',
+    'In follow-capture mode, each lane displays the page selected in its genuine capture manifest, restoring original recorded page navigation.'
   ],
   images: [...used.values()]}, null, 2) + '\n');
 

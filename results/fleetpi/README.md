@@ -2,7 +2,7 @@
 
 FleetPi + Fleet completed all three website updates **3.03× faster** than the matched eight-agent vLLM-Metal baseline in this trial. Both passed every round and all 251 final checks. This is an end-to-end system comparison, not an attribution of the gain to the Pi extension alone.
 
-[Watch the demo video](presentation/quiet-video/comparison.mp4) · [Technical recording](video/comparison.mp4) · [Open the output gallery](website/index.html) · [CSV](summary.csv) · [Detailed metrics](summary.json)
+[Watch the demo video](presentation/demo-video/comparison.mp4) · [Technical recording](video/comparison.mp4) · [Open the output gallery](website/index.html) · [CSV](summary.csv) · [Detailed metrics](summary.json)
 
 | Mode | Task wall | Reported output tok/s | Engine peak GiB | Rounds passed | Final checks |
 |---|---:|---:|---:|---:|---:|

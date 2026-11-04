@@ -1,0 +1,1308 @@
+{
+  "speed": 40,
+  "fps": 30,
+  "end_hold_seconds": 3,
+  "page": "index.html",
+  "page_mode": "follow-capture",
+  "real_duration_seconds": 1031.3570001125336,
+  "comparison_video_seconds": 25.8333,
+  "total_video_seconds": 28.8333,
+  "generated_by": "demos/agent-task-bench/visual/compose-presentation.mjs",
+  "inputs": [
+    {
+      "role": "config",
+      "path": "results/fleetpi/presentation/config.json",
+      "sha256": "f5c1df31acc5791a896f2bc206f65cf9b7ffabd1d905c8ad85b69f38b32536a6"
+    },
+    {
+      "role": "summary",
+      "path": "results/fleetpi/summary.json",
+      "sha256": "fb55c7ce153780f9f43e0dbd1b80fbdae899c41c0435aa4db14d8022640690a8"
+    },
+    {
+      "role": "manifest:fleet8",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames.jsonl",
+      "sha256": "29388b7bee7462fea27cbdb5b61f7420c23b0c8c9bd63ae40a4d9d7d6019c25d"
+    },
+    {
+      "role": "manifest:vllm8",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames.jsonl",
+      "sha256": "8ef1da47135053920b9c2d195a293685ee330166163916211b61a8a56fc63f65"
+    },
+    {
+      "role": "manifest:vllm1",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames.jsonl",
+      "sha256": "2b7b1371f947f16f7a6bd24073a95c23f424bcab5c9d80e3a6df7408609e8b13"
+    }
+  ],
+  "lanes": [
+    {
+      "mode": "fleet8",
+      "label": "Demo · 8 agents",
+      "summary_label": "FleetPi + Fleet, 8 agents",
+      "workflow_output_tokens_per_second": 112.692411383471,
+      "displayed_tps": "112.7",
+      "duration_seconds_capture_clock": 340.71599984169006,
+      "task_seconds": 339.428356625,
+      "checks": "251/251",
+      "passed_all_rounds": true,
+      "final_passed": true,
+      "rounds": [
+        "1:187/187",
+        "2:219/219",
+        "3:251/251"
+      ],
+      "final_capture_ok": true,
+      "final_uses_fallback": false,
+      "capture_dir": "results/fleetpi/comparison/fleet8/capture"
+    },
+    {
+      "mode": "vllm8",
+      "label": "vLLM · 8 agents",
+      "summary_label": "Pi + default vLLM, 8 agents",
+      "workflow_output_tokens_per_second": 37.966930367901355,
+      "displayed_tps": "38.0",
+      "duration_seconds_capture_clock": 1031.3570001125336,
+      "task_seconds": 1029.26414175,
+      "checks": "251/251",
+      "passed_all_rounds": true,
+      "final_passed": true,
+      "rounds": [
+        "1:187/187",
+        "2:219/219",
+        "3:251/251"
+      ],
+      "final_capture_ok": true,
+      "final_uses_fallback": false,
+      "capture_dir": "results/fleetpi/comparison/vllm8/capture"
+    },
+    {
+      "mode": "vllm1",
+      "label": "vLLM · 1 agent",
+      "summary_label": "Pi + default vLLM, 1 agent",
+      "workflow_output_tokens_per_second": 14.170550726238035,
+      "displayed_tps": "14.2",
+      "duration_seconds_capture_clock": 619.7590000629425,
+      "task_seconds": 618.465730042,
+      "checks": "251/251",
+      "passed_all_rounds": false,
+      "final_passed": true,
+      "rounds": [
+        "1:117/187",
+        "2:115/219",
+        "3:251/251"
+      ],
+      "final_capture_ok": true,
+      "final_uses_fallback": false,
+      "capture_dir": "results/fleetpi/comparison/vllm1/capture"
+    }
+  ],
+  "notes": [
+    "TPS is the workflow-average output tokens/s over each full run (summary.json workflow_output_tokens_per_second), shown statically; it is not live decode speed.",
+    "Lane clocks use the capture clock (summary capture_seconds), identical to the original comparison video; task_seconds excludes the initial screenshot hook.",
+    "Only real per-page screenshots from the capture manifests are shown; no page is recaptured, restyled or synthesised. Sampling skips intermediate states.",
+    "vllm1 missed rounds 1-2 (passed=false) and only its final cumulative check passed; the full report retains this result. No speed-to-success claim is made against it.",
+    "In follow-capture mode, each lane displays the page selected in its genuine capture manifest, restoring original recorded page navigation."
+  ],
+  "images": [
+    {
+      "lane": "fleet8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000000.png",
+      "sha256": "065887506b8d0c2d77ce059de1e02615e37cb84e7ff7119e457934698cc7003a",
+      "page_html_sha256": "484802c74688f718dea01a67b189fef54a9470a268b958f45294b055dcd2f7c0",
+      "page_screenshot_elapsed": 0.6549999713897705,
+      "first_shown_real_seconds": 0,
+      "last_shown_real_seconds": 92,
+      "source_frames": [
+        1,
+        9
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-00-000000.png",
+      "sha256": "065887506b8d0c2d77ce059de1e02615e37cb84e7ff7119e457934698cc7003a",
+      "page_html_sha256": "484802c74688f718dea01a67b189fef54a9470a268b958f45294b055dcd2f7c0",
+      "page_screenshot_elapsed": 0.7039999961853027,
+      "first_shown_real_seconds": 0,
+      "last_shown_real_seconds": 254.667,
+      "source_frames": [
+        1,
+        9,
+        17,
+        25
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-00-000000.png",
+      "sha256": "065887506b8d0c2d77ce059de1e02615e37cb84e7ff7119e457934698cc7003a",
+      "page_html_sha256": "484802c74688f718dea01a67b189fef54a9470a268b958f45294b055dcd2f7c0",
+      "page_screenshot_elapsed": 0.7820000648498535,
+      "first_shown_real_seconds": 0,
+      "last_shown_real_seconds": 172,
+      "source_frames": [
+        1,
+        9,
+        17
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-01-000000.png",
+      "sha256": "ec57d0d519ae7831e585d79fff738bde58934bf6ae20dd2a52afb2ad2204648c",
+      "page_html_sha256": "a54fd4a89de3783c137d53de2e02b439ed6beef92f3e5c79897ad34a86e581ae",
+      "page_screenshot_elapsed": 0.687999963760376,
+      "first_shown_real_seconds": 12,
+      "last_shown_real_seconds": 101.333,
+      "source_frames": [
+        2,
+        10
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-01-000000.png",
+      "sha256": "ec57d0d519ae7831e585d79fff738bde58934bf6ae20dd2a52afb2ad2204648c",
+      "page_html_sha256": "a54fd4a89de3783c137d53de2e02b439ed6beef92f3e5c79897ad34a86e581ae",
+      "page_screenshot_elapsed": 0.8730001449584961,
+      "first_shown_real_seconds": 12,
+      "last_shown_real_seconds": 264,
+      "source_frames": [
+        2,
+        10,
+        18,
+        26
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-01-000000.png",
+      "sha256": "ec57d0d519ae7831e585d79fff738bde58934bf6ae20dd2a52afb2ad2204648c",
+      "page_html_sha256": "a54fd4a89de3783c137d53de2e02b439ed6beef92f3e5c79897ad34a86e581ae",
+      "page_screenshot_elapsed": 0.815000057220459,
+      "first_shown_real_seconds": 12,
+      "last_shown_real_seconds": 238.667,
+      "source_frames": [
+        2,
+        10,
+        18,
+        24
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-02-000000.png",
+      "sha256": "8a67740f7bece1d5545832a0c23cc4cde7b929fd22d5ccecf735553edd602f52",
+      "page_html_sha256": "e174b42ae6b440fe77b0a75b964316f4a103b40403e044a39010267a7e46ab4f",
+      "page_screenshot_elapsed": 0.7400000095367432,
+      "first_shown_real_seconds": 21.333,
+      "last_shown_real_seconds": 112,
+      "source_frames": [
+        3,
+        11
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-02-000000.png",
+      "sha256": "8a67740f7bece1d5545832a0c23cc4cde7b929fd22d5ccecf735553edd602f52",
+      "page_html_sha256": "e174b42ae6b440fe77b0a75b964316f4a103b40403e044a39010267a7e46ab4f",
+      "page_screenshot_elapsed": 1.5950000286102295,
+      "first_shown_real_seconds": 22.667,
+      "last_shown_real_seconds": 274.667,
+      "source_frames": [
+        3,
+        11,
+        19,
+        27
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-02-000000.png",
+      "sha256": "8a67740f7bece1d5545832a0c23cc4cde7b929fd22d5ccecf735553edd602f52",
+      "page_html_sha256": "e174b42ae6b440fe77b0a75b964316f4a103b40403e044a39010267a7e46ab4f",
+      "page_screenshot_elapsed": 0.8659999370574951,
+      "first_shown_real_seconds": 22.667,
+      "last_shown_real_seconds": 285.333,
+      "source_frames": [
+        3,
+        11,
+        19,
+        25,
+        29
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-03-000000.png",
+      "sha256": "e645c39ed70ebef0e3387ab7e04f1ad468f9b49ff444b26aad4bb703a45ad965",
+      "page_html_sha256": "6e8260a55bad0cdb8baed2bbd56b00ba8d71d411c428c31f9367e2ebc79a3eb2",
+      "page_screenshot_elapsed": 0.7890000343322754,
+      "first_shown_real_seconds": 32,
+      "last_shown_real_seconds": 114.667,
+      "source_frames": [
+        4,
+        12
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-03-000000.png",
+      "sha256": "e645c39ed70ebef0e3387ab7e04f1ad468f9b49ff444b26aad4bb703a45ad965",
+      "page_html_sha256": "6e8260a55bad0cdb8baed2bbd56b00ba8d71d411c428c31f9367e2ebc79a3eb2",
+      "page_screenshot_elapsed": 0.9000000953674316,
+      "first_shown_real_seconds": 32,
+      "last_shown_real_seconds": 349.333,
+      "source_frames": [
+        4,
+        12,
+        20,
+        26,
+        30,
+        36
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-03-000000.png",
+      "sha256": "e645c39ed70ebef0e3387ab7e04f1ad468f9b49ff444b26aad4bb703a45ad965",
+      "page_html_sha256": "6e8260a55bad0cdb8baed2bbd56b00ba8d71d411c428c31f9367e2ebc79a3eb2",
+      "page_screenshot_elapsed": 1.628000020980835,
+      "first_shown_real_seconds": 33.333,
+      "last_shown_real_seconds": 284,
+      "source_frames": [
+        4,
+        12,
+        20,
+        28
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-04-000000.png",
+      "sha256": "93bbd295f5cbefd9c26e3231cadebc48073122d973fa13676030cf99bfb6dcb9",
+      "page_html_sha256": "d0b1a53fc6014dbd2998be2693e38b9d2da4603860ebac0ab49d74aaff273b91",
+      "page_screenshot_elapsed": 0.8389999866485596,
+      "first_shown_real_seconds": 42.667,
+      "last_shown_real_seconds": 50.667,
+      "source_frames": [
+        5
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-04-000000.png",
+      "sha256": "93bbd295f5cbefd9c26e3231cadebc48073122d973fa13676030cf99bfb6dcb9",
+      "page_html_sha256": "d0b1a53fc6014dbd2998be2693e38b9d2da4603860ebac0ab49d74aaff273b91",
+      "page_screenshot_elapsed": 1.6740000247955322,
+      "first_shown_real_seconds": 42.667,
+      "last_shown_real_seconds": 294.667,
+      "source_frames": [
+        5,
+        13,
+        21,
+        29
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-04-000000.png",
+      "sha256": "93bbd295f5cbefd9c26e3231cadebc48073122d973fa13676030cf99bfb6dcb9",
+      "page_html_sha256": "d0b1a53fc6014dbd2998be2693e38b9d2da4603860ebac0ab49d74aaff273b91",
+      "page_screenshot_elapsed": 0.9500000476837158,
+      "first_shown_real_seconds": 42.667,
+      "last_shown_real_seconds": 396,
+      "source_frames": [
+        5,
+        13,
+        21,
+        27,
+        31,
+        37,
+        41
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-05-000000.png",
+      "sha256": "9aafe9e4226f1e6304a730a8cd2a7df0d38a6794bcbefae8293e3edfdef726c4",
+      "page_html_sha256": "448b79d4226b955f838c53c3ad473bcb243ef24b1ba2eab470f96f2dd72bc33d",
+      "page_screenshot_elapsed": 0.8889999389648438,
+      "first_shown_real_seconds": 52,
+      "last_shown_real_seconds": 61.333,
+      "source_frames": [
+        6
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-05-000000.png",
+      "sha256": "9aafe9e4226f1e6304a730a8cd2a7df0d38a6794bcbefae8293e3edfdef726c4",
+      "page_html_sha256": "448b79d4226b955f838c53c3ad473bcb243ef24b1ba2eab470f96f2dd72bc33d",
+      "page_screenshot_elapsed": 1,
+      "first_shown_real_seconds": 52,
+      "last_shown_real_seconds": 445.333,
+      "source_frames": [
+        6,
+        14,
+        22,
+        32,
+        38,
+        42,
+        46
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-05-000000.png",
+      "sha256": "9aafe9e4226f1e6304a730a8cd2a7df0d38a6794bcbefae8293e3edfdef726c4",
+      "page_html_sha256": "448b79d4226b955f838c53c3ad473bcb243ef24b1ba2eab470f96f2dd72bc33d",
+      "page_screenshot_elapsed": 1.7049999237060547,
+      "first_shown_real_seconds": 53.333,
+      "last_shown_real_seconds": 297.333,
+      "source_frames": [
+        6,
+        14,
+        22,
+        30
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-06-000000.png",
+      "sha256": "09b421e11559471e3745f37386175cc38d49670a4514cacd7542382c59fa1fdc",
+      "page_html_sha256": "4aacd4cedc8dd57508790c9c03a2d9376b34ae92a9496afcad04881fc3270d3d",
+      "page_screenshot_elapsed": 0.940000057220459,
+      "first_shown_real_seconds": 62.667,
+      "last_shown_real_seconds": 70.667,
+      "source_frames": [
+        7
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-06-000000.png",
+      "sha256": "09b421e11559471e3745f37386175cc38d49670a4514cacd7542382c59fa1fdc",
+      "page_html_sha256": "4aacd4cedc8dd57508790c9c03a2d9376b34ae92a9496afcad04881fc3270d3d",
+      "page_screenshot_elapsed": 1.7390000820159912,
+      "first_shown_real_seconds": 62.667,
+      "last_shown_real_seconds": 233.333,
+      "source_frames": [
+        7,
+        15,
+        23
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-06-000000.png",
+      "sha256": "09b421e11559471e3745f37386175cc38d49670a4514cacd7542382c59fa1fdc",
+      "page_html_sha256": "4aacd4cedc8dd57508790c9c03a2d9376b34ae92a9496afcad04881fc3270d3d",
+      "page_screenshot_elapsed": 1.0499999523162842,
+      "first_shown_real_seconds": 62.667,
+      "last_shown_real_seconds": 489.333,
+      "source_frames": [
+        7,
+        15,
+        33,
+        39,
+        43,
+        47,
+        51
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-07-000000.png",
+      "sha256": "bc43cbf96849585f730dc3387e8fd412eda78f1e09aeec70f88fb5030367b5f8",
+      "page_html_sha256": "999f7c25582aa523494e1ccaee9d7090e854c372abf1864e895376d7aca6a327",
+      "page_screenshot_elapsed": 0.9900000095367432,
+      "first_shown_real_seconds": 72,
+      "last_shown_real_seconds": 81.333,
+      "source_frames": [
+        8
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-07-000000.png",
+      "sha256": "bc43cbf96849585f730dc3387e8fd412eda78f1e09aeec70f88fb5030367b5f8",
+      "page_html_sha256": "999f7c25582aa523494e1ccaee9d7090e854c372abf1864e895376d7aca6a327",
+      "page_screenshot_elapsed": 1.0989999771118164,
+      "first_shown_real_seconds": 72,
+      "last_shown_real_seconds": 536,
+      "source_frames": [
+        8,
+        16,
+        34,
+        44,
+        48,
+        52,
+        56
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-07-000000.png",
+      "sha256": "bc43cbf96849585f730dc3387e8fd412eda78f1e09aeec70f88fb5030367b5f8",
+      "page_html_sha256": "999f7c25582aa523494e1ccaee9d7090e854c372abf1864e895376d7aca6a327",
+      "page_screenshot_elapsed": 1.7720000743865967,
+      "first_shown_real_seconds": 73.333,
+      "last_shown_real_seconds": 244,
+      "source_frames": [
+        8,
+        16,
+        24
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-07-000012.png",
+      "sha256": "f6092a97f6cbca44b4c7af56c65b1c62dafb61e6c1846d936318b2394a351e7e",
+      "page_html_sha256": "bd5eeaec173e8a84326ed909a5abf1767f377eb14f7778f269a253bc060cabde",
+      "page_screenshot_elapsed": 115.51999998092651,
+      "first_shown_real_seconds": 116,
+      "last_shown_real_seconds": 156,
+      "source_frames": [
+        13,
+        18
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000013.png",
+      "sha256": "c15766cd723f4c3321ec5bce042ed8a3494dc3fa6f2d177e93f20f61244067d8",
+      "page_html_sha256": "4390a16b49d10fdd42f76df177117468087e4ce386034a92099eca5c1c720d6c",
+      "page_screenshot_elapsed": 120.67199993133545,
+      "first_shown_real_seconds": 121.333,
+      "last_shown_real_seconds": 165.333,
+      "source_frames": [
+        14,
+        19
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-04-000014.png",
+      "sha256": "0232088bacce37f032d7c6d88bb99b063851ba8076230cfabc3080fbff00f96c",
+      "page_html_sha256": "ac7aa74edf59511c3b277f7bf95cb68984517809b0b124b09ba6ee38e595b551",
+      "page_screenshot_elapsed": 123.80299997329712,
+      "first_shown_real_seconds": 124,
+      "last_shown_real_seconds": 222.667,
+      "source_frames": [
+        15,
+        23,
+        26
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-02-000015.png",
+      "sha256": "8ae4a8edb2b0ce2a6aa0eb50717ffe006cccc4c7dc77c10b54e05d63d30e5a1c",
+      "page_html_sha256": "e3f6ab1fa7f01fe201a3c438800f74f991074e65741cc84508137d7fd7d19a09",
+      "page_screenshot_elapsed": 126.95899987220764,
+      "first_shown_real_seconds": 128,
+      "last_shown_real_seconds": 186.667,
+      "source_frames": [
+        16,
+        21
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-06-000016.png",
+      "sha256": "f96a312b9bd71a4d284e4d72206df27471c5c0196b32bfb26cc0d6da9f246467",
+      "page_html_sha256": "c32b69213cb1f795d0c0388cf365786ada81b9cf4cbdc70fa9a697658319d163",
+      "page_screenshot_elapsed": 136.13899993896484,
+      "first_shown_real_seconds": 137.333,
+      "last_shown_real_seconds": 145.333,
+      "source_frames": [
+        17
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-01-000012.png",
+      "sha256": "4285b3372071133b0f6c0f139da0e607b43d10b6e61d39444c9c713f47243404",
+      "page_html_sha256": "3a82ac9a8ad9d3cb32a97af26f92310b9e25a7dc7898ea054353a8c6b5ede2d1",
+      "page_screenshot_elapsed": 115.45799994468689,
+      "first_shown_real_seconds": 166.667,
+      "last_shown_real_seconds": 176,
+      "source_frames": [
+        20
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-03-000012.png",
+      "sha256": "79ead2571388c48aedadc744554c9f04f35056825cadcad8e408901457fe997e",
+      "page_html_sha256": "cf7e91b27d591676645e2932dd5b4908abacd4703bdc889959d44454b058b8be",
+      "page_screenshot_elapsed": 115.4909999370575,
+      "first_shown_real_seconds": 188,
+      "last_shown_real_seconds": 196,
+      "source_frames": [
+        22
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-01-000023.png",
+      "sha256": "c814c526f02c3356e79ba397bc6899b926e1851b1648930b07ebb930fc3b803d",
+      "page_html_sha256": "ac7e199fa56d8829e68dd7db94e1fa2ca7fd79abcab7d343336b4dc4d787eaa4",
+      "page_screenshot_elapsed": 199.98599982261658,
+      "first_shown_real_seconds": 201.333,
+      "last_shown_real_seconds": 281.333,
+      "source_frames": [
+        24,
+        35
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-03-000024.png",
+      "sha256": "75a16cf2aafc3cce2bf813feac161166a7345fb5ef6126efa02f3153088c42ca",
+      "page_html_sha256": "9fa0f75d0a5b9b7b2e166bc987f751b8bdfd5182c1cd2e5fb1465f28b25d2033",
+      "page_screenshot_elapsed": 203.11999988555908,
+      "first_shown_real_seconds": 204,
+      "last_shown_real_seconds": 297.333,
+      "source_frames": [
+        25,
+        37
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-00-000022.png",
+      "sha256": "3e585c180a308aa1a4a822b7c20e01f6c98573d5295a7cef2919dfc53fb8bbec",
+      "page_html_sha256": "efc1aa2dbfa311c31ce7ab16031dafb68c63283c61ac5356b5ff1adf8734c326",
+      "page_screenshot_elapsed": 219.36700010299683,
+      "first_shown_real_seconds": 220,
+      "last_shown_real_seconds": 1031.357,
+      "source_frames": [
+        23,
+        49,
+        53,
+        57,
+        61,
+        67
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-05-000015.png",
+      "sha256": "bf0e3b22335d1180fd6a0c4a34c3b638fd6455a3c2001a79569dfcb5014070d1",
+      "page_html_sha256": "ed1642ff96287b30174aed555753d78250eef77328cdaeb17e37283a99366396",
+      "page_screenshot_elapsed": 126.99399995803833,
+      "first_shown_real_seconds": 224,
+      "last_shown_real_seconds": 225.333,
+      "source_frames": [
+        27
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-02-000027.png",
+      "sha256": "26bc2b0e3b61131369c7c2126bb8ab43ad7e1078fc99b0fcaf9614205b5d86ff",
+      "page_html_sha256": "605c9688c759db484968ac2916854c3b47f5c02697929ca14da6318d322510f9",
+      "page_screenshot_elapsed": 226.51699995994568,
+      "first_shown_real_seconds": 226.667,
+      "last_shown_real_seconds": 292,
+      "source_frames": [
+        28,
+        36
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-07-000028.png",
+      "sha256": "d8601a7006f413d245b3064746e362047b4632bb94c3aae0f72ecca692bf4d01",
+      "page_html_sha256": "08220afb70f5c8bc9f934bb62f974720eca86d2afe8a92e53feee118b124b67d",
+      "page_screenshot_elapsed": 229.66499996185303,
+      "first_shown_real_seconds": 230.667,
+      "last_shown_real_seconds": 326.667,
+      "source_frames": [
+        29,
+        33,
+        43
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000029.png",
+      "sha256": "62a6a7c584884998fe9e293963b54cb47fa9973d9a5d74a26c1321f2b8ded506",
+      "page_html_sha256": "b9277f487eeb4f5c842bfc6c3366e642b1042f4a650dfc1feb393523c63c35ae",
+      "page_screenshot_elapsed": 235.30099987983704,
+      "first_shown_real_seconds": 236,
+      "last_shown_real_seconds": 272,
+      "source_frames": [
+        30,
+        34
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-04-000030.png",
+      "sha256": "99184a4876128d25ed062c6c847c74000ba53e075acbb72ea1b7c76a15001e5c",
+      "page_html_sha256": "d76644f4ea47371b4737427360d2d21071f7014abe30da5dd5a6e3780cc01e3f",
+      "page_screenshot_elapsed": 238.45099997520447,
+      "first_shown_real_seconds": 238.667,
+      "last_shown_real_seconds": 241.333,
+      "source_frames": [
+        31
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-06-000031.png",
+      "sha256": "d37d9bdb11d4dea6246415c455c3a6452ff20d698910dc831022bb1cd5237d3f",
+      "page_html_sha256": "3e69755bb44a2e5536f830a25211955796748dbf2cdb02cc42cd02d797469fbf",
+      "page_screenshot_elapsed": 241.63399982452393,
+      "first_shown_real_seconds": 242.667,
+      "last_shown_real_seconds": 250.667,
+      "source_frames": [
+        32
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-01-000027.png",
+      "sha256": "d354742a459cdfde74efccd49fa617437b9f493bf3c9758a161a60bd96ded53c",
+      "page_html_sha256": "e2fbc2badb75e2ecb9e5116851a4fd9a7de4f85d604112dee8014eceff959d30",
+      "page_screenshot_elapsed": 265.4560000896454,
+      "first_shown_real_seconds": 266.667,
+      "last_shown_real_seconds": 589.333,
+      "source_frames": [
+        28,
+        54,
+        58,
+        62
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-03-000037.png",
+      "sha256": "75a16cf2aafc3cce2bf813feac161166a7345fb5ef6126efa02f3153088c42ca",
+      "page_html_sha256": "4591d6bdbaa69efdb112a165bffd37fdf1bee60f6c43393af894630def4caf17",
+      "page_screenshot_elapsed": 297.3829998970032,
+      "first_shown_real_seconds": 298.667,
+      "last_shown_real_seconds": 300,
+      "source_frames": [
+        38
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-03-000030.png",
+      "sha256": "9c1add7402b0d7598c3064bdecde839dd669df6cbf7031e1a49bc41dc91e95c7",
+      "page_html_sha256": "969f145f8881073d2238c1bd7500c81efa78e4b85b83798ee90ac47c51c59e8c",
+      "page_screenshot_elapsed": 298.25099992752075,
+      "first_shown_real_seconds": 298.667,
+      "last_shown_real_seconds": 605.333,
+      "source_frames": [
+        31,
+        41,
+        49,
+        57,
+        64
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-02-000038.png",
+      "sha256": "bc4847a8161ee5e92c97aa941c73ab71b91db1911eba3bfb17c1087cd028ba2c",
+      "page_html_sha256": "5942e0354e93a5c36f00524e9dd0c8cf68352acb5cde37fdd87daeb2493ce128",
+      "page_screenshot_elapsed": 300.59699988365173,
+      "first_shown_real_seconds": 301.333,
+      "last_shown_real_seconds": 306.667,
+      "source_frames": [
+        39
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-06-000031.png",
+      "sha256": "6b946780c619e805dcee62a671b097e98291e14af3c8ba1c553b57bf41789c5d",
+      "page_html_sha256": "3a881edc699542adcb5445ba6a3e9a09cb1621be94a654da94391afb0cef0582",
+      "page_screenshot_elapsed": 303.90700006484985,
+      "first_shown_real_seconds": 304,
+      "last_shown_real_seconds": 690.667,
+      "source_frames": [
+        32,
+        39,
+        44,
+        52,
+        60,
+        67,
+        75
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-04-000039.png",
+      "sha256": "99184a4876128d25ed062c6c847c74000ba53e075acbb72ea1b7c76a15001e5c",
+      "page_html_sha256": "2875239e02fc1893b9d6ad936b16251ecebcf5d653625f5affd0834b861a9e49",
+      "page_screenshot_elapsed": 306.75,
+      "first_shown_real_seconds": 308,
+      "last_shown_real_seconds": 309.333,
+      "source_frames": [
+        40
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-07-000032.png",
+      "sha256": "78822326931cde9b194edc659560cc59fc1326419ce051074eaed29799e07651",
+      "page_html_sha256": "10a846f8c3f5bf727d59cc839108b9b5b559e06aa3b914eeb86be828095f5215",
+      "page_screenshot_elapsed": 307.03200006484985,
+      "first_shown_real_seconds": 308,
+      "last_shown_real_seconds": 502.667,
+      "source_frames": [
+        33,
+        45,
+        53
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-00-000040.png",
+      "sha256": "62a6a7c584884998fe9e293963b54cb47fa9973d9a5d74a26c1321f2b8ded506",
+      "page_html_sha256": "dc5987872609fdb15f21b708ba6e4712e076920a5a854000d3e4b55090e4738e",
+      "page_screenshot_elapsed": 309.9119999408722,
+      "first_shown_real_seconds": 310.667,
+      "last_shown_real_seconds": 1031.357,
+      "source_frames": [
+        41,
+        47
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-06-000041.png",
+      "sha256": "d37d9bdb11d4dea6246415c455c3a6452ff20d698910dc831022bb1cd5237d3f",
+      "page_html_sha256": "c82539fccfe58002b510df1052913c3cfd93a933d28e3f1cb21e2d3720bf5f5e",
+      "page_screenshot_elapsed": 313.13100004196167,
+      "first_shown_real_seconds": 313.333,
+      "last_shown_real_seconds": 322.667,
+      "source_frames": [
+        42
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-00-000033.png",
+      "sha256": "6be1ddf28b2e68edd056eabf84be2d0b0b15ac9755c7253773ed3d3cd126df81",
+      "page_html_sha256": "b6fbedca2c7862694b76076daa2dc8e690109c5dcb877eb8a5ab68137ecfe1c7",
+      "page_screenshot_elapsed": 316.68099999427795,
+      "first_shown_real_seconds": 317.333,
+      "last_shown_real_seconds": 512,
+      "source_frames": [
+        34,
+        46,
+        54
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-01-000034.png",
+      "sha256": "8b1f619a816e4609b98c2b3fe6285cf566c75363aa6e3c488a73dbc40659fd99",
+      "page_html_sha256": "892e3668f6d8a86f0f28d9082d1d8191af96fe5ddac500418e53cea91341c17f",
+      "page_screenshot_elapsed": 323.8129999637604,
+      "first_shown_real_seconds": 324,
+      "last_shown_real_seconds": 589.333,
+      "source_frames": [
+        35,
+        47,
+        55,
+        62
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-07-000043.png",
+      "sha256": "d8601a7006f413d245b3064746e362047b4632bb94c3aae0f72ecca692bf4d01",
+      "page_html_sha256": "c49afbe6a0694327c461e5629cdd152a2ddd89bb2a65aa23d03eae04b80bf877",
+      "page_screenshot_elapsed": 327.91299986839294,
+      "first_shown_real_seconds": 328,
+      "last_shown_real_seconds": 330.667,
+      "source_frames": [
+        44
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-02-000034.png",
+      "sha256": "085340316f7c4222b6b014bb5e2733c3a99dc73c4c8fee11633770a8e7da1952",
+      "page_html_sha256": "c642f523066245996fb910ee42ea1ebc5e23d3a8ee2a38b32302a9100c834d3b",
+      "page_screenshot_elapsed": 329.87599992752075,
+      "first_shown_real_seconds": 330.667,
+      "last_shown_real_seconds": 600,
+      "source_frames": [
+        35,
+        59,
+        63
+      ]
+    },
+    {
+      "lane": "fleet8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/fleet8/capture/frames/page-07-000044.png",
+      "sha256": "5418136fda33bbe8086889cd8efe3a0fce56a21f4c0a83d9209b2622d9ba635e",
+      "page_html_sha256": "5a1a7d3caa1f6920c7b21d02e21a29d357e2c9f6f9b39ef980c34f94ce2d3b28",
+      "page_screenshot_elapsed": 331.04299998283386,
+      "first_shown_real_seconds": 332,
+      "last_shown_real_seconds": 340,
+      "source_frames": [
+        45
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-05-000035.png",
+      "sha256": "99e0eb56d6d1c5d1f2b1ef93a215b86e33c594ac943ec85569a67a068c9d2eaa",
+      "page_html_sha256": "c6eecd6762e39f5a29a0cdeec7d76974f8daf346b954ab7ae80e6ee1ec68ee5b",
+      "page_screenshot_elapsed": 331.9630000591278,
+      "first_shown_real_seconds": 333.333,
+      "last_shown_real_seconds": 562.667,
+      "source_frames": [
+        36,
+        38,
+        43,
+        51,
+        59
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-04-000036.png",
+      "sha256": "09843664506332b9fc6de916333a4eff94fc2ba5fa56effbb62eb1019edb0024",
+      "page_html_sha256": "e4a02e7e5237229bdddd1a2bb22298e1df2e13bbf180440a07feb83f4a83406d",
+      "page_screenshot_elapsed": 335.12599992752075,
+      "first_shown_real_seconds": 336,
+      "last_shown_real_seconds": 644,
+      "source_frames": [
+        37,
+        42,
+        50,
+        58,
+        69
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-02-000039.png",
+      "sha256": "e62a2b0bafc1d9241202869adf2636b2542534216b11ec21b660b74c6bb66921",
+      "page_html_sha256": "9f0e2ab466b9980a2959b06febf43474f26e6598298f4f20922870e3dbdf35b3",
+      "page_screenshot_elapsed": 361.01200008392334,
+      "first_shown_real_seconds": 361.333,
+      "last_shown_real_seconds": 598.667,
+      "source_frames": [
+        40,
+        48,
+        56,
+        63
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-03-000039.png",
+      "sha256": "a1a6c3a3725aa1b1fb6e9276454b2108046fb520be4ee0ab03e098606bd760bf",
+      "page_html_sha256": "8aa888030a85f286309909ee823d474639f0e25addc7b87beaa2af5571f13199",
+      "page_screenshot_elapsed": 377.0199999809265,
+      "first_shown_real_seconds": 377.333,
+      "last_shown_real_seconds": 602.667,
+      "source_frames": [
+        40,
+        64
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-04-000044.png",
+      "sha256": "7e4adbe4d58a27ae9e3d1765331d6d9478ab758434e30a43f47c7894aa3a7988",
+      "page_html_sha256": "df6894a043d0eb097844e829fc1b14965f5aaf063b02da6b12fdc0b1bf6f184a",
+      "page_screenshot_elapsed": 425.68499994277954,
+      "first_shown_real_seconds": 426.667,
+      "last_shown_real_seconds": 434.667,
+      "source_frames": [
+        45
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-05-000049.png",
+      "sha256": "7132eb7c0483b489790b1db2fa5306004a4b39709799434c7c9211b563908157",
+      "page_html_sha256": "53d5af9ddac2a2bed76594972a73722bbc257eaf563e8c8a430fa793b40d8644",
+      "page_screenshot_elapsed": 469.3199999332428,
+      "first_shown_real_seconds": 470.667,
+      "last_shown_real_seconds": 478.667,
+      "source_frames": [
+        50
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-06-000054.png",
+      "sha256": "5f4e38e6983b136b6c7ef8ed9db82f1c6ec7c42460fe8e56e9ee7b22c136e22a",
+      "page_html_sha256": "b0bee08cef05ea5dc37f67e8ad3f08ed75deb8d0bfd2150cac5746268f3a809f",
+      "page_screenshot_elapsed": 515.9960000514984,
+      "first_shown_real_seconds": 517.333,
+      "last_shown_real_seconds": 525.333,
+      "source_frames": [
+        55
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-07-000059.png",
+      "sha256": "83498fb3d1c99891c28ee0c334633c08d265db084cf426428cbe87cd9dad92e6",
+      "page_html_sha256": "84c31290199aa342a85099144939758d179c135ae9a83fcc784fb6d899b2a893",
+      "page_screenshot_elapsed": 560.0980000495911,
+      "first_shown_real_seconds": 561.333,
+      "last_shown_real_seconds": 569.333,
+      "source_frames": [
+        60
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-00-000060.png",
+      "sha256": "d2b76d0eb6b32ebec7e36a5a021fc193d43806b7640ce2635828b5d74a4dd730",
+      "page_html_sha256": "8ad3f36bef12abc4862cd3c065cfb66206fdb37ec39d6e267b19b03b73185ebd",
+      "page_screenshot_elapsed": 569.1449999809265,
+      "first_shown_real_seconds": 569.333,
+      "last_shown_real_seconds": 916,
+      "source_frames": [
+        61,
+        72,
+        77,
+        81,
+        90,
+        98
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-03-000064.png",
+      "sha256": "49d181f9c7cdc1f992b81333936a5b2abd851a0d08891f7a911944a88a2cb9e7",
+      "page_html_sha256": "915fbb741cff7ab1b2e262bf239f3bacbeebf1c1df1253fbf3b625100b9cb3c9",
+      "page_screenshot_elapsed": 603.6949999332428,
+      "first_shown_real_seconds": 604,
+      "last_shown_real_seconds": 613.333,
+      "source_frames": [
+        65
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-01-000064.png",
+      "sha256": "95d6f026ea4df92282e055183c9ccfcc702e924f2c4c5abfe17201eae3477162",
+      "page_html_sha256": "64249aba96311e4a8a39eaf132a1ffd3944055214ce464ba74094542d4869a57",
+      "page_screenshot_elapsed": 606.1930000782013,
+      "first_shown_real_seconds": 606.667,
+      "last_shown_real_seconds": 926.667,
+      "source_frames": [
+        65,
+        82,
+        91,
+        99
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-05-000065.png",
+      "sha256": "5eb7e2f92f8bdcfeee56d84319166d5a03499cdb8abfb9c1152b04bc4bde658e",
+      "page_html_sha256": "2d374020ad643b37c18b6199220505dff8916193a6edd9dcdd48ea7f5f58d54f",
+      "page_screenshot_elapsed": 609.8329999446869,
+      "first_shown_real_seconds": 610.667,
+      "last_shown_real_seconds": 886.667,
+      "source_frames": [
+        66,
+        70,
+        74,
+        87,
+        95
+      ]
+    },
+    {
+      "lane": "vllm1",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/vllm1/capture/frames/page-04-000064.png",
+      "sha256": "b35e359e901777baa4f0043cd730b04a57d60bfaaa9fbfcdc845036e3a0db196",
+      "page_html_sha256": "26b90e3ac04d173d2d93fffae3398f51df7abff32ba4928092408325f3d70bb1",
+      "page_screenshot_elapsed": 603.7249999046326,
+      "first_shown_real_seconds": 614.667,
+      "last_shown_real_seconds": 618.667,
+      "source_frames": [
+        66
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-03-000067.png",
+      "sha256": "ead2e5651c79f61e1ce0e866e3bf8b1f760750c74c999ef3d5d8e29eec4f9079",
+      "page_html_sha256": "9bc00a8d92da5ba95fc1f39ebcf5b461e5ac6f5f2faec3f507d886cdea155620",
+      "page_screenshot_elapsed": 624.1280000209808,
+      "first_shown_real_seconds": 625.333,
+      "last_shown_real_seconds": 940,
+      "source_frames": [
+        68,
+        85,
+        93,
+        101
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-07-000070.png",
+      "sha256": "d93d33f4a62d5e8f5f7b290c26dff2b459f1129e0bad53a74dcaccd0c6e8a80d",
+      "page_html_sha256": "3be25d49eaeb886d05cf0021fa9d82e4a1a6acf5eb517d0d08b35b4b764e063b",
+      "page_screenshot_elapsed": 654.5269999504089,
+      "first_shown_real_seconds": 654.667,
+      "last_shown_real_seconds": 1005.333,
+      "source_frames": [
+        71,
+        76,
+        80,
+        89,
+        97,
+        110
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-04-000072.png",
+      "sha256": "6ff9d7f2da4c754c9408dbf5af166e39d671b43b67940eb237d0be407c84a435",
+      "page_html_sha256": "db1fe1603b3ec341656802af722b6ea811a97c5892d1995f3320f4c22df3e04a",
+      "page_screenshot_elapsed": 660.7780001163483,
+      "first_shown_real_seconds": 661.333,
+      "last_shown_real_seconds": 876,
+      "source_frames": [
+        73,
+        86,
+        94
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-02-000077.png",
+      "sha256": "ccf00bf577740a238e482a6a3118685a681fad3090364e61b98838fb0d3e56d6",
+      "page_html_sha256": "2894ff1fbd977961a65816ef830bde09e455982ecdbdd90d87a99ccd00f03b73",
+      "page_screenshot_elapsed": 708.0099999904633,
+      "first_shown_real_seconds": 709.333,
+      "last_shown_real_seconds": 765.333,
+      "source_frames": [
+        78,
+        83
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-06-000078.png",
+      "sha256": "a539976f07b0068864ece786f8c81f6389f47b3c828d83b02f0af3b77058fec9",
+      "page_html_sha256": "6aee6d3b4dbe5002b3bf1a914be4fc561e7430d7113f8fbd03bdbdf02a0f0660",
+      "page_screenshot_elapsed": 715.1610000133514,
+      "first_shown_real_seconds": 716,
+      "last_shown_real_seconds": 896,
+      "source_frames": [
+        79,
+        88,
+        96
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-02-000083.png",
+      "sha256": "0d8c874133b54d7c66dd3334f9fcc20531175e69645b4001da94b497ceb086f0",
+      "page_html_sha256": "7b88953e889d53006a2d2214aab0f6a021bbfa3abea728540dff86f34277c475",
+      "page_screenshot_elapsed": 765.3380000591278,
+      "first_shown_real_seconds": 766.667,
+      "last_shown_real_seconds": 937.333,
+      "source_frames": [
+        84,
+        92,
+        100
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "volunteer.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-06-000101.png",
+      "sha256": "a539976f07b0068864ece786f8c81f6389f47b3c828d83b02f0af3b77058fec9",
+      "page_html_sha256": "cc24a042a5d5ae2275fe900f90e955e5a80bfdde41e167eb7bb2f6f75d31a300",
+      "page_screenshot_elapsed": 940.5350000858307,
+      "first_shown_real_seconds": 941.333,
+      "last_shown_real_seconds": 994.667,
+      "source_frames": [
+        102,
+        109
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "index.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-00-000102.png",
+      "sha256": "d2b76d0eb6b32ebec7e36a5a021fc193d43806b7640ce2635828b5d74a4dd730",
+      "page_html_sha256": "34838e1e13b6799aa9dbe136e81439f23a9ae626a2bc93aaa25cc625e35aac07",
+      "page_screenshot_elapsed": 943.6819999217987,
+      "first_shown_real_seconds": 944,
+      "last_shown_real_seconds": 1031.357,
+      "source_frames": [
+        103,
+        111,
+        113,
+        114
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "schedule.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-02-000103.png",
+      "sha256": "0d8c874133b54d7c66dd3334f9fcc20531175e69645b4001da94b497ceb086f0",
+      "page_html_sha256": "0c1fe80ce47a8d63fbc3fb9f437d4d665fab26e65df8986c141cc4135a258cd6",
+      "page_screenshot_elapsed": 947.3170001506805,
+      "first_shown_real_seconds": 948,
+      "last_shown_real_seconds": 952,
+      "source_frames": [
+        104
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "venues.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-03-000104.png",
+      "sha256": "fda5e48bee9d7f23f13af3165ecf3522f3fdc81f9a069ca0a1d989e6a0fc9078",
+      "page_html_sha256": "78ee54d6bd69166954a40c1e96fc2af9d991a12bc84647b07708043ba3bd303e",
+      "page_screenshot_elapsed": 952.4670000076294,
+      "first_shown_real_seconds": 953.333,
+      "last_shown_real_seconds": 957.333,
+      "source_frames": [
+        105
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "lineup.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-01-000105.png",
+      "sha256": "9d7564e6033a426426f92aa3445bec7f808ebfb0593eddb91b4e26e7c0ae6a1a",
+      "page_html_sha256": "1fb3a5f395b3dd6f38a9517d756b04ba0c66f06f685dcde9be41477ff3133763",
+      "page_screenshot_elapsed": 957.6170001029968,
+      "first_shown_real_seconds": 958.667,
+      "last_shown_real_seconds": 964,
+      "source_frames": [
+        106
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "tickets.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-04-000106.png",
+      "sha256": "6ff9d7f2da4c754c9408dbf5af166e39d671b43b67940eb237d0be407c84a435",
+      "page_html_sha256": "ffb25d3759cfd4bed34fccd6758fe77666f6dbcf96d6f4bd78fa511a96ff3182",
+      "page_screenshot_elapsed": 964.7669999599457,
+      "first_shown_real_seconds": 965.333,
+      "last_shown_real_seconds": 974.667,
+      "source_frames": [
+        107
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "accessibility.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-05-000107.png",
+      "sha256": "5eb7e2f92f8bdcfeee56d84319166d5a03499cdb8abfb9c1152b04bc4bde658e",
+      "page_html_sha256": "2ec183f2db4fa894ed94620d669b209ab01d7fa44f5bd67cb99095252411a8a2",
+      "page_screenshot_elapsed": 974.9179999828339,
+      "first_shown_real_seconds": 976,
+      "last_shown_real_seconds": 984,
+      "source_frames": [
+        108
+      ]
+    },
+    {
+      "lane": "vllm8",
+      "page": "faq.html",
+      "path": "results/fleetpi/comparison/vllm8/capture/frames/page-07-000111.png",
+      "sha256": "f82aa262e9f3096bec0458ee307315c46476012f3057a4e194754d59181536ab",
+      "page_html_sha256": "bbf73b25fd58c937778f8edd68953ac3d0181f968c8e0b57ab874895a9fee981",
+      "page_screenshot_elapsed": 1012.4300000667572,
+      "first_shown_real_seconds": 1013.333,
+      "last_shown_real_seconds": 1021.333,
+      "source_frames": [
+        112
+      ]
+    }
+  ]
+}

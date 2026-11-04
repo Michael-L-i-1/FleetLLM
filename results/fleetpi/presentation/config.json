@@ -1,6 +1,6 @@
 {
   "_note": "Presentation restyle of the frozen FleetPi comparison. Paths are relative to this file. Numbers are read from summary.json at render time; expected_display is only a guard that aborts on mismatch.",
-  "title": "FleetPi",
+  "title": "Demo",
   "model": "Muse Glimmer 30B \u00b7 4-bit",
   "summary": "../summary.json",
   "page": "index.html",
@@ -12,7 +12,7 @@
   "lanes": [
     {
       "mode": "fleet8",
-      "name": "FleetPi",
+      "name": "Demo",
       "agents": "8 agents",
       "accent": true,
       "capture_dir": "../comparison/fleet8/capture",
@@ -29,11 +29,11 @@
       "mode": "vllm1",
       "name": "vLLM",
       "agents": "1 agent",
-      "mark": "\u2020",
       "capture_dir": "../comparison/vllm1/capture",
       "expected_display_tps": "14.2"
     }
   ],
-  "footnote_mark": "\u2020 Final site passed; first two milestone checks failed.",
-  "footnote_method": "Whole-run output averages \u00b7 tools and checks included"
+  "footnote_mark": "",
+  "footnote_method": "",
+  "page_mode": "follow-capture"
 }

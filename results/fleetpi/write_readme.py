@@ -10,7 +10,7 @@ def clock(seconds):
 def stages(row):return sum(r['checksPassed']==r['checksTotal'] for r in row['rounds'])
 lines=['# FleetPi: real Pi agents on Glimmer four-bit','',
  f'FleetPi + Fleet completed all three website updates **{ratio:.2f}× faster** than the matched eight-agent vLLM-Metal baseline in this trial. Both passed every round and all 251 final checks. This is an end-to-end system comparison, not an attribution of the gain to the Pi extension alone.','',
- '[Watch the demo video](presentation/quiet-video/comparison.mp4) · [Technical recording](video/comparison.mp4) · [Open the output gallery](website/index.html) · [CSV](summary.csv) · [Detailed metrics](summary.json)','',
+ '[Watch the demo video](presentation/demo-video/comparison.mp4) · [Technical recording](video/comparison.mp4) · [Open the output gallery](website/index.html) · [CSV](summary.csv) · [Detailed metrics](summary.json)','',
  '| Mode | Task wall | Reported output tok/s | Engine peak GiB | Rounds passed | Final checks |',
  '|---|---:|---:|---:|---:|---:|']
 for row in rows:

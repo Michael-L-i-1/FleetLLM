@@ -2,15 +2,15 @@
 
 Designed with Claude Opus 5.5, then simplified per user feedback: large site captures, small bold labels and quiet metrics. Rendered and verified locally.
 
-[Watch the presentation](quiet-video/comparison.mp4) · [Poster](quiet-video/poster.png) · [Original technical recording](../video/comparison.mp4)
+[Watch the presentation](demo-video/comparison.mp4) · [Poster](demo-video/poster.png) · [Original technical recording](../video/comparison.mp4)
 
-The presentation shows the actual home-page screenshots from the frozen three-mode comparison. Large figures are measured whole-run workflow averages, including tools/checks: FleetPi8 112.7, vLLM8 38.0, vLLM1 14.2 output tokens/s. They are static summary metrics, not live GPU decode rates. A shared real-time clock advances equally at40×; each lane freezes at its actual end. The single agent's failed early milestones remain footnoted. All source image hashes, manifest positions and metric inputs are recorded in quiet-video/provenance.json and validated in validation.json.
+The presentation follows the actual page navigation from the frozen three-mode capture manifests, restoring the original screen switching. Large figures are measured whole-run workflow averages, including tools/checks: FleetPi8 112.7, vLLM8 38.0, vLLM1 14.2 output tokens/s. They are static summary metrics, not live GPU decode rates. A shared real-time clock advances equally at40×; each lane freezes at its actual end. The full results report and provenance preserve the single agent's failed early milestones; the clean presentation has no footer. All source image hashes, manifest positions and metric inputs are recorded in demo-video/provenance.json and validated in validation.json.
 
 The source benchmark, output websites, timings and original recording are unchanged. This is a presentation-only restyle. The original folder of recorded page images must be present to regenerate it (retained locally and in the separately hashed capture archive).
 
 ```sh
 node demos/agent-task-bench/visual/compose-presentation.mjs \
-  results/fleetpi/presentation/config.json results/fleetpi/presentation/quiet-video
+  results/fleetpi/presentation/config.json results/fleetpi/presentation/demo-video
 ```
 
 Use --stills-only for quick layout QA. Output is1920×720,30fps,~28.8seconds.

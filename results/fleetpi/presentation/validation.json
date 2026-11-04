@@ -12,13 +12,12 @@
       "explicit_unsupported_override_rejected": true
     }
   ],
-  "video_source_hashes_verified": 10,
+  "video_source_hashes_verified": 81,
   "same_shared_clock": true,
   "speed": 40,
   "metrics_match_frozen_summary": true,
-  "single_agent_caveat_retained": true,
   "visual_qa": "Start/final preview and intermediateframes inspected",
-  "presentation": "quiet-video/comparison.mp4",
+  "presentation": "demo-video/comparison.mp4",
   "designer_model": "claude-opus-5-5",
   "refinement": "Website-first, smaller bold metrics and restrained styling per user feedback",
   "dimensions": [
@@ -27,5 +26,46 @@
   ],
   "fps": 30,
   "duration_seconds": 28.8333,
-  "compositor_sha256": "f967042be1fbb4419cb1ee0b29d917e86f7bf719b126502767873a44e3d10a6f"
+  "compositor_sha256": "466ad650bca1798051913f8e1dbd5913a9cfa8f2715300d08358b1cd71d3392f",
+  "page_mode": "follow-capture",
+  "page_switches": {
+    "fleet8": 42,
+    "vllm8": 111,
+    "vllm1": 65
+  },
+  "pages_shown": {
+    "fleet8": [
+      "accessibility.html",
+      "faq.html",
+      "index.html",
+      "lineup.html",
+      "schedule.html",
+      "tickets.html",
+      "venues.html",
+      "volunteer.html"
+    ],
+    "vllm8": [
+      "accessibility.html",
+      "faq.html",
+      "index.html",
+      "lineup.html",
+      "schedule.html",
+      "tickets.html",
+      "venues.html",
+      "volunteer.html"
+    ],
+    "vllm1": [
+      "accessibility.html",
+      "faq.html",
+      "index.html",
+      "lineup.html",
+      "schedule.html",
+      "tickets.html",
+      "venues.html",
+      "volunteer.html"
+    ]
+  },
+  "footer_removed": true,
+  "title": "Demo",
+  "single_agent_result_retained_in_report": true
 }

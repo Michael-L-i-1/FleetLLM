@@ -44,3 +44,6 @@ evals/third_party/
 /results/fleetpi/presentation/video/
 /results/fleetpi/presentation/quiet-video/.render/
 /results/fleetpi/presentation/quiet-video/presentation.html
+
+/results/fleetpi/presentation/demo-video/.render/
+/results/fleetpi/presentation/demo-video/presentation.html

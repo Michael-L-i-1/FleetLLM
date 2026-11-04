@@ -731,9 +731,12 @@ static void reuse_phase(engine *e, const int *ids, int n) {
 // Prefill rows a sequence may take now: a planned move's start is a chunk boundary.
 static int input_cap(const engine *e, int id, int want) {
     const seq_t *s = &e->seqs[id];
-    // A recurrent endpoint cannot be recovered after advancing past it. Stop
-    // at the nearest live waiter, also when filling a partially used GEMM tile.
-    if (e->recurrent_prefix_dedup && e->m->c.n_linear)
+    // Recurrent endpoints cannot be recovered after advancing; SWA may also
+    // discard the page needed at an earlier fork boundary. Stop at the nearest
+    // waiter, including tile fill. SWA coalescing excludes learned drafters:
+    // target/drafter capture ownership has not been validated for this path.
+    // Pure attention resolves on the next step before advancing again.
+    if (e->recurrent_prefix_dedup && (e->m->c.n_linear || (e->kv.window && !e->draft)))
         for (int i = 0; i < e->n_seqs; i++) {
             const seq_t *child = &e->seqs[i];
             if (child->live && !child->done && !child->cached && child->wait_len > s->n_tokens && child->wait_for == id && child->wait_gen == s->ng_gen &&

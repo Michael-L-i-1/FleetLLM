@@ -70,7 +70,7 @@ typedef struct {
     int row_budget;            // max rows per forward step (prefill chunking)
     bool recurrent_cache_priority; // retain useful prompt checkpoints before retired generation endpoints
     bool recurrent_state_move;     // transfer a superseded cached endpoint without another slot
-    bool recurrent_prefix_dedup;   // stop prefill at waiting children's exact recurrent endpoints
+    bool recurrent_prefix_dedup;   // stop at waiting recurrent/SWA endpoints (SWA: no learned drafter)
     bool prompt_checkpoints;   // save exact hybrid state before the assistant generation header
     int min_share;             // minimum common prefix worth forking
     engine_stats st;

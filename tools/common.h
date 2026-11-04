@@ -121,7 +121,9 @@ static runtime load_runtime(int argc, char **argv) {
     rt.e = engine_new_with_recurrent_fraction(rt.m, rt.be, rt.tok, kv, recurrent_fraction);
     rt.e->recurrent_cache_priority = arg_flag(argc, argv, "--recurrent-cache-priority");
     rt.e->recurrent_state_move = arg_flag(argc, argv, "--recurrent-state-move");
-    rt.e->recurrent_prefix_dedup = arg_flag(argc, argv, "--recurrent-prefix-dedup");
+    rt.e->recurrent_prefix_dedup = arg_flag(argc, argv, "--recurrent-prefix-dedup") || arg_flag(argc, argv, "--shared-prefix-coalescing");
+    if (rt.draft && rt.m->c.n_swa && rt.e->recurrent_prefix_dedup)
+        fprintf(stderr, "[prefix] SWA boundary coalescing disabled with learned drafter\n");
     rt.e->prompt_checkpoints = arg_flag(argc, argv, "--prompt-checkpoints");
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
     int spec_k = (int)arg_num(argc, argv, "--spec-k", 0);

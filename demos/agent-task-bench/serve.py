@@ -16,6 +16,24 @@ ROOT=Path(__file__).resolve().parents[2]
 HERE=Path(__file__).resolve().parent
 
 
+def load_pilot_input(path):
+    raw=path.read_bytes()
+    entries=json.loads(raw)
+    if not isinstance(entries,list) or len(entries)!=8:
+        raise ValueError('Pilot input must be a JSON list of exactly 8 entries')
+    for entry in entries:
+        if not isinstance(entry,dict) or set(entry)!={'messages','max_tokens'}:
+            raise ValueError('Each pilot entry requires exactly messages and max_tokens')
+        if type(entry['max_tokens']) is not int or entry['max_tokens']<=0:
+            raise ValueError('Pilot max_tokens must be a positive integer')
+        messages=entry['messages']
+        if not isinstance(messages,list) or not messages or any(
+                not isinstance(message,dict) or message.get('role') not in {'system','user','assistant'}
+                or not isinstance(message.get('content'),str) for message in messages):
+            raise ValueError('Pilot messages must contain role/content text messages')
+    return entries,raw
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config',type=Path,required=True)
@@ -23,9 +41,14 @@ def main():
     p.add_argument('--task',type=Path)
     p.add_argument('--agents',type=int,choices=[1,8],default=8)
     p.add_argument('--pilot',action='store_true')
+    p.add_argument('--pilot-input',type=Path)
     p.add_argument('--capture',action='store_true')
     p.add_argument('--wall-limit',type=float)
-    a=p.parse_args();cfg=json.loads(a.config.read_text());a.output.mkdir(parents=True,exist_ok=False)
+    a=p.parse_args()
+    if a.pilot_input and not a.pilot:p.error('--pilot-input requires --pilot')
+    pilot_entries,pilot_raw=load_pilot_input(a.pilot_input) if a.pilot_input else (None,None)
+    cfg=json.loads(a.config.read_text());a.output.mkdir(parents=True,exist_ok=False)
+    if pilot_raw is not None:(a.output/'pilot-input.json').write_bytes(pilot_raw)
     base=cfg.get('base','http://127.0.0.1:8090/v1');health=base.removesuffix('/v1')+'/health'
     try:urllib.request.urlopen(health,timeout=1)
     except OSError:pass
@@ -34,6 +57,9 @@ def main():
           'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
           'model_binary_sha256':hashlib.sha256(Path(cfg['command'][0]).resolve().read_bytes()).hexdigest(),
           'complete':False,'pilot':a.pilot,'agents':a.agents,'task':str(a.task) if a.task else None}
+    if pilot_raw is not None:
+        meta['pilot_input']={'path':str(a.pilot_input.resolve()),'sha256':hashlib.sha256(pilot_raw).hexdigest(),
+                             'archived':'pilot-input.json'}
     server=None;harness=None;samplers=[]
     cancelled=False
     def cancel(number, frame):
@@ -80,8 +106,12 @@ def main():
                 for i in range(8):
                     problem=('Write Rust function pub fn slug(input: &str) -> String that lowercases ASCII and collapses nonalphanumeric runs to one hyphen, trimming hyphens.' if i%2==0 else 'Write an accessible HTML coffee menu section with scoped CSS, three cards Espresso $3, Latte $5, Tea $4, responsive grid, and a labelled search input.')
                     messages.append([{'role':'system','content':common},{'role':'user','content':f'Worker {i}. {problem} Path: part{i}.'}])
+                entries=pilot_entries if pilot_entries is not None else [{'messages':m,'max_tokens':512} for m in messages]
+                if pilot_entries is None:(a.output/'pilot-input.json').write_text(json.dumps(entries,indent=2)+'\n')
+                meta.setdefault('pilot_input',{'archived':'pilot-input.json',
+                    'sha256':hashlib.sha256((a.output/'pilot-input.json').read_bytes()).hexdigest()})
                 t=time.monotonic()
-                with ThreadPoolExecutor(max_workers=8) as pool:responses=list(pool.map(lambda x:request(x,512),messages))
+                with ThreadPoolExecutor(max_workers=8) as pool:responses=list(pool.map(lambda entry:request(entry['messages'],entry['max_tokens']),entries))
                 wall=time.monotonic()-t;tokens=sum(d['response'].get('usage',{}).get('completion_tokens',0) for d in responses)
                 pilot={'wall_seconds':wall,'completion_tokens':tokens,'tokens_per_second':tokens/wall,'responses':responses}
                 (a.output/'pilot.json').write_text(json.dumps(pilot,indent=2)+'\n');meta['pilot_summary']={k:v for k,v in pilot.items() if k!='responses'}

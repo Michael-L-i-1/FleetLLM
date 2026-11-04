@@ -1,0 +1,593 @@
+{
+  "inference_used": false,
+  "note": "CPU Chromium evaluator checks; actual v1 artifacts are only retrospective grader validation, not v2 model-run results. Temporary feasible implementation is not in the benchmark fixture.",
+  "full_site_checks": {
+    "baseline": {
+      "passed": false,
+      "checks": 63,
+      "failures": [
+        "01-header.html: custom styling supplied: requirement not met",
+        "02-hero.html: custom styling supplied: requirement not met",
+        "03-mission.html: custom styling supplied: requirement not met",
+        "05-impact.html: custom styling supplied: requirement not met",
+        "06-events.html: custom styling supplied: requirement not met",
+        "07-visit.html: custom styling supplied: requirement not met",
+        "08-footer.html: custom styling supplied: requirement not met",
+        "390px: navigation: requirement not met",
+        "390px: hero calls to action: requirement not met",
+        "390px: hero menu-cta visible pixels: Expected exactly one target for #hero a[href=\"#menu\"]",
+        "390px: hero mission-cta visible pixels: Expected exactly one target for #hero a[href=\"#mission\"]",
+        "390px: mission disclosure: requirement not met",
+        "390px: menu cards: requirement not met",
+        "390px: labelled search: requirement not met",
+        "390px: search behavior: requirement not met",
+        "390px: impact facts: requirement not met",
+        "390px: dated events: requirement not met",
+        "390px: visit details: requirement not met",
+        "390px: accessible newsletter: requirement not met",
+        "390px: no horizontal overflow: requirement not met",
+        "1440px: hero typography: requirement not met",
+        "1440px: navigation: requirement not met",
+        "1440px: hero calls to action: requirement not met",
+        "1440px: hero menu-cta visible pixels: Expected exactly one target for #hero a[href=\"#menu\"]",
+        "1440px: hero mission-cta visible pixels: Expected exactly one target for #hero a[href=\"#mission\"]",
+        "1440px: mission disclosure: requirement not met",
+        "1440px: menu cards: requirement not met",
+        "1440px: labelled search: requirement not met",
+        "1440px: search behavior: requirement not met",
+        "1440px: impact facts: requirement not met",
+        "1440px: dated events: requirement not met",
+        "1440px: visit details: requirement not met",
+        "1440px: accessible newsletter: requirement not met"
+      ],
+      "visibilityProbes": [
+        {
+          "width": 390,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 16,
+            "y": 137,
+            "width": 358,
+            "height": 75
+          },
+          "stableChangedPixels": 4397,
+          "changedPixels": 4397,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 390,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "passed": false,
+          "error": "Expected exactly one target for #hero a[href=\"#menu\"]"
+        },
+        {
+          "width": 390,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "passed": false,
+          "error": "Expected exactly one target for #hero a[href=\"#mission\"]"
+        },
+        {
+          "width": 1440,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 16,
+            "y": 137,
+            "width": 1408,
+            "height": 38
+          },
+          "stableChangedPixels": 4397,
+          "changedPixels": 4397,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "passed": false,
+          "error": "Expected exactly one target for #hero a[href=\"#menu\"]"
+        },
+        {
+          "width": 1440,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "passed": false,
+          "error": "Expected exactly one target for #hero a[href=\"#mission\"]"
+        }
+      ]
+    },
+    "temporary-feasible": {
+      "passed": true,
+      "checks": 63,
+      "failures": [],
+      "visibilityProbes": [
+        {
+          "width": 390,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 24,
+            "y": 188,
+            "width": 342,
+            "height": 111
+          },
+          "stableChangedPixels": 8545,
+          "changedPixels": 8545,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 390,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "clip": {
+            "x": 32,
+            "y": 338,
+            "width": 49,
+            "height": 27
+          },
+          "stableChangedPixels": 314,
+          "changedPixels": 314,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 390,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "clip": {
+            "x": 96,
+            "y": 338,
+            "width": 63,
+            "height": 27
+          },
+          "stableChangedPixels": 425,
+          "changedPixels": 425,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 24,
+            "y": 188,
+            "width": 1392,
+            "height": 56
+          },
+          "stableChangedPixels": 8545,
+          "changedPixels": 8545,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "clip": {
+            "x": 32,
+            "y": 283,
+            "width": 49,
+            "height": 27
+          },
+          "stableChangedPixels": 314,
+          "changedPixels": 314,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "clip": {
+            "x": 96,
+            "y": 283,
+            "width": 63,
+            "height": 27
+          },
+          "stableChangedPixels": 425,
+          "changedPixels": 425,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        }
+      ]
+    },
+    "actual-fleet-v1": {
+      "passed": true,
+      "checks": 63,
+      "failures": [],
+      "visibilityProbes": [
+        {
+          "width": 390,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 20,
+            "y": 161,
+            "width": 350,
+            "height": 76
+          },
+          "stableChangedPixels": 5693,
+          "changedPixels": 5693,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 390,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "clip": {
+            "x": 105,
+            "y": 530,
+            "width": 180,
+            "height": 50
+          },
+          "stableChangedPixels": 8684,
+          "changedPixels": 8684,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 390,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "clip": {
+            "x": 111,
+            "y": 595,
+            "width": 168,
+            "height": 54
+          },
+          "stableChangedPixels": 8758,
+          "changedPixels": 8758,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "headline",
+          "selector": "#hero h1",
+          "clip": {
+            "x": 24,
+            "y": 154,
+            "width": 1392,
+            "height": 59
+          },
+          "stableChangedPixels": 12814,
+          "changedPixels": 12814,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "clip": {
+            "x": 539,
+            "y": 546,
+            "width": 180,
+            "height": 54
+          },
+          "stableChangedPixels": 9396,
+          "changedPixels": 9396,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        },
+        {
+          "width": 1440,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "clip": {
+            "x": 734,
+            "y": 546,
+            "width": 167,
+            "height": 54
+          },
+          "stableChangedPixels": 8758,
+          "changedPixels": 8758,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        }
+      ]
+    },
+    "actual-vllm-v1": {
+      "passed": false,
+      "checks": 63,
+      "failures": [
+        "390px: hero headline visible pixels: #hero h1 contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)",
+        "390px: hero menu-cta visible pixels: #hero a[href=\"#menu\"] contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)",
+        "390px: hero mission-cta visible pixels: #hero a[href=\"#mission\"] contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)",
+        "1440px: hero headline visible pixels: #hero h1 contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)",
+        "1440px: hero menu-cta visible pixels: #hero a[href=\"#menu\"] contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)",
+        "1440px: hero mission-cta visible pixels: #hero a[href=\"#mission\"] contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+      ],
+      "visibilityProbes": [
+        {
+          "width": 390,
+          "target": "headline",
+          "selector": "#hero h1",
+          "passed": false,
+          "clip": {
+            "x": 20,
+            "y": 161,
+            "width": 350,
+            "height": 68
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "styleRestored": true,
+          "error": "#hero h1 contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+        },
+        {
+          "width": 390,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "passed": false,
+          "clip": {
+            "x": 32,
+            "y": 336,
+            "width": 161,
+            "height": 48
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "styleRestored": true,
+          "error": "#hero a[href=\"#menu\"] contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+        },
+        {
+          "width": 390,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "passed": false,
+          "clip": {
+            "x": 208,
+            "y": 336,
+            "width": 150,
+            "height": 48
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "styleRestored": true,
+          "error": "#hero a[href=\"#mission\"] contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+        },
+        {
+          "width": 1440,
+          "target": "headline",
+          "selector": "#hero h1",
+          "passed": false,
+          "clip": {
+            "x": 24,
+            "y": 154,
+            "width": 1392,
+            "height": 59
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "styleRestored": true,
+          "error": "#hero h1 contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+        },
+        {
+          "width": 1440,
+          "target": "menu-cta",
+          "selector": "#hero a[href=\"#menu\"]",
+          "passed": false,
+          "clip": {
+            "x": 531,
+            "y": 304,
+            "width": 188,
+            "height": 54
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "styleRestored": true,
+          "error": "#hero a[href=\"#menu\"] contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+        },
+        {
+          "width": 1440,
+          "target": "mission-cta",
+          "selector": "#hero a[href=\"#mission\"]",
+          "passed": false,
+          "clip": {
+            "x": 734,
+            "y": 304,
+            "width": 175,
+            "height": 54
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "styleRestored": true,
+          "error": "#hero a[href=\"#mission\"] contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+        }
+      ]
+    }
+  },
+  "pixel_probe_regressions": {
+    "passed": true,
+    "results": [
+      {
+        "name": "visible",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "stylesRestored": true,
+        "probe": {
+          "selector": "#target",
+          "clip": {
+            "x": 40,
+            "y": 40,
+            "width": 720,
+            "height": 45
+          },
+          "stableChangedPixels": 5125,
+          "changedPixels": 5125,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        }
+      },
+      {
+        "name": "pointer-events-none-occlusion",
+        "passed": true,
+        "expected": false,
+        "actual": false,
+        "stylesRestored": true,
+        "probe": {
+          "selector": "#target",
+          "clip": {
+            "x": 40,
+            "y": 40,
+            "width": 720,
+            "height": 45
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": false,
+          "styleRestored": true
+        },
+        "error": "#target contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+      },
+      {
+        "name": "transparent-target",
+        "passed": true,
+        "expected": false,
+        "actual": false,
+        "stylesRestored": true,
+        "probe": {
+          "selector": "#target",
+          "clip": {
+            "x": 40,
+            "y": 40,
+            "width": 720,
+            "height": 45
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": false,
+          "styleRestored": true
+        },
+        "error": "#target contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+      },
+      {
+        "name": "explicit-visible-child",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "stylesRestored": true,
+        "probe": {
+          "selector": "#target",
+          "clip": {
+            "x": 40,
+            "y": 40,
+            "width": 720,
+            "height": 45
+          },
+          "stableChangedPixels": 6841,
+          "changedPixels": 6841,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": true,
+          "styleRestored": true
+        }
+      },
+      {
+        "name": "animated-opaque-occlusion",
+        "passed": true,
+        "expected": false,
+        "actual": false,
+        "stylesRestored": true,
+        "probe": {
+          "selector": "#target",
+          "clip": {
+            "x": 40,
+            "y": 40,
+            "width": 720,
+            "height": 45
+          },
+          "stableChangedPixels": 0,
+          "changedPixels": 0,
+          "unstablePixels": 0,
+          "minimumChangedPixels": 24,
+          "channelThreshold": 8,
+          "passed": false,
+          "styleRestored": true
+        },
+        "error": "#target contributes only 0 stable changed pixels; requires at least 24 (possible occlusion or invisible content)"
+      }
+    ],
+    "output": "/tmp/fleet-coffee-v2-probe-selfcheck"
+  }
+}

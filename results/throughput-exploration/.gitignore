@@ -1,0 +1,9 @@
+/workload32*.json
+/runs/*/trace/responses/
+/runs/*/quality/responses/
+/runs/*/trace/calls.jsonl
+/runs/*/trace/events.jsonl
+/runs/*/quality/calls.jsonl
+/runs/*/quality/events.jsonl
+/opus/*response.jsonl
+/opus/model-probe.jsonl

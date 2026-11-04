@@ -1,0 +1,29 @@
+{
+  "requested_model": "claude-opus-5-5",
+  "mode": "read-only print",
+  "tools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "flags": [
+    "--safe-mode",
+    "--permission-mode dontAsk",
+    "--permission-prompts none",
+    "--strict-mcp-config",
+    "--no-session-persistence",
+    "--no-chrome",
+    "--disable-slash-commands"
+  ],
+  "fallback_model": null,
+  "git_head_at_invocation": "9c8dbef8e45720a5c7c4fe863f54b5798da38476",
+  "source_sha256_at_invocation": {
+    "src/engine.c": "2e6588900c669c8ebe2d08a910c03ab709b5ad8b720565ab88e2d07369e59db1",
+    "src/engine.h": "dc0a93a84770f1a4cd4d0670ff108270431fcb3ddc2cffc991947d3581690227",
+    "src/kv.c": "e9c9849acb689a9051d3fd9e27b70500b976fc98881baa610dd7ba864e83ce55",
+    "src/kv.h": "f320ca3744f2d9b4f21fd33907192a867f36ecbb409f5b1d38b4db2083585a23",
+    "src/metal/metal.m": "459b7f82e1833a7f6b7cb9fc7f33cb8cb46a8a1ae028291f66c86c5024fd0255",
+    "src/metal/kernels.metal": "6ee3309101ea697f9b61427e9ac0a4f296edc0f3810935940c7fde209309e884",
+    "src/server.c": "a663ca3446ff2858b8ee222445ad365927931d3a406a63fff86cec0a7eb11671"
+  }
+}

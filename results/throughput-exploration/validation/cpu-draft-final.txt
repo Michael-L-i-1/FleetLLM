@@ -1,0 +1,103 @@
+[cpu] reference path (f32 dequant), 2 threads
+dense PyTorch reference: KV4, split-context=0, hidden states + tokens PASS
+[cpu] reference path (f32 dequant), 2 threads
+dense PyTorch reference: KV4, split-context=1, hidden states + tokens PASS
+[cpu] reference path (f32 dequant), 2 threads
+dense PyTorch reference: KV2, split-context=0, hidden states + tokens PASS
+[cpu] reference path (f32 dequant), 2 threads
+dense PyTorch reference: KV2, split-context=1, hidden states + tokens PASS
+[cpu] reference path (f32 dequant), 2 threads
+dense PyTorch reference: KV1, split-context=0, hidden states + tokens PASS
+[cpu] reference path (f32 dequant), 2 threads
+dense PyTorch reference: KV1, split-context=1, hidden states + tokens PASS
+[approx] CPU FFN block sparsity 50.0%, skipped layers 2/4; changes model outputs
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 3.9e-03)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 21 4-bit affine (err 0.0e+00) 1 8-bit (err 0.0e+00)
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB:
+[cpu] neon+dotprod, 2 threads; weights 0.00 GB -> 0.00 GB: 15 4-bit affine (err 0.0e+00)
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+[cpu] reference path (f32 dequant), 2 threads
+approximation: option validation, deterministic energy selection and batch independence PASS
+target hidden capture: layer selection and row layout PASS
+compact K-quants: no implicit 8-bit expansion PASS
+engine native kv1 k1 rejection: accepted 4/42, tokens PASS
+engine native kv1 k1 full acceptance: accepted 24/24, tokens PASS
+engine native kv1 k3 rejection: accepted 3/123, tokens PASS
+engine native kv1 k3 full acceptance: accepted 36/36, tokens PASS
+engine native kv2 k1 rejection: accepted 4/42, tokens PASS
+engine native kv2 k1 full acceptance: accepted 24/24, tokens PASS
+engine native kv2 k3 rejection: accepted 3/123, tokens PASS
+engine native kv2 k3 full acceptance: accepted 36/36, tokens PASS
+engine native kv4 k1 rejection: accepted 4/42, tokens PASS
+engine native kv4 k1 full acceptance: accepted 24/24, tokens PASS
+engine native kv4 k3 rejection: accepted 3/123, tokens PASS
+engine native kv4 k3 full acceptance: accepted 36/36, tokens PASS
+engine reference kv1 k1 rejection: accepted 4/42, tokens PASS
+engine reference kv1 k1 full acceptance: accepted 24/24, tokens PASS
+engine reference kv1 k3 rejection: accepted 3/123, tokens PASS
+engine reference kv1 k3 full acceptance: accepted 36/36, tokens PASS
+engine reference kv2 k1 rejection: accepted 4/42, tokens PASS
+engine reference kv2 k1 full acceptance: accepted 24/24, tokens PASS
+engine reference kv2 k3 rejection: accepted 3/123, tokens PASS
+engine reference kv2 k3 full acceptance: accepted 36/36, tokens PASS
+engine reference kv4 k1 rejection: accepted 4/42, tokens PASS
+engine reference kv4 k1 full acceptance: accepted 24/24, tokens PASS
+engine reference kv4 k3 rejection: accepted 3/123, tokens PASS
+engine reference kv4 k3 full acceptance: accepted 36/36, tokens PASS

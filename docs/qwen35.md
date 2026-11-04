@@ -40,14 +40,15 @@ normalization weights already include the source model's zero-centered offset.
 
 A Qwen3.5-4B sequence needs approximately 52.69 MB of recurrent state in addition
 to attention KV. Fleet reserves bounded state slots from the supplied KV budget
-(up to one quarter, rounded to at least one slot and capped at 64 slots). The rest
+(one quarter by default, rounded to at least one slot and capped at 64 slots). The rest
 backs paged attention. Cached states are evicted first when slots are needed;
 active states can be discarded and exactly recomputed under pressure.
 
-Each available endpoint is independently copied on a fork. Reusing arbitrary
+Each available endpoint is independently copied on a normal fork. Reusing arbitrary
 intermediate attention pages does not provide the corresponding recurrent state.
-An unavailable intermediate fork therefore recomputes its prefix. Waiting for a
-prefill leader is disabled until there is a matching recurrent checkpoint.
+An unavailable intermediate fork therefore recomputes its prefix. The optional
+shared-prefix scheduler below stops a prefill leader at an exact fork boundary.
+Each child still owns independent mutable recurrent state.
 
 N-gram speculation, DFlash, span reuse and recurrent disk offload need additional
 checkpoint/rollback support. Their CLI switches fail explicitly for this model.
@@ -101,3 +102,39 @@ channels into each threadgroup. These are exact execution changes, not layer
 skipping or activation sparsity. A controlled 128-token generation preserved the
 output byte-for-byte and improved decode from 31.20 to 90.26 tok/s on this M5 Pro;
 this compares two versions of Fleet's new implementation, not competing engines.
+
+## Optional throughput experiments
+
+The following switches are opt-in; normal Fleet defaults are unchanged. They
+operate on exact recurrent states, without layer skipping, activation sparsity,
+or context deletion.
+
+| Setting | Behavior | Cost or limitation |
+|---|---|---|
+| `--recurrent-prefix-dedup` | Coalesces concurrent shared-prefix prefill at an exact leader boundary, then forks each waiter. | Each child needs its own state slot; missing/canceled leaders fall back to recomputation. |
+| `--recurrent-state-move` | Transfers ownership of a reusable inactive cached endpoint instead of copying it and releasing the source. | Consumes that cached endpoint; never transfers a live mutable parent or a source with waiting children. |
+| `--recurrent-cache-priority` | Reclaims inactive generation endpoints before useful prompt checkpoints when state slots fill. | Checkpoints still compete within the same bounded cache budget. |
+| `--recurrent-fraction 0.5` | Reserves half the supplied KV budget for recurrent states instead of the default quarter. | Leaves fewer attention pages. Valid range 0.05–0.90, maximum 64 slots. |
+| `FLEET_Q35_NAX_ATTN=1` | Uses tiled NAX matrix operations for 256-dimensional full-attention prefill. | Metal only; decode keeps the vector path. Floating-point rounding can change. |
+
+For example, on the validated Mac checkpoint:
+
+```sh
+FLEET_Q35_NAX_ATTN=1 ./build/fleet serve --model /path/to/snapshot \
+  --device metal --name qwen35-4b-mlx4 --budget-gb 16 --kv-gb 4 \
+  --max-active 8 --admit --row-budget 128 --prompt-checkpoints \
+  --recurrent-prefix-dedup --recurrent-state-move --recurrent-cache-priority
+```
+
+At a 4 GB KV budget, the default split provides 18 state slots; a 0.5 split
+provides 37. Start with the default for eight active sessions; the larger split
+is tested separately for sixteen. Compare total budgets and KV precision within
+each experiment rather than treating different memory allocations as free gains.
+
+`FLEET_TRACE_STATS=1` emits cumulative per-request work, shared tokens, checkpoint
+captures/skips, state moves, slot misses and eviction counters. It is intended for
+diagnosis and benchmark attribution. `scripts/qwen35dedupcheck.c` exercises tiny
+scheduler fixtures; `scripts/qwen35_attention_check.py` checks HD256 span-boundary
+logits. See the [throughput experiment report](../results/throughput-exploration/README.md)
+for workload limits and measured results. These experiments do not establish
+successful autonomous coding or performance against another inference engine.

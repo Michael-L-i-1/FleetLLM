@@ -1,0 +1,34 @@
+{
+  "status": "completed",
+  "verified_model": "claude-opus-5-5",
+  "general_review": "review-result.txt",
+  "hd256_audit": "hd256-audit-result.txt",
+  "recommendations": [
+    {
+      "rank": 1,
+      "prototype": "slot-aware retention/admission and ownership move for cached exact endpoints",
+      "first_step": "instrument match-but-fresh fallback, skipped checkpoints, evictions by class, slot preemptions; reject if baseline counters show no opportunity",
+      "hypothesis": "20\u201350% throughput gain at16 only if recompute from slot churn is substantial; no predicted universal gain",
+      "quality": "no model math change; compare token/decoded-output drift against repeat baseline floor"
+    },
+    {
+      "rank": 2,
+      "prototype": "extend existing swap to recurrent state for hybrid models",
+      "hypothesis": "large prefill-work savings possible if backing storage holds reuse working set and reload beats recompute; existing Fleet feature extension, not novel algorithm",
+      "quality": "exact byte-preserving state+KV restore with end-to-end continuation tests"
+    },
+    {
+      "rank": 3,
+      "prototype": "system-message boundary shared-prefix checkpoints and constrained leader waiting",
+      "hypothesis": "avoid duplicated shared-prefix prefill at fanout; each mutable child still owns recurrent state",
+      "quality": "exact checkpoint fork with boundary validation"
+    }
+  ],
+  "hd256_audit_result": "No new correctness bug found in submitted one-tile HD256 prefill diff; profile register pressure/serialized V loads and test span boundaries/mixed batches/Q8. Existing FLEET_ATTN_VEC=0+hd256 unsupported kernel-name edge should be guarded or documented.",
+  "reviewer_corrections": [
+    "Actual default at KV4GB is18 recurrent slots, not approximately20.",
+    "engine preempt preserves generated outputs; their cached context is recomputed.",
+    "A single shared prefix checkpoint still requires independent mutable recurrent state per active child.",
+    "Per-threadgroup shared-memory maximum alone does not prove per-core occupancy."
+  ]
+}

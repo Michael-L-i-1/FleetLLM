@@ -1,0 +1,23 @@
+{
+  "source_commit": "9c8dbef8e45720a5c7c4fe863f54b5798da38476",
+  "binary": "build/throughput-control/fleet-serve",
+  "sha256": "a020044592213b3771313d336ba61471fa9913a3c4e25cf28990d57472af675f",
+  "model": "mlx-community/Qwen3.5-4B-4bit",
+  "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "normal_features": [
+    "native Metal/NAX quantized matmuls",
+    "persistent recurrent wrappers",
+    "continuous batching",
+    "paged attention KV",
+    "default prefix cache where exact state available",
+    "admission"
+  ],
+  "new_features_disabled": [
+    "prompt-checkpoints",
+    "recurrent-prefix-dedup",
+    "context masking",
+    "new state split",
+    "experimental projection fusion"
+  ],
+  "baseline_policy": "Same workload, weight quantization, caps, total memory and attention KV type in each ablation; KV8 is existing supported functionality and gets a separately matched control."
+}

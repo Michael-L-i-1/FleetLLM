@@ -1,0 +1,55 @@
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.02 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 3 state slots, 0.03 MB each, reserved fraction 0.05 within KV budget; endpoint prefix snapshots only
+[recurrent] 16 state slots, 0.03 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[recurrent] 32 state slots, 0.03 MB each, reserved fraction 0.50 within KV budget; endpoint prefix snapshots only
+[recurrent] 41 state slots, 0.03 MB each, reserved fraction 0.65 within KV budget; endpoint prefix snapshots only
+[recurrent] 57 state slots, 0.03 MB each, reserved fraction 0.90 within KV budget; endpoint prefix snapshots only
+fanout dedup=0 checkpoints=0 slots=32: prefill=337 shared=0, outputs match fresh mathematical reference
+fanout dedup=1 checkpoints=0 slots=32: prefill=181 shared=155, outputs match fresh mathematical reference
+fanout dedup=1 checkpoints=1 slots=32: prefill=181 shared=155, outputs match fresh mathematical reference
+fanout dedup=1 checkpoints=0 slots=1: prefill=337 shared=0, outputs match fresh mathematical reference
+fanout dedup=1 checkpoints=0 slots=2: prefill=296 shared=41, outputs match fresh mathematical reference
+abandoned leader recycle=0 retired=0 off-step=0: exact fresh fallback PASS
+abandoned leader recycle=1 retired=0 off-step=0: exact fresh fallback PASS
+abandoned leader recycle=0 retired=1 off-step=0: exact fresh fallback PASS
+abandoned leader recycle=0 retired=0 off-step=1: exact fresh fallback PASS
+state slot exhaustion at endpoint: no invalid clone, exact recomputation PASS
+cancelled waiter: no stale boundary or state allocation PASS
+full-slot move: exact continuation, protected owners/waiters, COW, one handle release, unchanged slots, counters PASS
+phase capture priority=0: bounded slots, protected active/checkpoint, callback ownership, exact output PASS
+phase capture priority=1: bounded slots, protected active/checkpoint, callback ownership, exact output PASS
+phase prefill priority=0 waited-endpoint=0: FIFO/default, endpoint preference, waiter protection PASS
+phase prefill priority=1 waited-endpoint=0: FIFO/default, endpoint preference, waiter protection PASS
+phase prefill priority=1 waited-endpoint=1: FIFO/default, endpoint preference, waiter protection PASS
+checkpoint lifecycle move=0 priority=0 growing=0 pressure=0 reused=0,80,80,80: exact replies, bounded capture PASS
+checkpoint lifecycle move=1 priority=0 growing=0 pressure=0 reused=0,80,80,80: exact replies, bounded capture PASS
+checkpoint lifecycle move=1 priority=1 growing=0 pressure=0 reused=0,80,80,80: exact replies, bounded capture PASS
+checkpoint lifecycle move=1 priority=1 growing=1 pressure=0 reused=0,80,100,120: exact replies, bounded capture PASS
+checkpoint lifecycle move=1 priority=1 growing=0 pressure=1 reused=0,80,80,80: exact replies, bounded capture PASS
+fraction 0.05: 3 slots, same total budget PASS
+fraction 0.25: 16 slots, same total budget PASS
+fraction 0.50: 32 slots, same total budget PASS
+fraction 0.65: 41 slots, same total budget PASS
+fraction 0.90: 57 slots, same total budget PASS
+ALL DEDUP SCHEDULER CHECKS PASS

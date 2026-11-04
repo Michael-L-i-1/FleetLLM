@@ -1,0 +1,124 @@
+{
+  "command": [
+    "build/fleet-serve",
+    "--model",
+    "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Qwen3.5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+    "--device",
+    "metal",
+    "--name",
+    "qwen35-4b-mlx4",
+    "--budget-gb",
+    "16",
+    "--kv-gb",
+    "4",
+    "--max-active",
+    "8",
+    "--admit",
+    "--row-budget",
+    "128",
+    "--prompt-checkpoints",
+    "--recurrent-prefix-dedup",
+    "--recurrent-state-move",
+    "--recurrent-cache-priority",
+    "--port",
+    "8090"
+  ],
+  "responses": [
+    {
+      "id": "chatcmpl-1",
+      "object": "chat.completion",
+      "created": 1793757040,
+      "model": "qwen35-4b-mlx4",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "PURPLE"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 2532,
+        "completion_tokens": 3,
+        "total_tokens": 2535,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "chatcmpl-2",
+      "object": "chat.completion",
+      "created": 1793757042,
+      "model": "qwen35-4b-mlx4",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "PURPLE"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 2532,
+        "completion_tokens": 3,
+        "total_tokens": 2535,
+        "prompt_tokens_details": {
+          "cached_tokens": 2525
+        }
+      }
+    },
+    {
+      "id": "chatcmpl-3",
+      "object": "chat.completion",
+      "created": 1793757042,
+      "model": "qwen35-4b-mlx4",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "PURPLE"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 2532,
+        "completion_tokens": 3,
+        "total_tokens": 2535,
+        "prompt_tokens_details": {
+          "cached_tokens": 2525
+        }
+      }
+    },
+    {
+      "id": "chatcmpl-4",
+      "object": "chat.completion",
+      "created": 1793757042,
+      "model": "qwen35-4b-mlx4",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "PURPLE"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 2532,
+        "completion_tokens": 3,
+        "total_tokens": 2535,
+        "prompt_tokens_details": {
+          "cached_tokens": 2525
+        }
+      }
+    }
+  ]
+}

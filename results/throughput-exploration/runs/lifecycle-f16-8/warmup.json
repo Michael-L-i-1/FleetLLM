@@ -1,0 +1,24 @@
+{
+  "id": "chatcmpl-1",
+  "object": "chat.completion",
+  "created": 1793756849,
+  "model": "qwen35-4b-mlx4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "READY"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 2,
+    "total_tokens": 18,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}

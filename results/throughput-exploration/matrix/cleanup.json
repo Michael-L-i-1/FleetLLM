@@ -1,0 +1,21 @@
+{
+  "servers": [],
+  "port8090_listening": false,
+  "lsof": "",
+  "all12_complete": true,
+  "all_short_quality_correct": true,
+  "graded_trace_cases": [
+    {
+      "label": "qa-control-f16-8",
+      "graded_correct": 32,
+      "graded_total": 32,
+      "graded_accuracy": 1.0
+    },
+    {
+      "label": "qa-all-f16-8",
+      "graded_correct": 32,
+      "graded_total": 32,
+      "graded_accuracy": 1.0
+    }
+  ]
+}

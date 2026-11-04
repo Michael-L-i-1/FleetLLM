@@ -1,0 +1,84 @@
+[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.1s
+[recurrent] 18 state slots, 52.69 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[load] 0.2s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 3.05 GB (5820 full + 0 swa pages), backend metal
+[serve] listening on http://127.0.0.1:8090/v1 (model "qwen35-4b-mlx4")
+[fleet_stats] served=1 rows=17 shared=0 preemptions=0 checkpoints=1 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=2/18
+[serve] chatcmpl-1: 16 prompt + 2 generated tokens, first token 0.16s, total 0.17s, stop
+[fleet_stats] served=2 rows=4515 shared=27902 preemptions=0 checkpoints=7 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=16/18
+[fleet_stats] served=3 rows=4515 shared=27902 preemptions=0 checkpoints=7 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=16/18
+[fleet_stats] served=4 rows=4515 shared=27902 preemptions=0 checkpoints=7 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=16/18
+[serve] chatcmpl-3: 4046 prompt + 3 generated tokens, first token 2.24s, total 2.42s, stop
+[serve] chatcmpl-2: 4046 prompt + 3 generated tokens, first token 2.24s, total 2.42s, stop
+[serve] chatcmpl-5: 4056 prompt + 2 generated tokens, first token 2.33s, total 2.42s, stop
+[fleet_stats] served=5 rows=4701 shared=27902 preemptions=0 checkpoints=9 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-4: 4058 prompt + 5 generated tokens, first token 2.33s, total 2.59s, stop
+[fleet_stats] served=6 rows=4705 shared=27902 preemptions=0 checkpoints=9 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=18/18
+[fleet_stats] served=7 rows=4705 shared=27902 preemptions=0 checkpoints=9 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=18/18
+[fleet_stats] served=8 rows=4705 shared=27902 preemptions=0 checkpoints=9 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-8: 4112 prompt + 3 generated tokens, first token 2.56s, total 2.60s, stop
+[serve] chatcmpl-6: 4058 prompt + 5 generated tokens, first token 2.42s, total 2.60s, stop
+[serve] chatcmpl-7: 4111 prompt + 4 generated tokens, first token 2.52s, total 2.60s, stop
+[fleet_stats] served=9 rows=4706 shared=27902 preemptions=0 checkpoints=9 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-9: 4084 prompt + 3 generated tokens, first token 2.59s, total 2.62s, stop
+[fleet_stats] served=10 rows=6626 shared=60417 preemptions=0 checkpoints=10 skipped=0 state_moves=8 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=1 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-10: 5632 prompt + 2 generated tokens, first token 1.07s, total 1.15s, stop
+[fleet_stats] served=11 rows=8034 shared=66042 preemptions=0 checkpoints=11 skipped=0 state_moves=9 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=2 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-11: 5394 prompt + 3 generated tokens, first token 1.81s, total 1.96s, stop
+[fleet_stats] served=12 rows=9570 shared=66042 preemptions=0 checkpoints=12 skipped=0 state_moves=9 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=3 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-12: 5684 prompt + 3 generated tokens, first token 2.69s, total 2.83s, stop
+[fleet_stats] served=13 rows=10594 shared=71429 preemptions=0 checkpoints=13 skipped=0 state_moves=10 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=4 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-13: 5106 prompt + 3 generated tokens, first token 2.98s, total 3.12s, stop
+[fleet_stats] served=14 rows=12386 shared=82205 preemptions=0 checkpoints=14 skipped=0 state_moves=12 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=5 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-14: 5621 prompt + 4 generated tokens, first token 3.91s, total 4.13s, stop
+[fleet_stats] served=15 rows=14434 shared=87819 preemptions=0 checkpoints=15 skipped=0 state_moves=13 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=6 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-15: 6039 prompt + 5 generated tokens, first token 5.00s, total 5.29s, stop
+[fleet_stats] served=16 rows=15586 shared=87819 preemptions=0 checkpoints=17 skipped=0 state_moves=13 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=8 checkpoint_evictions=0 states=18/18
+[fleet_stats] served=17 rows=15586 shared=87819 preemptions=0 checkpoints=17 skipped=0 state_moves=13 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=8 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-16: 5213 prompt + 5 generated tokens, first token 5.64s, total 5.96s, stop
+[serve] chatcmpl-17: 4438 prompt + 2 generated tokens, first token 5.83s, total 5.90s, stop
+[serve] 6 active | 5.7 tok/s generated | 17 served | 0 preemptions | 93851 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies | forward_rows 16482 checkpoints 17 skipped 0 state_moves 14 fullslot_misses 0 slot_preemptions 0
+[fleet_stats] served=18 rows=17634 shared=103488 preemptions=0 checkpoints=18 skipped=0 state_moves=16 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=9 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-18: 7393 prompt + 4 generated tokens, first token 5.71s, total 5.94s, stop
+[fleet_stats] served=19 rows=19298 shared=110874 preemptions=0 checkpoints=20 skipped=0 state_moves=17 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=11 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-19: 6860 prompt + 5 generated tokens, first token 5.43s, total 5.76s, stop
+[fleet_stats] served=20 rows=19682 shared=110874 preemptions=0 checkpoints=20 skipped=0 state_moves=17 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=11 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-20: 6299 prompt + 3 generated tokens, first token 5.11s, total 5.27s, stop
+[fleet_stats] served=21 rows=21218 shared=124019 preemptions=0 checkpoints=21 skipped=0 state_moves=19 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=12 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-21: 6680 prompt + 3 generated tokens, first token 5.29s, total 5.45s, stop
+[fleet_stats] served=22 rows=21986 shared=124019 preemptions=0 checkpoints=23 skipped=0 state_moves=19 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=14 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-22: 6331 prompt + 3 generated tokens, first token 5.36s, total 5.53s, stop
+[fleet_stats] served=23 rows=22242 shared=130692 preemptions=0 checkpoints=23 skipped=0 state_moves=20 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=14 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-23: 6414 prompt + 2 generated tokens, first token 3.82s, total 3.90s, stop
+[fleet_stats] served=24 rows=23650 shared=143423 preemptions=0 checkpoints=24 skipped=0 state_moves=22 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=15 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-24: 6658 prompt + 2 generated tokens, first token 4.12s, total 4.19s, stop
+[fleet_stats] served=25 rows=24802 shared=150074 preemptions=0 checkpoints=25 skipped=0 state_moves=23 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=16 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-25: 5298 prompt + 4 generated tokens, first token 4.52s, total 4.77s, stop
+[fleet_stats] served=26 rows=26082 shared=155365 preemptions=0 checkpoints=26 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=17 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-26: 8747 prompt + 3 generated tokens, first token 4.69s, total 4.85s, stop
+[fleet_stats] served=27 rows=27618 shared=155365 preemptions=0 checkpoints=29 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=20 checkpoint_evictions=0 states=18/18
+[fleet_stats] served=28 rows=27618 shared=155365 preemptions=0 checkpoints=29 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=20 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-27: 7615 prompt + 5 generated tokens, first token 4.03s, total 4.39s, stop
+[serve] chatcmpl-28: 7305 prompt + 2 generated tokens, first token 4.17s, total 4.27s, stop
+[fleet_stats] served=29 rows=28002 shared=155365 preemptions=0 checkpoints=29 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=20 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-29: 6890 prompt + 3 generated tokens, first token 3.66s, total 3.83s, stop
+[fleet_stats] served=30 rows=29282 shared=155365 preemptions=0 checkpoints=30 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=21 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-30: 7552 prompt + 4 generated tokens, first token 3.94s, total 4.18s, stop
+[fleet_stats] served=31 rows=30690 shared=155365 preemptions=0 checkpoints=31 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=22 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-31: 7903 prompt + 3 generated tokens, first token 4.92s, total 5.08s, stop
+[serve] 2 active | 4.9 tok/s generated | 31 served | 0 preemptions | 155365 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies | forward_rows 32354 checkpoints 32 skipped 0 state_moves 24 fullslot_misses 0 slot_preemptions 0
+[fleet_stats] served=32 rows=32482 shared=155365 preemptions=0 checkpoints=32 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=23 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-32: 8317 prompt + 4 generated tokens, first token 5.03s, total 5.26s, stop
+[fleet_stats] served=33 rows=32549 shared=155365 preemptions=0 checkpoints=33 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=24 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-33: 5861 prompt + 3 generated tokens, first token 4.34s, total 4.37s, stop
+[fleet_stats] served=34 rows=32736 shared=155365 preemptions=0 checkpoints=35 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=28 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-35: 85 prompt + 3 generated tokens, first token 0.11s, total 0.13s, stop
+[fleet_stats] served=35 rows=32737 shared=155365 preemptions=0 checkpoints=35 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=28 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-34: 97 prompt + 5 generated tokens, first token 0.09s, total 0.15s, stop
+[fleet_stats] served=36 rows=32976 shared=155365 preemptions=0 checkpoints=37 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=32 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-36: 95 prompt + 2 generated tokens, first token 0.12s, total 0.14s, stop
+[fleet_stats] served=37 rows=33137 shared=155365 preemptions=0 checkpoints=38 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=34 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-37: 150 prompt + 4 generated tokens, first token 0.14s, total 0.24s, stop
+[fleet_stats] served=38 rows=33255 shared=155365 preemptions=0 checkpoints=39 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=36 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-38: 151 prompt + 3 generated tokens, first token 0.11s, total 0.18s, stop
+[fleet_stats] served=39 rows=33264 shared=155365 preemptions=0 checkpoints=39 skipped=0 state_moves=24 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=36 checkpoint_evictions=0 states=18/18
+[serve] chatcmpl-39: 123 prompt + 3 generated tokens, first token 0.08s, total 0.11s, stop

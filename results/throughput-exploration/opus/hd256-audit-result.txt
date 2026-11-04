@@ -1,0 +1,66 @@
+I found no correctness bugs in the HD256 diff. The single-tile reuse is synchronized correctly, and the routing fix does what the root said it does. The main risk is performance: register pressure, and V loads that are now serialized behind QK. I only read code; I didn't compile, run or profile anything.
+
+## Correctness
+
+**Barriers and reuse of the shared tile.** Correct. Each HD256 tile goes:
+1. Barrier, so last tile's PV readers are done (`kernels_nax.metal:327`).
+2. Load K, then barrier (`:348`).
+3. QK.
+4. Barrier, so every SIMD group has finished reading K (`:401`).
+5. Overwrite the same rows with V, then barrier (`:416`).
+6. PV.
+
+Every barrier is in uniform control flow, because `lo`/`end`/`t0` depend only on `tg` and `first`/`last`, never on the SIMD group or lane. The scheduling barrier at `TD/2` (`:421`) is also uniform.
+
+**Async matrix ops.** Not a concern here. `nax_mma` (`:234-245`) copies its operands out of `frag8` registers into cooperative tensors and runs synchronously. K and V are read from threadgroup memory with ordinary loads before `op.run`, so no matrix op is still reading the tile when a barrier passes.
+
+**Tile size and alignment.** The tile is 32×264×2 = 16,896 B. Each row is 528 B, a multiple of 8, so the `half4` stores and loads are aligned. With `d0 ∈ {0,64,128,192}`, the Q8 `uint` reads are 4-byte aligned. Each thread loads 16 `half4` chunks (64 dims); with 4 threads per token, 128 threads cover all 32 tokens.
+
+**Q8 scale/offset and masking.** These match the 64/128 path:
+- The V address is `base + vofs`, and the V scale is read from `pb + sc_v`. Neither depends on HD except through `vofs = nkv*page*HD`, which is the same as before.
+- The V-load guard (`p <= end && p >= first.start`) is the same as the K guard. Masked tokens get V = 0 and P = 0, so stale or NaN data can't leak in.
+
+**Gate and half-output layout.** Unchanged. The output index `row*nh*HD + h*HD + col` and the gate index `row*gs + col` match `attn_reduce` (`kernels.metal:926-928`).
+
+**Host routing (`metal.m:596-623`).** Correct:
+- With `nax256` on, `naxs_attn` is false, so decode and verify rows still go to `attn_vec_256_*`.
+- Input rows get `skip = 1` and are not added to `vrows`.
+- NAX rows get `part = NAX_ROW`, so `n_part` and the `part` buffer only count vec rows, and `attn_reduce` skips NAX rows (`kernels.metal:911`).
+- NAX partials use `nslot` and `npart`, sized `n_nrow*nh*nax_sp*(hd+2)`. For the span reduce, `E = 8` fits in `o[8]`.
+- The partial write at `:441` uses stride `(HD+2)`, which matches.
+
+**Kernel registration.** `attn_nax_256` and `attn_nax8_256` match the host's format string (`:822`).
+
+**One existing issue, not caused by this diff.** There are no `attn_mma_256` or `attn_fd_256` kernels (`kernels.metal:765-774`). With `FLEET_ATTN_VEC=0` and HD=256, `vec_attn` is false, so decode rows reach `P(mt, "attn_mma_256")`, which doesn't exist. This already failed before the diff for every row; the diff just narrows it to decode rows. Avoid that env combination, or add a guard.
+
+## Performance risks (most important first)
+
+1. **Register spills.** This is the biggest risk. Each thread keeps live:
+   - `Q[16]` as `frag8<half>`: about 64 32-bit registers
+   - `O[16]` as `frag8<float>`: 128 registers
+   - `S0`/`S1`: 16
+   - K/V fragments, addresses, `mx`/`sum`/`vs`/`ve`
+
+   That's roughly 220 or more 32-bit registers, about double the 64/128 case. On Apple GPUs this is likely to spill or cut occupancy a lot. Check the compiler's register and spill stats, or an Xcode GPU capture, before trusting any timing. If it spills:
+   - Split O by halves of the head dimension. This needs two passes, recomputing QK or storing P.
+   - Or use 8 query rows per SIMD group.
+2. **V loads are serialized.** Before, K and V loads went out together in one phase. Now the V device reads, and the Q8 dequantize, start only after QK and the softmax rescale, and there are 4 barriers per tile instead of 2. V latency is fully exposed. One partial fix: issue the V device loads into registers before the `:401` barrier, then store them to threadgroup memory after it. That adds about 16 `half4` registers, which conflicts with (1), so measure both.
+3. **Occupancy.** 16.9 KiB per threadgroup allows at most one resident threadgroup per 32 KiB. Registers will probably be the tighter limit anyway.
+
+## Exact math vs floating-point differences
+
+The math matches the vec path exactly: the same mask (`start..ctx_end`), scale, online softmax, gate sigmoid and output layout. Results will differ slightly in floating point, for these reasons:
+- Q is cast to half before QK. The vec path scales q in float.
+- The scale is applied after the dot product, in the log2 domain.
+- P·V is accumulated in a different order, with P in float and V in half.
+- `fast::exp2` is used, and span partials are merged differently.
+
+So compare with a tolerance, not bit-for-bit.
+
+## Tests to run before trusting throughput
+
+1. **Per-layer comparison against the vec path.** Run `FLEET_Q35_NAX_ATTN=1` and `=0` on the same prompt and compare each full-attention layer's output (max abs/rel error), for both f16 and Q8 KV. Use prompt lengths 1, 31, 32, 33, 63, 64, 65, 4095, 4096 and 4097. These cover partial tiles, the 64-row group edge, and the `nax_sp > 1` reduce path, which you can also force with a small `FLEET_NAX_SPAN` such as 64.
+2. **Prefill after an existing prefix.** Append to a context that's already cached so `first.start` and the tile start don't line up (an unaligned `lo`), and include a sequence boundary inside a batch.
+3. **Mixed batches.** Put input rows and decode/verify rows in one forward pass. Check that decode rows match the vec-only run exactly, and that nothing writes a `NAX_ROW` slot. Run once under Metal validation / shader validation to catch out-of-bounds writes.
+4. **Gate and output format.** Run with `mt->h16` (half output) both on and off, and check that the gated output matches the reference.
+5. **End-to-end check.** Compare greedy decode tokens and logits KL on a few prompts, then check the compiler's spill stats before any throughput A/B.

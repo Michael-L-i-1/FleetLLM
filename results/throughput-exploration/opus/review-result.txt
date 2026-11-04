@@ -1,0 +1,124 @@
+I'm running as Claude Opus 5.5 (`claude-opus-5-5`) and nothing limited the review. I only used Read/Grep/Glob, ran nothing and edited nothing. Every number below is either a measured value from your results or a back-of-envelope estimate, and I label which.
+
+## What the code shows
+
+**Recurrent state slots are the binding resource, and the scheduler handles running out of them badly.**
+- **Slot count is fixed at startup.** It is a quarter of the KV budget (`engine.c:41-51`). With `--kv-gb 4` that is about 20 slots of 52.69 MB.
+- **Checkpointed agents need two slots.** An agent with `--prompt-checkpoints` holds 2 slots while generating (the live sequence plus the checkpoint clone from `engine.c:875-888`). It still holds 2 while waiting on a tool (the checkpoint plus its finished endpoint). So 8 agents already want about 16–24 of the 20 slots.
+- **A full slot pool silently forces full recomputes.**
+  - `kv_can_fork_at` (`kv.c:102`) returns false whenever slots are full. `engine_create` then falls back to `engine_create_fresh` (`engine.c:243`) and recomputes the whole history.
+  - This happens even when the match is the agent's own cached checkpoint, which `engine.c:249` releases straight after copying it. The copy needs a free slot, so it fails exactly when slots are short.
+  - Checkpoint saving fails the same way (`engine.c:880`) and is skipped without being counted.
+- **Eviction is crude.**
+  - `engine.c:762-763` releases cached states oldest first. The checkpoint was retired at prompt time, before its own endpoint, so it is evicted first. With thinking on and reasoning dropped from history, the checkpoint is the only useful state of the two.
+  - The slot-preemption victim (`engine.c:770-777`) is simply the lowest-index live sequence with a state. It is not ordered by cost or arrival, so it is unfair, and `preempt` throws away the whole context, generated tokens included.
+- **Admission ignores slots.** `server.c:180` checks attention pages only, so the scheduler can admit more sequences than there are slots.
+- **Agents never share a common system prompt.** Leader waiting is disabled for hybrid models (`engine.c:234`) and only exact endpoints can be forked. That fits your control run showing **0.0% cached prompt** with four workers that share a system prompt.
+- **Swap is disabled for this model** (`engine.c:325`).
+
+**On attention-only KV work:** if Qwen3.5-4B has 4 KV heads × 256 dims (check `config.json`), FP16 KV is about 32 KiB per token per sequence. One recurrent state then equals roughly 1.6K tokens of KV. Your replay calls average about 1.3K prompt tokens (15,602 tokens over 12 calls), so the fixed state, not KV, dominates per-agent memory. INT8 KV will barely move the bottleneck at these lengths.
+
+## Ranked prototypes
+
+### 1. Slot-aware state retention and admission (exact; implement first)
+
+**Bottleneck:** recomputing full histories after evictions and forced fresh fallbacks once N ≥ 8.
+
+**Sketch:**
+- **(a) Count first.** Add counters for fresh fallbacks despite a match, cached-state evictions (checkpoint vs endpoint), skipped checkpoints, and slot preemptions. Run the baseline once with only these; if they are near zero at N=16, drop this prototype.
+- **(b) Move instead of copy.** In `engine_create`, when `best` is cached and line 249 would release it, transfer `pages`, `recurrent`, `recurrent_handle`, the release function and `recurrent_len` to the new sequence, and zero the source. This needs no new slot and no 52.69 MB copy.
+- **(c) Evict before falling back.** If no slot is free, evict one other cached state (never `best`) before choosing a fresh recompute. Apply the same rule at checkpoint save.
+- **(d) Evict by usefulness.** Track hits by class (checkpoint vs endpoint) and evict the class with fewer hits first. Also release this session's stale branches once its next turn forks a checkpoint.
+- **(e) Admit by slots too.** At `server.c:180`, also require free slots (1 for the sequence plus 1 if it will checkpoint) beyond reclaimable cache. A request that doesn't fit stays queued instead of later preempting a live sequence.
+- **(f) Pick victims by cost.** Choose the preemption victim with the fewest tokens to recompute, not the lowest index.
+
+**Why it can beat the four-agent result:** at N=4 the 20 slots are enough, so this should be a no-op there, which makes N=4 a useful control. Gains should only appear once demand exceeds the slots.
+
+**Hypothesis:** about +10–25% throughput at N=8 and +20–50% at N=16 with `--kv-gb 4`, but only to the extent eviction-driven recompute is a large share of prefill rows in the baseline. Counter (a) tests that.
+
+**Exactness:** no math changes. Greedy outputs should be token-identical, apart from batch-composition floating-point differences. Measure that floor by running the baseline against itself.
+
+**Correctness obligations:**
+- No double free after a move.
+- `recurrent_used` stays unchanged on a move.
+- Never move a sequence that is live or that another sequence's `wait_for` points at.
+- Never evict the match itself.
+- Extend `qwen35statecheck` with move-then-continue vs recompute.
+
+**Ablation:** compare against current Fleet both without and with `--prompt-checkpoints` (B0, B1). Toggle (b)–(f) individually.
+
+### 2. Recurrent and attention swap to SSD for hybrid models (exact)
+
+**Bottleneck:** at N=32 in 4 GB, roughly 20 slots cannot keep a state for every waiting agent even after prototype 1, so evictions are unavoidable.
+
+**Sketch:**
+- **Swap-out:** extend `swap_out`/`swap_in` (`engine.c:323-398`) to append the 52.69 MB state after the exclusive pages. Release the Metal wrapper, free the buffer and decrement `recurrent_used`.
+- **Swap-in:** acquire a slot (evicting if needed), `posix_memalign`, `pread`, and restore `recurrent_len`. `recurrent_buffer` re-wraps the buffer lazily (`metal.m:451`).
+- **Matching:** for hybrids, a swapped sequence matches only if `l == swap_len` (not `<=`) at `engine.c:184` and `engine.c:232`.
+- **Accounting:** count the state in `engine_need_pages`.
+
+**Why it can win:** reading one state back is about 52.69 MB, so roughly 10–20 ms at typical SSD speeds (estimate). Recomputing a 2–6K-token history costs seconds of prefill. Payoff grows with N and with tool-wait length.
+
+**Hypothesis:** prefill rows down 40–70% vs prototype 1 alone at N=32 with `--kv-gb 4` and waits of about 1.5 s. Short waits could cause swap thrash, so report swap bytes and seconds. This extends Fleet's existing swap feature; it is not a new technique.
+
+**Correctness obligations:**
+- Write the state only after the forward pass completes. The forward is already synchronous at `metal.m:901`.
+- Check that swap-out/in followed by continuing gives byte-identical state and logits vs never swapping.
+
+**Ablation:** prototype 1 vs prototype 1 + `--swap-dir`, with the same budget, reporting disk bytes separately.
+
+### 3. Exact shared-prefix checkpoints for agent fan-out
+
+**Bottleneck:** N agents each prefill the same system prompt, which is what the 0% cached control shows.
+
+**Sketch:**
+- Add a second boundary at the end of the system message, computed next to `server.c:427-438`, so `checkpoint_at` becomes a short list.
+- `input_cap` already cuts prefill chunks at boundaries.
+- Re-enable leader waiting for hybrids (`engine.c:234`), but only while the leader has not yet passed the boundary. `resolve_wait` forks it at exactly that length.
+- One slot serves every agent with that prompt, and prototype 1's usefulness eviction should keep it.
+
+**Hypothesis:** saves about (N−1) × system-prompt tokens per fan-out, plus per re-prefill after an eviction. That is large for `bench/agents.py` (about 3K shared tokens, estimate) and small for the site replay (around 300 tokens).
+
+**Exactness:** the same level as current checkpoints. Verify fork vs recompute.
+
+**Not in the top three, but measure first:**
+- **Prefill attention runs on scalar kernels.** With head_dim 256, all rows, prefill included, go to scalar `attn_vec` (`metal.m:599`), because MMA and NAX attention are only built for 64/128 (`kernels.metal:765-768`). At 16K or more of context I estimate prefill attention roughly matches the GEMM cost per chunk. It only matters for long contexts, and an MMA version would use half-precision P, so it is not bitwise exact and needs logit checks.
+- **Recurrence is dispatched per sequence.** The per-sequence `q35_conv`/`q35_delta` loops (`metal.m:479-520`) add 48 serial dispatches per sequence per step. Batching them over one slot arena would be exact.
+- **Decode may scale poorly with batch size.** Your calls show about 36 tok/s per request at 4 concurrent vs 90 single, though that window includes interleaved prefill. Profile with `FLEET_PROFILE` on decode-only steps at n = 1, 4, 8, 16, 32 before choosing any kernel work.
+
+## Benchmark matrix (small)
+
+| Axis | Values |
+|---|---|
+| Work | Teacher-forced fixed histories (`workflow-replay.py` style, recorded assistant text) and `bench/agents.py` with fixed seed, 6 turns, 160-token cap |
+| Concurrency N | 4 (no-op check), 8, 16, 32; `--admit`, max-active = N |
+| Memory | `--kv-gb` 4 and 8 at a fixed `--budget-gb`; log the slot count |
+| Tool waits | 0 s, and exponential with 1.5 s mean, capped at 6 s, seeded |
+| Thinking | On (reasoning stripped from history) and none |
+| Variants | B0, B1 = B0 + checkpoints, +P1, +P1+P2, +P1+P3 |
+| Trials | 3 or more, alternating order, startup and warmup excluded |
+
+**Report:**
+- Wall time.
+- Completed workflows per second, counting only all turns done and outputs passing the check.
+- Prompt, cached and computed prefill rows; decode rows; generated tokens.
+- Queue delay (arrival to admission) and TTFT p50/p95.
+- Per-agent completion spread (max/min, Jain's fairness index).
+- Slots used vs limit, sampled per step.
+- Evictions by class, fresh fallbacks, skipped checkpoints.
+- Page and slot preemptions; swap bytes and seconds.
+- Peak memory (Metal plus RSS).
+- Token-identity vs B1 and the B1-vs-B1 noise floor; `qwen35check.py` for any kernel change.
+
+## First prototype and success criterion
+
+**Implement prototype 1 first, starting with the counters in (a).**
+
+It succeeds if, on teacher-forced replay at N=16, `--kv-gb 4`, thinking on, checkpoints on and 1.5 s mean tool waits over 3 trials, it does all of the following against B1:
+- Cuts computed prefill rows by **≥25%**.
+- Improves completed workflows per second by **≥10%**.
+- Keeps generated tokens identical (no more divergence than the B1-vs-B1 floor).
+- Has **zero slot preemptions**.
+- Changes N=4 results by no more than ±3%.
+
+It is falsified if the baseline counters show few evictions or fallbacks, or if prefill rows fall by less than 10%. In that case the bottleneck is elsewhere, and the next step is the decode-scaling profile.

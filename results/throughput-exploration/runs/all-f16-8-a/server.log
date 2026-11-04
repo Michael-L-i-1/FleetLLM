@@ -1,0 +1,45 @@
+[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s
+[recurrent] 37 state slots, 52.69 MB each, reserved fraction 0.50 within KV budget; endpoint prefix snapshots only
+[load] 0.3s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 2.05 GB (3910 full + 0 swa pages), backend metal
+[serve] listening on http://127.0.0.1:8090/v1 (model "qwen35-4b-mlx4")
+[serve] chatcmpl-1: 16 prompt + 2 generated tokens, first token 0.13s, total 0.14s, stop
+[serve] chatcmpl-5: 4007 prompt + 64 generated tokens, first token 2.23s, total 3.46s, length
+[serve] chatcmpl-3: 4007 prompt + 64 generated tokens, first token 2.23s, total 3.46s, length
+[serve] chatcmpl-2: 4007 prompt + 64 generated tokens, first token 2.23s, total 3.46s, length
+[serve] chatcmpl-7: 4007 prompt + 64 generated tokens, first token 2.23s, total 3.46s, length
+[serve] chatcmpl-6: 4007 prompt + 64 generated tokens, first token 2.23s, total 3.46s, length
+[serve] chatcmpl-4: 4007 prompt + 64 generated tokens, first token 2.23s, total 3.46s, length
+[serve] chatcmpl-8: 4007 prompt + 64 generated tokens, first token 2.26s, total 3.47s, length
+[serve] chatcmpl-9: 4007 prompt + 64 generated tokens, first token 2.26s, total 3.47s, length
+[serve] chatcmpl-10: 5301 prompt + 64 generated tokens, first token 0.90s, total 5.80s, length
+[serve] 7 active | 76.8 tok/s generated | 10 served | 0 preemptions | 59883 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies | forward_rows 14694 checkpoints 16 skipped 0 state_moves 8 fullslot_misses 0 slot_preemptions 0
+[serve] chatcmpl-11: 5553 prompt + 64 generated tokens, first token 1.79s, total 6.46s, length
+[serve] chatcmpl-12: 5525 prompt + 64 generated tokens, first token 2.66s, total 6.65s, length
+[serve] chatcmpl-13: 4919 prompt + 64 generated tokens, first token 2.91s, total 6.79s, length
+[serve] chatcmpl-14: 4359 prompt + 64 generated tokens, first token 3.00s, total 6.87s, length
+[serve] chatcmpl-15: 5492 prompt + 64 generated tokens, first token 3.91s, total 7.83s, length
+[serve] chatcmpl-16: 5972 prompt + 64 generated tokens, first token 5.17s, total 9.14s, length
+[serve] chatcmpl-17: 5146 prompt + 64 generated tokens, first token 5.81s, total 9.92s, length
+[serve] chatcmpl-18: 6739 prompt + 64 generated tokens, first token 1.07s, total 5.89s, length
+[serve] chatcmpl-19: 7234 prompt + 64 generated tokens, first token 1.97s, total 5.91s, length
+[serve] chatcmpl-20: 6124 prompt + 64 generated tokens, first token 1.93s, total 5.54s, length
+[serve] chatcmpl-21: 6439 prompt + 64 generated tokens, first token 2.33s, total 5.16s, length
+[serve] chatcmpl-22: 5139 prompt + 64 generated tokens, first token 2.59s, total 5.03s, length
+[serve] chatcmpl-23: 6119 prompt + 64 generated tokens, first token 2.62s, total 4.98s, length
+[serve] chatcmpl-24: 6319 prompt + 64 generated tokens, first token 0.95s, total 3.29s, length
+[serve] chatcmpl-25: 6563 prompt + 64 generated tokens, first token 1.19s, total 3.67s, length
+[serve] 8 active | 81.9 tok/s generated | 25 served | 0 preemptions | 152746 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 0/0 accepted in 0 verifies | forward_rows 28484 checkpoints 28 skipped 2 state_moves 24 fullslot_misses 0 slot_preemptions 0
+[serve] chatcmpl-26: 8505 prompt + 64 generated tokens, first token 1.05s, total 5.81s, length
+[serve] chatcmpl-27: 7156 prompt + 64 generated tokens, first token 1.03s, total 5.58s, length
+[serve] chatcmpl-28: 7412 prompt + 64 generated tokens, first token 1.85s, total 5.76s, length
+[serve] chatcmpl-29: 6633 prompt + 64 generated tokens, first token 1.94s, total 5.70s, length
+[serve] chatcmpl-30: 5619 prompt + 64 generated tokens, first token 2.00s, total 5.49s, length
+[serve] chatcmpl-31: 7637 prompt + 64 generated tokens, first token 2.90s, total 5.54s, length
+[serve] chatcmpl-32: 7377 prompt + 64 generated tokens, first token 3.61s, total 5.58s, length
+[serve] chatcmpl-33: 8142 prompt + 64 generated tokens, first token 3.50s, total 4.58s, length
+[serve] chatcmpl-35: 85 prompt + 3 generated tokens, first token 0.11s, total 0.14s, stop
+[serve] chatcmpl-34: 97 prompt + 5 generated tokens, first token 0.10s, total 0.15s, stop
+[serve] chatcmpl-36: 95 prompt + 2 generated tokens, first token 0.11s, total 0.13s, stop
+[serve] chatcmpl-37: 150 prompt + 4 generated tokens, first token 0.13s, total 0.23s, stop
+[serve] chatcmpl-38: 151 prompt + 3 generated tokens, first token 0.10s, total 0.17s, stop
+[serve] chatcmpl-39: 123 prompt + 3 generated tokens, first token 0.08s, total 0.10s, stop

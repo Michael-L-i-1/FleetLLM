@@ -1,0 +1,1 @@
+nax256-smoke.log and nax256-smoke.out came from an old binary after an unsuccessful rebuild. They are preserved for audit only and are NOT validation of the NAX256 change. Use nax256-parity.json, nax256-boundaries.json, and gpu-state checks instead.

@@ -1,0 +1,56 @@
+[
+  {
+    "control": "control-f16-8-a",
+    "optimized": "final-all-f16-8-b",
+    "wall_speedup": 5.662568357869072,
+    "same_generated_tokens": true,
+    "identical_content_and_reasoning": 31,
+    "compared_requests": 32,
+    "note": "Exact text matching is an audit, not a general quality grade. Capped traces are not completed tasks."
+  },
+  {
+    "control": "control-f16-8-b",
+    "optimized": "final-all-f16-8-c",
+    "wall_speedup": 5.740904360637168,
+    "same_generated_tokens": true,
+    "identical_content_and_reasoning": 31,
+    "compared_requests": 32,
+    "note": "Exact text matching is an audit, not a general quality grade. Capped traces are not completed tasks."
+  },
+  {
+    "control": "qa-control-f16-8",
+    "optimized": "qa-all-f16-8",
+    "wall_speedup": 6.561762418898925,
+    "same_generated_tokens": true,
+    "identical_content_and_reasoning": 32,
+    "compared_requests": 32,
+    "note": "Exact text matching is an audit, not a general quality grade. Capped traces are not completed tasks."
+  },
+  {
+    "control": "cap256-control-f16-8",
+    "optimized": "cap256-all-f16-8",
+    "wall_speedup": 3.5258814011169295,
+    "same_generated_tokens": true,
+    "identical_content_and_reasoning": 27,
+    "compared_requests": 32,
+    "note": "Exact text matching is an audit, not a general quality grade. Capped traces are not completed tasks."
+  },
+  {
+    "control": "control-kv8-16",
+    "optimized": "all-kv8-16",
+    "wall_speedup": 6.7993051695930795,
+    "same_generated_tokens": true,
+    "identical_content_and_reasoning": 55,
+    "compared_requests": 64,
+    "note": "Exact text matching is an audit, not a general quality grade. Capped traces are not completed tasks."
+  },
+  {
+    "control": "control-kv8-32",
+    "optimized": "all-kv8-32",
+    "wall_speedup": 7.042712541115068,
+    "same_generated_tokens": true,
+    "identical_content_and_reasoning": 112,
+    "compared_requests": 128,
+    "note": "Exact text matching is an audit, not a general quality grade. Capped traces are not completed tasks."
+  }
+]

@@ -1,0 +1,12 @@
+[metal] repacked 2.37 GB of 4-bit weights into NAX tiles in 0.2s
+[recurrent] 18 state slots, 52.69 MB each, reserved fraction 0.25 within KV budget; endpoint prefix snapshots only
+[load] 0.3s qwen3.5 5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c, 32 layers, weights 2.37 GB (pinned 0.00), KV 3.05 GB (5820 full + 0 swa pages), backend metal
+[serve] listening on http://127.0.0.1:8090/v1 (model "qwen35-4b-mlx4")
+[fleet_stats] served=1 rows=2534 shared=0 preemptions=0 checkpoints=1 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=2/18
+[serve] chatcmpl-1: 2532 prompt + 3 generated tokens, first token 1.41s, total 1.43s, stop
+[fleet_stats] served=2 rows=2543 shared=2525 preemptions=0 checkpoints=2 skipped=0 state_moves=1 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=3/18
+[serve] chatcmpl-2: 2532 prompt + 3 generated tokens, first token 0.02s, total 0.05s, stop
+[fleet_stats] served=3 rows=2552 shared=5050 preemptions=0 checkpoints=3 skipped=0 state_moves=2 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=4/18
+[serve] chatcmpl-3: 2532 prompt + 3 generated tokens, first token 0.02s, total 0.05s, stop
+[fleet_stats] served=4 rows=2561 shared=7575 preemptions=0 checkpoints=4 skipped=0 state_moves=3 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=5/18
+[serve] chatcmpl-4: 2532 prompt + 3 generated tokens, first token 0.02s, total 0.05s, stop

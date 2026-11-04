@@ -1,0 +1,26 @@
+You are reviewing FleetLLM to propose throughput improvements. This is a READ-ONLY review; do not edit files, execute commands, launch servers, use subagents, or access files outside this working repository. Use only Read/Grep/Glob. The caller will implement and benchmark your best suggestions separately.
+
+User goal: a general agent-tailored inference engine for constrained devices, currently optimizing native C/Metal Qwen3.5-4B affine 4-bit group64 on Apple M5 Pro (20 GPU cores, 48 GB unified RAM). Test 8–32 concurrent multi-turn workflows with tool waits and constrained memory. Keep baseline as normal Fleet with previously implemented optimizations, no new experimental approaches. Minor quality reduction is acceptable only if explicitly measured; prefer exact changes.
+
+Current context and measured evidence:
+- Native CPU + Metal support added for Qwen3.5 hybrid architecture: 24 recurrent linear layers + 8 full attention layers. FP32 recurrence, FP16 attention KV default, optional INT8 attention KV validated. One recurrent state = ~52.69 MB per sequence.
+- Initial Metal implementation 31.2 tok/s -> persistent per-state MTLBuffer wrappers plus four value channels per threadgroup -> 90.26 tok/s on controlled 128-token single-sequence test, byte-identical output. Both fixes belong to the current baseline. Do not propose them again or count that as paper gains.
+- Engine already has continuous batching, COW prefix sharing, retained finished sequences, admission, paged attention, optional KV INT8, NAX affine kernels on M5. Full-attention architectures additionally have prompt-lookup speculation, SPAN, swap; Qwen3.5 currently explicitly rejects speculation/SPAN/disk offload because recurrent rollback/offload is not implemented.
+- New experimental --prompt-checkpoints snapshots exact recurrent state before an assistant generation header. Four-agent fixed-history 3-turn replay, 2 trials each: control mean14.315s /89.07 aggregate tok/s vs checkpoints12.220s /104.34tok/s (+17.1% throughput), identical decoded content+reasoning in all12 replies/trial. Context masking alone ~1.6% and changes one reply; combination15.3%, worse than checkpoints alone. Leave masking opt-in. Do not sell these as 3x.
+- Actual four-worker website job failed coordinator20-call cap and HTML ID preservation in both current baseline and combined. Do not conflate faster failed jobs with successful task throughput. Need fixed-work replay/teacher-forced evidence plus quality checks.
+
+Please inspect these exact files (use targeted excerpts to avoid reading giant results directories):
+src/engine.c, src/engine.h (scheduler, admission/commitment accounting, recurrent slots, preemption, cache matching/checkpoints);
+src/kv.c, src/kv.h (state budget and state ownership);
+src/metal/metal.m and src/metal/kernels.metal (Qwen recurrence and full-attention path, decode/prefill grouping);
+src/server.c (request admission and session handling);
+bench/agents.py and bench/tool_agents.py (existing workload harnesses);
+docs/qwen35.md and results/agent-workflows/restart/README.md (current validation and results).
+
+Deliver a concise but concrete review:
+1. Rank the best 2–3 NEW prototypes by likely impact in this repo/hardware/workload. Cite source file/functions/line vicinity and explain the actual bottleneck, not generic optimizations already implemented.
+2. For each: minimal implementation sketch, why it can exceed the four-agent result under 8–32 agents, expected speedup as a hypothesis (state conditions, never promise 3x), quality/exactness risks, rollback/fork/recompute correctness obligations, and a fair ablation against normal current Fleet.
+3. Suggest a small realistic benchmark matrix with identical work, memory budgets, tool waits, startup excluded, output/teacher-force comparison, model/token counts, queue delay, prefill rows, state-slot occupancy, preemptions and successful work per second.
+4. Be skeptical about attention-only KV optimizations on this hybrid model; state memory remains fixed per sequence. Look specifically for avoidable recomputation/thrashing, overly conservative recurrent slot allocation, long-context full-attention cost on M5, useful exact session-boundary snapshots, and fairness problems under constrained concurrency.
+
+Make no file edits. No extra tools beyond Read/Grep/Glob. End with the single prototype you would implement first and a falsifiable success criterion. Your model is explicitly requested as Claude Opus 5.5; report if any tool/model limitation prevents this review rather than substituting another model.

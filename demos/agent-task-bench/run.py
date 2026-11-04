@@ -275,7 +275,10 @@ class Benchmark:
                     stdout=(self.out/'capture.log').open('w'),stderr=subprocess.STDOUT)
                 until=time.monotonic()+45
                 ready=self.out/'capture/capture-ready.json'
-                while not (ready.exists() and json.loads(ready.read_text()).get('frames',0)>0):
+                while True:
+                    try:initialized=ready.exists() and json.loads(ready.read_text()).get('frames',0)>0
+                    except (OSError,ValueError):initialized=False
+                    if initialized:break
                     if self.capture.poll() is not None or time.monotonic()>until:
                         raise RuntimeError('Recorder failed initial-frame handshake')
                     time.sleep(.1)

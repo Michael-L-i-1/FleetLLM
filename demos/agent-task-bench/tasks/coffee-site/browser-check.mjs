@@ -18,7 +18,7 @@ for (const name of names) {
   await check(`${name}: markup only`, () => !/<\s*(script|iframe|object|embed)\b|\bon\w+\s*=/i.test(text));
   await check(`${name}: no remote assets`, () => !/(?:src|href)\s*=\s*['"](?:https?:)?\/\/|url\(\s*['"]?(?:https?:)?\/\//i.test(text));
 }
-const browser = await chromium.launch({headless:true});
+const browser = await chromium.launch({headless:true, args:['--disable-gpu']});
 try {
   for (const width of [390,1440]) {
     const page = await browser.newPage({viewport:{width,height:1000}});

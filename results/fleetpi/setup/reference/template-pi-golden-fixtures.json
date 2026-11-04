@@ -1,0 +1,339 @@
+{
+  "source": "Actual Pi SDK active tool schema export and official cached Glimmer Jinja via HF",
+  "cases": [
+    {
+      "name": "actual-pi-tool-definitions",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a coding agent."
+        },
+        {
+          "role": "user",
+          "content": "Read index.html."
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to read (relative or absolute)"
+                },
+                "offset": {
+                  "type": "number",
+                  "description": "Line number to start reading from (1-indexed)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of lines to read"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "edit",
+            "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "edits"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to edit (relative or absolute)"
+                },
+                "edits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "oldText",
+                      "newText"
+                    ],
+                    "properties": {
+                      "oldText": {
+                        "type": "string",
+                        "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                      },
+                      "newText": {
+                        "type": "string",
+                        "description": "Replacement text for this targeted edit."
+                      }
+                    }
+                  },
+                  "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "content"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to write (relative or absolute)"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Content to write to the file"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "ls",
+            "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Directory to list (default: current directory)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of entries to return (default: 500)"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "check_site",
+            "description": "Assemble the eight page fragments and run the real cumulative browser checks for the current round at 390px and 1440px. Reports pass counts and the failures on your owned pages. Takes about ten seconds.",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>You are a coding agent.\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"read\", \"description\": \"\"}\n{\"name\": \"edit\", \"description\": \"\"}\n{\"name\": \"write\", \"description\": \"\"}\n{\"name\": \"ls\", \"description\": \"\"}\n{\"name\": \"check_site\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"read\", \"description\": \"Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.\", \"parameters\": {\"type\": \"object\", \"required\": [\"path\"], \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"Path to the file to read (relative or absolute)\"}, \"offset\": {\"type\": \"number\", \"description\": \"Line number to start reading from (1-indexed)\"}, \"limit\": {\"type\": \"number\", \"description\": \"Maximum number of lines to read\"}}}}\n{\"name\": \"edit\", \"description\": \"Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.\", \"parameters\": {\"type\": \"object\", \"required\": [\"path\", \"edits\"], \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"Path to the file to edit (relative or absolute)\"}, \"edits\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"required\": [\"oldText\", \"newText\"], \"properties\": {\"oldText\": {\"type\": \"string\", \"description\": \"Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call.\"}, \"newText\": {\"type\": \"string\", \"description\": \"Replacement text for this targeted edit.\"}}}, \"description\": \"One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead.\"}}}}\n{\"name\": \"write\", \"description\": \"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.\", \"parameters\": {\"type\": \"object\", \"required\": [\"path\", \"content\"], \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"Path to the file to write (relative or absolute)\"}, \"content\": {\"type\": \"string\", \"description\": \"Content to write to the file\"}}}}\n{\"name\": \"ls\", \"description\": \"List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"Directory to list (default: current directory)\"}, \"limit\": {\"type\": \"number\", \"description\": \"Maximum number of entries to return (default: 500)\"}}}}\n{\"name\": \"check_site\", \"description\": \"Assemble the eight page fragments and run the real cumulative browser checks for the current round at 390px and 1440px. Reports pass counts and the failures on your owned pages. Takes about ten seconds.\", \"parameters\": {\"type\": \"object\", \"properties\": {}}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"read.*\", \"edit.*\", \"write.*\", \"ls.*\", \"check_site.*\", \"user\".<|eot|><|start|>user<|message|>Read index.html.<|eot|><|start|>assistant"
+    },
+    {
+      "name": "actual-pi-historical-calls-reversed-results",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Preserve project requirements."
+        },
+        {
+          "role": "user",
+          "content": "Inspect files."
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "reasoning_content": "I will inspect the files.",
+          "tool_calls": [
+            {
+              "id": "call-a",
+              "type": "function",
+              "function": {
+                "name": "read",
+                "arguments": {
+                  "path": "index.html",
+                  "offset": 1
+                }
+              }
+            },
+            {
+              "id": "call-b",
+              "type": "function",
+              "function": {
+                "name": "edit",
+                "arguments": {
+                  "path": "index.html",
+                  "oldText": "  café & <button title=\"Hi\">\n",
+                  "newText": "  café & <button title=\"Hello\">\n"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call-b",
+          "content": "Edit applied."
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call-a",
+          "content": "<h1>Demo</h1>"
+        },
+        {
+          "role": "user",
+          "content": "Continue."
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to read (relative or absolute)"
+                },
+                "offset": {
+                  "type": "number",
+                  "description": "Line number to start reading from (1-indexed)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of lines to read"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "edit",
+            "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "edits"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to edit (relative or absolute)"
+                },
+                "edits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "oldText",
+                      "newText"
+                    ],
+                    "properties": {
+                      "oldText": {
+                        "type": "string",
+                        "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                      },
+                      "newText": {
+                        "type": "string",
+                        "description": "Replacement text for this targeted edit."
+                      }
+                    }
+                  },
+                  "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "content"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to write (relative or absolute)"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Content to write to the file"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "ls",
+            "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Directory to list (default: current directory)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of entries to return (default: 500)"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "check_site",
+            "description": "Assemble the eight page fragments and run the real cumulative browser checks for the current round at 390px and 1440px. Reports pass counts and the failures on your owned pages. Takes about ten seconds.",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      ],
+      "render_options": {
+        "bos_token": "<|begin_of_text|>",
+        "add_generation_prompt": true,
+        "reasoning_strength": "low",
+        "current_date": "2026-11-04"
+      },
+      "expected": "<|begin_of_text|><|start|>system<|message|>Preserve project requirements.\n\nReasoning strength: low.\n\nIn this environment you have access to a set of tools you can use to answer the user's question.\n\nYou can invoke a function by writing a \"<atem:function_calls>\" block like the following:\n<atem:function_calls>\n<atem:invoke name=\"$FUNCTION_NAME\">\n<atem:parameter name=\"$PARAMETER_NAME\">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\nString and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\nHere are the functions available in JSONSchema format:\n// Tool metadata\n{\"name\": \"read\", \"description\": \"\"}\n{\"name\": \"edit\", \"description\": \"\"}\n{\"name\": \"write\", \"description\": \"\"}\n{\"name\": \"ls\", \"description\": \"\"}\n{\"name\": \"check_site\", \"description\": \"\"}\n// Function schemas\n{\"name\": \"read\", \"description\": \"Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.\", \"parameters\": {\"type\": \"object\", \"required\": [\"path\"], \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"Path to the file to read (relative or absolute)\"}, \"offset\": {\"type\": \"number\", \"description\": \"Line number to start reading from (1-indexed)\"}, \"limit\": {\"type\": \"number\", \"description\": \"Maximum number of lines to read\"}}}}\n{\"name\": \"edit\", \"description\": \"Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.\", \"parameters\": {\"type\": \"object\", \"required\": [\"path\", \"edits\"], \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"Path to the file to edit (relative or absolute)\"}, \"edits\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"required\": [\"oldText\", \"newText\"], \"properties\": {\"oldText\": {\"type\": \"string\", \"description\": \"Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call.\"}, \"newText\": {\"type\": \"string\", \"description\": \"Replacement text for this targeted edit.\"}}}, \"description\": \"One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead.\"}}}}\n{\"name\": \"write\", \"description\": \"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.\", \"parameters\": {\"type\": \"object\", \"required\": [\"path\", \"content\"], \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"Path to the file to write (relative or absolute)\"}, \"content\": {\"type\": \"string\", \"description\": \"Content to write to the file\"}}}}\n{\"name\": \"ls\", \"description\": \"List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"Directory to list (default: current directory)\"}, \"limit\": {\"type\": \"number\", \"description\": \"Maximum number of entries to return (default: 500)\"}}}}\n{\"name\": \"check_site\", \"description\": \"Assemble the eight page fragments and run the real cumulative browser checks for the current round at 390px and 1440px. Reports pass counts and the failures on your owned pages. Takes about ten seconds.\", \"parameters\": {\"type\": \"object\", \"properties\": {}}}\n\nHere's an example of how to call a function in the tool set:\n(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\nto=example_tool_name.example_function_name\n\n<atem:function_calls>\n<atem:invoke name=\"example_tool_name.example_function_name\">\n<atem:parameter name=\"example_parameter_1\">value_1</atem:parameter>\n<atem:parameter name=\"example_parameter_2\">This is the value for the second parameter\nthat can span\n\"multiple\" lines\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls>\n\n# Valid recipients: \"self\", \"read.*\", \"edit.*\", \"write.*\", \"ls.*\", \"check_site.*\", \"user\".<|eot|><|start|>user<|message|>Inspect files.<|eot|><|start|>assistant to=self<|message|>I will inspect the files.<|eom|><|start|>assistant to=read<|message|><atem:function_calls>\n<atem:invoke name=\"read\">\n<atem:parameter name=\"path\">index.html</atem:parameter>\n<atem:parameter name=\"offset\">1</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|><|start|>assistant to=edit<|message|><atem:function_calls>\n<atem:invoke name=\"edit\">\n<atem:parameter name=\"path\">index.html</atem:parameter>\n<atem:parameter name=\"oldText\">  café & <button title=\"Hi\">\n</atem:parameter>\n<atem:parameter name=\"newText\">  café & <button title=\"Hello\">\n</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eot|><|start|>tool edit<|message|><tool_output name=\"edit\">\nEdit applied.\n</tool_output><|eot|><|start|>tool read<|message|><tool_output name=\"read\">\n<h1>Demo</h1>\n</tool_output><|eot|><|start|>user<|message|>Continue.<|eot|><|start|>assistant"
+    }
+  ]
+}

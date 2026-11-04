@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/earendil-works/pi",
+  "commit": "9e870f6f002ca6c21ce010fdb99122afe3738b28",
+  "branch": "fleetpi-demo",
+  "license": "MIT",
+  "strategy": "Pinned local fork; tracked patches and bootstrap will reproduce fork without vendoring dependency/build artifacts."
+}

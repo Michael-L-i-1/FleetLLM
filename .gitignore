@@ -5,3 +5,11 @@ build-*/
 evals/.venv/
 evals/third_party/
 /demos/site-refactor/node_modules
+/integrations/fleetpi/vendor/
+/integrations/fleetpi/node_modules/
+/integrations/fleetpi/dist/
+
+/integrations/fleetpi/configs/*.local.json
+/build-fleetpi*/
+/results/fleetpi/setup/*jsonl
+/results/fleetpi/setup/*stderr

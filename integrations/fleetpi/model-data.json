@@ -1,0 +1,7 @@
+{
+  "source": "Official Pi hydrate:model-data at pinned upstream commit",
+  "upstream_commit": "9e870f6f002ca6c21ce010fdb99122afe3738b28",
+  "sha256": "b0c7352f4d31a5bc70bc3715f5307987f81aca1bdca0b53f923b1089e9a56f39",
+  "files": 44,
+  "purpose": "Offline reproducible catalog hydration; no remote inference dependency"
+}

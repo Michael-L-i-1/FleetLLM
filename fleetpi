@@ -1,0 +1,10 @@
+#!/bin/sh
+# Run the locally pinned Pi + Fleet integration after bootstrap.
+set -eu
+repo=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cli="$repo/integrations/fleetpi/vendor/pi/packages/fleetpi/dist/cli.js"
+if [ ! -f "$cli" ]; then
+  printf '%s\n' 'Run python3 integrations/fleetpi/bootstrap.py first.' >&2
+  exit 1
+fi
+exec node "$cli" "$@"

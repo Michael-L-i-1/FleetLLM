@@ -28,3 +28,6 @@ evals/third_party/
 
 /results/fleetpi/setup/local-debug/
 /results/fleetpi/report-output.json
+
+/results/fleetpi/video/dashboard.html
+/results/fleetpi/video/timeline.ffconcat

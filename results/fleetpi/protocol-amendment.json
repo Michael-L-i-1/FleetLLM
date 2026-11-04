@@ -1,0 +1,21 @@
+{
+  "unix": 1793827898.6250958,
+  "before_new_results": true,
+  "reason": "Raw first single response proves malformed model LS invoke. Separately CPUreplay found stockreasoning/tool handoff race; isolated source-guarded predicate plugin fixes actual framing bug without executing malformedcalls. BothvLLMarmsrerunwithsameplugin; originalV8passedhistorical andinterruptedV1excluded. Fleetinference/harness unchanged; frozenv1 SDKdist retained forcomparison; posttrial60testrobustnesscode notbuiltintothistrial.",
+  "next_modes": [
+    "vllm1",
+    "vllm8"
+  ],
+  "performance_defaults": "Unchanged; prefixcaching/batching enabled; nocustomperformanceflags.",
+  "compatibility_plugin": "integrations/fleetpi/compat/glimmer_handoff.py",
+  "frozen_before_rerun_unix": 1793827991.162291,
+  "sha256": {
+    "integrations/fleetpi/compat/glimmer_handoff.py": "f4e4e6f54ccb83c2ed268211985992386bd6293fbbd4a88e369d1ea37578d964",
+    "integrations/fleetpi/configs/vllm-default.local.json": "af030029e0e1999accfa8e5aa106b4d3ef23240524c21009bd2ede39c2416287",
+    "results/fleetpi/frozen/fleetpi-trial.patch": "73ac75a76db944402442afdb76da6eac5eda3a7d695d58012a09511e0f892d6f",
+    "integrations/fleetpi/scripts/compare.mjs": "6f44162e42cfd73517e73e496e71071c3c6e1ccb2f92e4d9f58b7be4741fd2e4"
+  },
+  "raw_incident_attribution": "Exact4253-tokenprompt/103-tokenrawresponse reproduces malformed ATEMinvoke name ls followedbybaremessage marker. ExactCPUreplay old/newpredicate giveszeroexecutablecallsandidentical203charactercontenttail. Independently fixedtoken/textclockrace, not claimedcausalityforfirstmodelmalformation.",
+  "smoke": "CorrectedvLLMtwoagentrealPi read/editUnicodeHTML/read/followupread passed; 684CPUreplaychecks passed.",
+  "frozen_config_copy": "results/fleetpi/frozen/vllm-config-trial.json"
+}

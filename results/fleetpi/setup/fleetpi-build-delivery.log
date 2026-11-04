@@ -1,0 +1,4 @@
+
+> @earendil-works/fleetpi@1.5.0 build
+> tsc -p tsconfig.build.json && node ../../scripts/package-files.mjs executable dist/cli.js
+

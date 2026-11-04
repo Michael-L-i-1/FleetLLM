@@ -1,0 +1,11 @@
+{"case": "delivered-text-lag", "lag": 1, "original_discarded_handoff": true, "patched_calls": 1}
+{"case": "delivered-text-lag", "lag": 6, "original_discarded_handoff": true, "patched_calls": 1}
+{"case": "delivered-text-lag", "lag": 16, "original_discarded_handoff": true, "patched_calls": 1}
+{"case": "delivered-text-lag", "lag": 28, "original_discarded_handoff": true, "patched_calls": 1}
+{"case": "delivered-text-lag", "lag": 64, "original_discarded_handoff": true, "patched_calls": 1}
+{"known_unfixed": "missing reasoning eom plus bare tool header", "whole_chunk_calls": 0, "incremental_calls": 1}
+{"raw_malformed_call": true, "patched_predicate": false, "chunking": "whole", "executable_calls": 0, "parameter_tail_chars": 203}
+{"raw_malformed_call": true, "patched_predicate": false, "chunking": "character", "executable_calls": 0, "parameter_tail_chars": 203}
+{"raw_malformed_call": true, "patched_predicate": true, "chunking": "whole", "executable_calls": 0, "parameter_tail_chars": 203}
+{"raw_malformed_call": true, "patched_predicate": true, "chunking": "character", "executable_calls": 0, "parameter_tail_chars": 203}
+{"passed": 684, "gpu_or_model_loaded": false, "scope": "source-hash-guarded parser AST; lightweight protocol/tokenizer stubs"}

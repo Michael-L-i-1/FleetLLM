@@ -1,0 +1,23 @@
+mkdir -p build-fleetpi
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/chat.c -o build-fleetpi/chat.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/cpu.c -o build-fleetpi/cpu.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/cpuq.c -o build-fleetpi/cpuq.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/engine.c -o build-fleetpi/engine.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/gguf.c -o build-fleetpi/gguf.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/json.c -o build-fleetpi/json.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/kv.c -o build-fleetpi/kv.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/model.c -o build-fleetpi/model.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/ngram.c -o build-fleetpi/ngram.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/quant.c -o build-fleetpi/quant.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/safetensors.c -o build-fleetpi/safetensors.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/sampler.c -o build-fleetpi/sampler.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/server.c -o build-fleetpi/server.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/spans.c -o build-fleetpi/spans.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/threadpool.c -o build-fleetpi/threadpool.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/tokenizer.c -o build-fleetpi/tokenizer.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/unicode_data.c -o build-fleetpi/unicode_data.o
+python3 scripts/embed_metal.py src/metal/kernels.metal kernels_metal > build-fleetpi/kernels_metal.h
+python3 scripts/embed_metal.py src/metal/kernels_nax.metal kernels_nax_metal >> build-fleetpi/kernels_metal.h
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -fobjc-arc -Ibuild-fleetpi -Isrc -c src/metal/metal.m -o build-fleetpi/metal.o
+ar rcs build-fleetpi/libfleetllm.a build-fleetpi/chat.o build-fleetpi/cpu.o build-fleetpi/cpuq.o build-fleetpi/engine.o build-fleetpi/gguf.o build-fleetpi/json.o build-fleetpi/kv.o build-fleetpi/model.o build-fleetpi/ngram.o build-fleetpi/quant.o build-fleetpi/safetensors.o build-fleetpi/sampler.o build-fleetpi/server.o build-fleetpi/spans.o build-fleetpi/threadpool.o build-fleetpi/tokenizer.o build-fleetpi/unicode_data.o build-fleetpi/metal.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -Isrc tools/serve.c build-fleetpi/libfleetllm.a -lpthread -lm -framework Metal -framework Foundation -o build-fleetpi/fleet-serve

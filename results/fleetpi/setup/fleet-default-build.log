@@ -1,0 +1,22 @@
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/chat.c -o build/chat.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/cpu.c -o build/cpu.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/cpuq.c -o build/cpuq.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/engine.c -o build/engine.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/gguf.c -o build/gguf.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/json.c -o build/json.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/kv.c -o build/kv.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/model.c -o build/model.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/ngram.c -o build/ngram.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/quant.c -o build/quant.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/safetensors.c -o build/safetensors.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/sampler.c -o build/sampler.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/server.c -o build/server.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/spans.c -o build/spans.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/threadpool.c -o build/threadpool.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/tokenizer.c -o build/tokenizer.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -c src/unicode_data.c -o build/unicode_data.o
+python3 scripts/embed_metal.py src/metal/kernels.metal kernels_metal > build/kernels_metal.h
+python3 scripts/embed_metal.py src/metal/kernels_nax.metal kernels_nax_metal >> build/kernels_metal.h
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -fobjc-arc -Ibuild -Isrc -c src/metal/metal.m -o build/metal.o
+ar rcs build/libfleetllm.a build/chat.o build/cpu.o build/cpuq.o build/engine.o build/gguf.o build/json.o build/kv.o build/model.o build/ngram.o build/quant.o build/safetensors.o build/sampler.o build/server.o build/spans.o build/threadpool.o build/tokenizer.o build/unicode_data.o build/metal.o
+cc -O3 -g -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -mcpu=native -D_GNU_SOURCE -D_DARWIN_C_SOURCE -DCI_METAL=1 -Isrc tools/serve.c build/libfleetllm.a -lpthread -lm -framework Metal -framework Foundation -o build/fleet-serve

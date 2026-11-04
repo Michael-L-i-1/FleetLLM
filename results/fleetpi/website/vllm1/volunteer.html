@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' file: data:; script-src 'sha256-XcKXImeTHZDCEgLQrnEAlh9VNuYAnc4rrXGLc6cc3LU='; base-uri 'none'; form-action 'none'"><title>Volunteer — Lantern Commons</title><style>
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;color:#182e30;background:#fff;font-family:Arial,sans-serif}img,svg{max-width:100%;height:auto}a{color:inherit}button,input,select{font:inherit}[hidden]{display:none!important}.site-header{padding:16px;border-bottom:1px solid #ddd}.site-brand{font-weight:700}.site-nav{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px}.site-nav a{padding:8px 0;font-size:14px}.site-nav [aria-current=page]{font-weight:700}main>article{padding:16px}.site-footer{padding:16px;border-top:1px solid #ddd;font-size:12px}
+</style></head><body><header id="top" class="site-header"><a class="site-brand" href="index.html">Lantern Commons</a><nav class="site-nav" aria-label="Main navigation"><a href="index.html">Home</a><a href="lineup.html">Lineup</a><a href="schedule.html">Schedule</a><a href="venues.html">Venues</a><a href="tickets.html">Tickets</a><a href="accessibility.html">Accessibility</a><a href="volunteer.html" aria-current="page">Volunteer</a><a href="faq.html">FAQ</a></nav></header><main><article id="page-volunteer">
+<style>
+#page-volunteer{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#182e30;background:#f5ebd9;line-height:1.6}
+#page-volunteer h1{font-family:Georgia,serif;font-size:28px;margin:0 0 12px}
+@media(min-width:1440px){#page-volunteer h1{font-size:34px}}
+#page-volunteer .wrap{padding:24px;max-width:900px}
+#page-volunteer .cta{display:inline-block;background:#087f7a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;min-height:40px;line-height:16px}
+#page-volunteer button.cta{border:none;cursor:pointer}
+#page-volunteer .cta:focus{outline:2px solid #182e30;outline-offset:2px}
+#page-volunteer .family-notice{border:1px dashed #7048c6;padding:12px;margin:16px 0;background:#fff}
+#page-volunteer .family-highlight{background:#fff8e1;border-left:4px solid #7048c6;padding:12px;margin:16px 0}
+#page-volunteer .help-strip{border-top:1px solid #182e30;padding:16px;margin-top:24px;font-size:14px}
+#page-volunteer label{display:block;margin:8px 0 4px}
+#page-volunteer input,#page-volunteer select{padding:8px;width:100%;max-width:320px}
+</style>
+<div class="wrap">
+<h1>Volunteer With Us</h1>
+<p>Welcome crew and Workshop helpers shifts available.</p>
+<div class="family-highlight" data-family-highlight>
+Family welcome shift runs 10:00–13:00 to support families arriving in Family hours.
+</div>
+<form id="volunteer-form">
+<label for="volunteer-email">Email</label>
+<input id="volunteer-email" type="email" required>
+<label for="volunteer-shift">Shift</label>
+<select id="volunteer-shift">
+<option value="welcome">Welcome crew</option>
+<option value="workshops">Workshop helpers</option>
+<option value="family">Family welcome (10:00–13:00)</option>
+</select>
+<button class="cta" data-primary-cta type="submit">Join the crew</button>
+<p id="volunteer-status" role="status" aria-live="polite"></p>
+</form>
+<div class="family-notice" data-family-notice>
+Under-12s free with an adult. No booking fees. Family hours 10:00–16:00.
+</div>
+<div class="help-strip" data-help-strip>
+Need a hand? <a href="accessibility.html">Access guide</a> · <a href="mailto:access@lanterncommons.example">access@lanterncommons.example</a>
+</div>
+</div>
+</article>
+</main><footer class="site-footer">Lantern Commons Arts Weekend · Fictional benchmark demo. No payments or real signups.</footer><script>// Protected functional behavior; editable pages supply accessible markup.
+document.addEventListener('change', event => {
+  if (event.target.id !== 'schedule-filter') return;
+  const category=event.target.value;
+  let count=0;
+  for (const card of document.querySelectorAll('[data-event]')) {
+    card.hidden=category!=='all' && card.dataset.category!==category;
+    if (!card.hidden) count++;
+  }
+  const empty=document.getElementById('schedule-empty');if (empty) empty.hidden=count!==0;
+});
+document.addEventListener('submit', event => {
+  const kind=event.target.id==='ticket-form'?'ticket':event.target.id==='volunteer-form'?'volunteer':null;
+  if (!kind) return;
+  event.preventDefault();
+  const email=document.getElementById(kind+'-email'), status=document.getElementById(kind+'-status');
+  if (!email || !email.checkValidity() || !status) return;
+  status.textContent=kind==='ticket'?"You're on the list — we'll email ticket information.":"Thanks — we'll send volunteer information.";
+  event.target.dataset.submitted='true';
+});
+</script></body></html>

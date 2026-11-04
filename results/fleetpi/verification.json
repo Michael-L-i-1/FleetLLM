@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "tests": {
+    "fleetpi": 66,
+    "native_jinja_goldens": 17,
+    "parser_replay": 684
+  },
+  "checks": [
+    "full FleetPi model-free suite",
+    "full Pi TypeScript noEmit",
+    "FleetPi Biome lint and formatting",
+    "focused checker parent/grandchild cancellation",
+    "CPU ASAN/UBSAN native parser/server/SWA/KV/stale-leader tests",
+    "Metal builds isolated and standard",
+    "real Pi two-agent native tool round trips on both backends",
+    "unified fleetpi CLI local-model request and automatic shutdown",
+    "bootstrap idempotence plus clean upstream patch application and byte match",
+    "archive SHA256 readback for every trace and screenshot",
+    "final and intermediate video visual inspection"
+  ],
+  "limitations": [
+    "single trial per primary mode",
+    "single-agent final site passes but required earlier milestones fail; no matched workflow speedup claim",
+    "post-trial reliability changes verified separately from frozen measurements"
+  ]
+}

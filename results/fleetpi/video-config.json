@@ -1,0 +1,29 @@
+{
+  "title": "Glimmer four-bit \u00b7 real Pi agents \u00b7 eight-page website, three rounds",
+  "speed": 40,
+  "sample_seconds": 10,
+  "fps": 12,
+  "lanes": [
+    {
+      "label": "FleetPi + Fleet, 8 agents",
+      "capture_dir": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-fleetpi/results/fleetpi/comparison/fleet8/capture",
+      "duration_seconds": 340.71599984169006,
+      "status": "passed 251/251",
+      "metrics": "Task 339.4s \u00b7 112.7 output tok/s \u00b7 18.19 GiB engine"
+    },
+    {
+      "label": "Pi + default vLLM, 8 agents",
+      "capture_dir": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-fleetpi/results/fleetpi/comparison/vllm8/capture",
+      "duration_seconds": 1031.3570001125336,
+      "status": "passed 251/251",
+      "metrics": "Task 1029.3s \u00b7 38.0 output tok/s \u00b7 17.99 GiB engine"
+    },
+    {
+      "label": "Pi + default vLLM, 1 agent",
+      "capture_dir": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-fleetpi/results/fleetpi/comparison/vllm1/capture",
+      "duration_seconds": 619.7590000629425,
+      "status": "early rounds failed; final 251/251",
+      "metrics": "Task 618.5s \u00b7 14.2 output tok/s \u00b7 18.20 GiB engine"
+    }
+  ]
+}

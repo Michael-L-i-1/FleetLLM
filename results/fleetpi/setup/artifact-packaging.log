@@ -1,0 +1,12 @@
+[
+  {
+    "file": "archives/traces.tar.gz",
+    "sha256": "7540c431d750f9fbba9be86346b64fb21375d3d158f0ae4547320305f7803d4c",
+    "bytes": 1796532
+  },
+  {
+    "file": "archives/captures.local.tar.gz",
+    "sha256": "5f7f20d1a4e8ed836f98ab173a08c25c33192ff96b87217f56df23a1034e9dfa",
+    "bytes": 140013111
+  }
+]

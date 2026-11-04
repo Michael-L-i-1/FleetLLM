@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' file: data:; script-src 'sha256-XcKXImeTHZDCEgLQrnEAlh9VNuYAnc4rrXGLc6cc3LU='; base-uri 'none'; form-action 'none'"><title>Lineup — Lantern Commons</title><style>
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;color:#182e30;background:#fff;font-family:Arial,sans-serif}img,svg{max-width:100%;height:auto}a{color:inherit}button,input,select{font:inherit}[hidden]{display:none!important}.site-header{padding:16px;border-bottom:1px solid #ddd}.site-brand{font-weight:700}.site-nav{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px}.site-nav a{padding:8px 0;font-size:14px}.site-nav [aria-current=page]{font-weight:700}main>article{padding:16px}.site-footer{padding:16px;border-top:1px solid #ddd;font-size:12px}
+</style></head><body><header id="top" class="site-header"><a class="site-brand" href="index.html">Lantern Commons</a><nav class="site-nav" aria-label="Main navigation"><a href="index.html">Home</a><a href="lineup.html" aria-current="page">Lineup</a><a href="schedule.html">Schedule</a><a href="venues.html">Venues</a><a href="tickets.html">Tickets</a><a href="accessibility.html">Accessibility</a><a href="volunteer.html">Volunteer</a><a href="faq.html">FAQ</a></nav></header><main><article id="page-lineup"><style>
+#page-lineup { color:#182e30; background:#f5ebd9; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; line-height:1.6; padding:2rem 1.25rem; }
+#page-lineup h1 { font-family:Georgia,serif; font-size:34px; margin:0 0 1rem; }
+#page-lineup .intro { max-width:720px; margin-bottom:2rem; }
+#page-lineup .cards { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+#page-lineup .artist-card { background:#fff; border:1px solid #e3d9c4; border-radius:12px; padding:1.25rem; box-shadow:0 2px 6px rgba(24,46,48,.06); }
+#page-lineup .artist-card h2 { margin:0 0 .5rem; font-size:22px; }
+#page-lineup .artist-card p { margin:0; opacity:.9; }
+#page-lineup a[data-primary-cta] { display:inline-block; background:#087f7a; color:#fff; text-decoration:none; padding:12px 20px; border-radius:8px; font-weight:600; min-height:40px; line-height:40px; margin-top:2rem; }
+#page-lineup a[data-primary-cta]:focus { outline:3px solid #fff; outline-offset:3px; box-shadow:0 0 0 2px #182e30; }
+@media (max-width:600px){ #page-lineup h1{font-size:28px;} }
+</style>
+<h1>Lantern Commons Artist Lineup</h1>
+<p class="intro">Meet the three artists bringing music and making to Alder Park for the weekend of 12–13 June 2027.</p>
+<div data-family-notice>
+<strong>Family notice:</strong>
+<ul>
+<li>Under-12s free with an adult</li>
+<li>No booking fees</li>
+<li>Family hours 10:00–16:00</li>
+</ul>
+</div>
+<div class="cards">
+<div class="artist-card" data-artist>
+<h2>Riverlight Quartet</h2>
+<p>Live jazz and improvisation</p>
+</div>
+<div class="artist-card" data-artist>
+<h2>Night Orchard</h2>
+<p>Indie folk under the evening sky</p>
+</div>
+<div class="artist-card" data-artist>
+<h2>Mira Chen</h2>
+<p>Printmaking and live visual art</p>
+</div>
+<div data-family-highlight>
+Mira Chen's live printmaking is all ages friendly with hands-on activities for children and families.</div>
+</div>
+<a data-primary-cta href="schedule.html">View full schedule</a>
+<div data-help-strip>
+<strong>Need a hand?</strong> <a href="accessibility.html">Accessibility guide</a> • <a href="mailto:access@lanterncommons.example">access@lanterncommons.example</a>
+</div>
+</article>
+</main><footer class="site-footer">Lantern Commons Arts Weekend · Fictional benchmark demo. No payments or real signups.</footer><script>// Protected functional behavior; editable pages supply accessible markup.
+document.addEventListener('change', event => {
+  if (event.target.id !== 'schedule-filter') return;
+  const category=event.target.value;
+  let count=0;
+  for (const card of document.querySelectorAll('[data-event]')) {
+    card.hidden=category!=='all' && card.dataset.category!==category;
+    if (!card.hidden) count++;
+  }
+  const empty=document.getElementById('schedule-empty');if (empty) empty.hidden=count!==0;
+});
+document.addEventListener('submit', event => {
+  const kind=event.target.id==='ticket-form'?'ticket':event.target.id==='volunteer-form'?'volunteer':null;
+  if (!kind) return;
+  event.preventDefault();
+  const email=document.getElementById(kind+'-email'), status=document.getElementById(kind+'-status');
+  if (!email || !email.checkValidity() || !status) return;
+  status.textContent=kind==='ticket'?"You're on the list — we'll email ticket information.":"Thanks — we'll send volunteer information.";
+  event.target.dataset.submitted='true';
+});
+</script></body></html>

@@ -1,0 +1,95 @@
+{
+  "selection": "A candidate must retain32/32QA,6/6shortprobes,no caps or errors. Use substantial timing improvement only as a hypothesis and confirm on fresh review/QA repeats. Every attempt retained.",
+  "jobs": [
+    {
+      "label": "tune-llama-noidle-qa",
+      "config_sha256": "7fdb75dfb14ac3cad4c313f68d7ce6eb5b2d447726494a7ef63c5788f244e3b8",
+      "command": [
+        "python3",
+        "bench/engine_comparison.py",
+        "--server-config",
+        "results/engine-comparison/configs/llama-n8-noidle.json",
+        "--workload",
+        "results/throughput-exploration/workload32-qa.json",
+        "--output",
+        "results/engine-comparison/runs/tune-llama-noidle-qa",
+        "--sessions",
+        "8",
+        "--timeout",
+        "600"
+      ]
+    },
+    {
+      "label": "tune-llama-checkpoint4-qa",
+      "config_sha256": "93a1e354d3f6968ffd00f0cdbbc17993d82d033dbc6297a9cb8fbe81a7a5cdc2",
+      "command": [
+        "python3",
+        "bench/engine_comparison.py",
+        "--server-config",
+        "results/engine-comparison/configs/llama-n8-checkpoint4.json",
+        "--workload",
+        "results/throughput-exploration/workload32-qa.json",
+        "--output",
+        "results/engine-comparison/runs/tune-llama-checkpoint4-qa",
+        "--sessions",
+        "8",
+        "--timeout",
+        "600"
+      ]
+    },
+    {
+      "label": "tune-llama-noidle-checkpoint4-qa",
+      "config_sha256": "dc293bbfdff790c42c71ddeb5cebad912eacb23300f58d033dadcf3397eda797",
+      "command": [
+        "python3",
+        "bench/engine_comparison.py",
+        "--server-config",
+        "results/engine-comparison/configs/llama-n8-noidle-checkpoint4.json",
+        "--workload",
+        "results/throughput-exploration/workload32-qa.json",
+        "--output",
+        "results/engine-comparison/runs/tune-llama-noidle-checkpoint4-qa",
+        "--sessions",
+        "8",
+        "--timeout",
+        "600"
+      ]
+    },
+    {
+      "label": "tune-vllm-batch4096-qa",
+      "config_sha256": "a66d769c67fc41f51ab668e91b25c4528455bbf665b28f471c77dcd9211d0b1d",
+      "command": [
+        "python3",
+        "bench/engine_comparison.py",
+        "--server-config",
+        "results/engine-comparison/configs/vllm-n8-batch4096.json",
+        "--workload",
+        "results/throughput-exploration/workload32-qa.json",
+        "--output",
+        "results/engine-comparison/runs/tune-vllm-batch4096-qa",
+        "--sessions",
+        "8",
+        "--timeout",
+        "600"
+      ]
+    },
+    {
+      "label": "tune-fleet-rows512-qa",
+      "config_sha256": "6ce7b18b2ead9c31f1fb21eb1284b3bb5335874192aeb30ba6de6b46f271d2a8",
+      "command": [
+        "python3",
+        "bench/engine_comparison.py",
+        "--server-config",
+        "results/engine-comparison/configs/fleet-n8-rows512.json",
+        "--workload",
+        "results/throughput-exploration/workload32-qa.json",
+        "--output",
+        "results/engine-comparison/runs/tune-fleet-rows512-qa",
+        "--sessions",
+        "8",
+        "--timeout",
+        "600"
+      ]
+    }
+  ]
+}

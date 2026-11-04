@@ -1,0 +1,140 @@
+[
+  {
+    "label": "selected-fleet-review-n8-a",
+    "allocation_and_route_lines": [],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-vllm-review-n8-a",
+    "allocation_and_route_lines": [
+      "(EngineCore pid=39643) INFO 11-03 20:40:10 [compiled_mlp.py:101] Metal: compiled MLP dispatch wrapped 32 blocks (mx.compile on decode-shaped calls).",
+      "(EngineCore pid=39643) INFO 11-03 20:40:11 [__init__.py:352] NAX prefill attention kernels loaded (M5 tensor units)",
+      "(EngineCore pid=39643) INFO 11-03 20:40:11 [hybrid.py:122] Hybrid shared cache: 448 blocks, 7.44 GiB backing for KV and state"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-llama-review-n8-a",
+    "allocation_and_route_lines": [
+      "0.00.593.695 I load_tensors: offloaded 33/33 layers to GPU",
+      "0.00.713.889 I llama_kv_cache:       MTL0 KV buffer size =  2304.00 MiB",
+      "0.00.733.731 I llama_memory_recurrent:       MTL0 RS buffer size =   402.00 MiB"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-llama-qa-n8-a",
+    "allocation_and_route_lines": [
+      "0.00.209.849 I load_tensors: offloaded 33/33 layers to GPU",
+      "0.00.331.356 I llama_kv_cache:       MTL0 KV buffer size =  2304.00 MiB",
+      "0.00.351.444 I llama_memory_recurrent:       MTL0 RS buffer size =   402.00 MiB"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-fleet-qa-n8-a",
+    "allocation_and_route_lines": [],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-vllm-qa-n8-a",
+    "allocation_and_route_lines": [
+      "(EngineCore pid=43713) INFO 11-03 20:43:08 [compiled_mlp.py:101] Metal: compiled MLP dispatch wrapped 32 blocks (mx.compile on decode-shaped calls).",
+      "(EngineCore pid=43713) INFO 11-03 20:43:09 [__init__.py:352] NAX prefill attention kernels loaded (M5 tensor units)",
+      "(EngineCore pid=43713) INFO 11-03 20:43:09 [hybrid.py:122] Hybrid shared cache: 448 blocks, 7.44 GiB backing for KV and state"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-llama-review-n8-b",
+    "allocation_and_route_lines": [
+      "0.00.607.082 I load_tensors: offloaded 33/33 layers to GPU",
+      "0.00.727.699 I llama_kv_cache:       MTL0 KV buffer size =  2304.00 MiB",
+      "0.00.748.078 I llama_memory_recurrent:       MTL0 RS buffer size =   402.00 MiB"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-vllm-review-n8-b",
+    "allocation_and_route_lines": [
+      "(EngineCore pid=45875) INFO 11-03 20:44:41 [compiled_mlp.py:101] Metal: compiled MLP dispatch wrapped 32 blocks (mx.compile on decode-shaped calls).",
+      "(EngineCore pid=45875) INFO 11-03 20:44:43 [__init__.py:352] NAX prefill attention kernels loaded (M5 tensor units)",
+      "(EngineCore pid=45875) INFO 11-03 20:44:43 [hybrid.py:122] Hybrid shared cache: 448 blocks, 7.44 GiB backing for KV and state"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-fleet-review-n8-b",
+    "allocation_and_route_lines": [],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-vllm-qa-n8-b",
+    "allocation_and_route_lines": [
+      "(EngineCore pid=47947) INFO 11-03 20:46:06 [compiled_mlp.py:101] Metal: compiled MLP dispatch wrapped 32 blocks (mx.compile on decode-shaped calls).",
+      "(EngineCore pid=47947) INFO 11-03 20:46:07 [__init__.py:352] NAX prefill attention kernels loaded (M5 tensor units)",
+      "(EngineCore pid=47947) INFO 11-03 20:46:07 [hybrid.py:122] Hybrid shared cache: 448 blocks, 7.44 GiB backing for KV and state"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-fleet-qa-n8-b",
+    "allocation_and_route_lines": [],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-llama-qa-n8-b",
+    "allocation_and_route_lines": [
+      "0.00.576.920 I load_tensors: offloaded 33/33 layers to GPU",
+      "0.00.703.764 I llama_kv_cache:       MTL0 KV buffer size =  2304.00 MiB",
+      "0.00.727.235 I llama_memory_recurrent:       MTL0 RS buffer size =   402.00 MiB"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-fleet-cap256-n8-a",
+    "allocation_and_route_lines": [],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-llama-cap256-n8-a",
+    "allocation_and_route_lines": [
+      "0.00.268.623 I load_tensors: offloaded 33/33 layers to GPU",
+      "0.00.390.728 I llama_kv_cache:       MTL0 KV buffer size =  2304.00 MiB",
+      "0.00.410.542 I llama_memory_recurrent:       MTL0 RS buffer size =   402.00 MiB"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-vllm-cap256-n8-a",
+    "allocation_and_route_lines": [
+      "(EngineCore pid=53305) INFO 11-03 20:50:08 [compiled_mlp.py:101] Metal: compiled MLP dispatch wrapped 32 blocks (mx.compile on decode-shaped calls).",
+      "(EngineCore pid=53305) INFO 11-03 20:50:09 [__init__.py:352] NAX prefill attention kernels loaded (M5 tensor units)",
+      "(EngineCore pid=53305) INFO 11-03 20:50:09 [hybrid.py:122] Hybrid shared cache: 448 blocks, 7.44 GiB backing for KV and state"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-vllm-review-n16-a",
+    "allocation_and_route_lines": [
+      "(EngineCore pid=55057) INFO 11-03 20:51:31 [compiled_mlp.py:101] Metal: compiled MLP dispatch wrapped 32 blocks (mx.compile on decode-shaped calls).",
+      "(EngineCore pid=55057) INFO 11-03 20:51:32 [__init__.py:352] NAX prefill attention kernels loaded (M5 tensor units)",
+      "(EngineCore pid=55057) INFO 11-03 20:51:32 [hybrid.py:122] Hybrid shared cache: 448 blocks, 7.44 GiB backing for KV and state"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-llama-review-n16-a",
+    "allocation_and_route_lines": [
+      "0.00.582.991 I load_tensors: offloaded 33/33 layers to GPU",
+      "0.00.787.974 I llama_kv_cache:       MTL0 KV buffer size =  3968.00 MiB",
+      "0.00.827.452 I llama_memory_recurrent:       MTL0 RS buffer size =   804.00 MiB"
+    ],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  },
+  {
+    "label": "selected-fleet-review-n16-a",
+    "allocation_and_route_lines": [],
+    "note": "Full diagnostic log is in raw-artifacts.tar.gz."
+  }
+]

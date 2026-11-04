@@ -1,0 +1,9 @@
+{
+  "vllm": "0.32.0+cpu",
+  "vllm-metal": "0.32.0",
+  "mlx": "0.32.2",
+  "mlx-lm": "0.32.0",
+  "torch": "2.13.0",
+  "transformers": "5.19.0",
+  "tokenizers": "0.23.3"
+}

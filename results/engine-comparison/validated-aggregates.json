@@ -1,0 +1,260 @@
+[
+  {
+    "engine": "fleet",
+    "workload": "cap256",
+    "repeats": 1,
+    "wall_seconds_mean": 40.24837645795196,
+    "wall_seconds_min": 40.24837645795196,
+    "wall_seconds_max": 40.24837645795196,
+    "generation_tok_per_second_mean": 200.8279764637071,
+    "completion_tokens_each": [
+      8083
+    ],
+    "graded_correct_each": [
+      null
+    ],
+    "graded_total_each": [
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "fleet",
+    "workload": "qa",
+    "repeats": 2,
+    "wall_seconds_mean": 19.862934125005268,
+    "wall_seconds_min": 19.59086766699329,
+    "wall_seconds_max": 20.135000583017245,
+    "generation_tok_per_second_mean": 5.438283454955862,
+    "completion_tokens_each": [
+      108,
+      108
+    ],
+    "graded_correct_each": [
+      32,
+      32
+    ],
+    "graded_total_each": [
+      32,
+      32
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "fleet",
+    "workload": "review",
+    "repeats": 2,
+    "wall_seconds_mean": 23.878274208516814,
+    "wall_seconds_min": 23.567854332970455,
+    "wall_seconds_max": 24.188694084063172,
+    "generation_tok_per_second_mean": 85.78283998962914,
+    "completion_tokens_each": [
+      2048,
+      2048
+    ],
+    "graded_correct_each": [
+      null,
+      null
+    ],
+    "graded_total_each": [
+      null,
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "fleet",
+    "workload": "review-n16",
+    "repeats": 1,
+    "wall_seconds_mean": 46.01854483294301,
+    "wall_seconds_min": 46.01854483294301,
+    "wall_seconds_max": 46.01854483294301,
+    "generation_tok_per_second_mean": 89.00759497870567,
+    "completion_tokens_each": [
+      4096
+    ],
+    "graded_correct_each": [
+      null
+    ],
+    "graded_total_each": [
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "llama",
+    "workload": "cap256",
+    "repeats": 1,
+    "wall_seconds_mean": 67.51945441705175,
+    "wall_seconds_min": 67.51945441705175,
+    "wall_seconds_max": 67.51945441705175,
+    "generation_tok_per_second_mean": 121.32799458656683,
+    "completion_tokens_each": [
+      8192
+    ],
+    "graded_correct_each": [
+      null
+    ],
+    "graded_total_each": [
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "llama",
+    "workload": "qa",
+    "repeats": 2,
+    "wall_seconds_mean": 35.051890499540605,
+    "wall_seconds_min": 34.62555129104294,
+    "wall_seconds_max": 35.47822970803827,
+    "generation_tok_per_second_mean": 3.081602116742718,
+    "completion_tokens_each": [
+      108,
+      108
+    ],
+    "graded_correct_each": [
+      32,
+      32
+    ],
+    "graded_total_each": [
+      32,
+      32
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "llama",
+    "workload": "review",
+    "repeats": 2,
+    "wall_seconds_mean": 41.87395541649312,
+    "wall_seconds_min": 41.26105791609734,
+    "wall_seconds_max": 42.48685291688889,
+    "generation_tok_per_second_mean": 48.919162859036135,
+    "completion_tokens_each": [
+      2048,
+      2048
+    ],
+    "graded_correct_each": [
+      null,
+      null
+    ],
+    "graded_total_each": [
+      null,
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "llama",
+    "workload": "review-n16",
+    "repeats": 1,
+    "wall_seconds_mean": 83.74101200001314,
+    "wall_seconds_min": 83.74101200001314,
+    "wall_seconds_max": 83.74101200001314,
+    "generation_tok_per_second_mean": 48.91271196960645,
+    "completion_tokens_each": [
+      4096
+    ],
+    "graded_correct_each": [
+      null
+    ],
+    "graded_total_each": [
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "vllm",
+    "workload": "cap256",
+    "repeats": 1,
+    "wall_seconds_mean": 61.72294400003739,
+    "wall_seconds_min": 61.72294400003739,
+    "wall_seconds_max": 61.72294400003739,
+    "generation_tok_per_second_mean": 132.31708455116873,
+    "completion_tokens_each": [
+      8167
+    ],
+    "graded_correct_each": [
+      null
+    ],
+    "graded_total_each": [
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "vllm",
+    "workload": "qa",
+    "repeats": 2,
+    "wall_seconds_mean": 17.611006833030842,
+    "wall_seconds_min": 17.43976187496446,
+    "wall_seconds_max": 17.782251791097224,
+    "generation_tok_per_second_mean": 6.133108318181881,
+    "completion_tokens_each": [
+      108,
+      108
+    ],
+    "graded_correct_each": [
+      32,
+      32
+    ],
+    "graded_total_each": [
+      32,
+      32
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "vllm",
+    "workload": "review",
+    "repeats": 2,
+    "wall_seconds_mean": 28.00348558346741,
+    "wall_seconds_min": 27.582438374869525,
+    "wall_seconds_max": 28.424532792065293,
+    "generation_tok_per_second_mean": 73.15028995396256,
+    "completion_tokens_each": [
+      2048,
+      2048
+    ],
+    "graded_correct_each": [
+      null,
+      null
+    ],
+    "graded_total_each": [
+      null,
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  },
+  {
+    "engine": "vllm",
+    "workload": "review-n16",
+    "repeats": 1,
+    "wall_seconds_mean": 50.42802875000052,
+    "wall_seconds_min": 50.42802875000052,
+    "wall_seconds_max": 50.42802875000052,
+    "generation_tok_per_second_mean": 81.22467011959014,
+    "completion_tokens_each": [
+      4096
+    ],
+    "graded_correct_each": [
+      null
+    ],
+    "graded_total_each": [
+      null
+    ],
+    "all_transport_complete": true,
+    "note": "Capped review output and different quantizations do not establish equal coding quality."
+  }
+]

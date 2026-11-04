@@ -1,0 +1,32 @@
+{
+  "status": "complete",
+  "active_label": null,
+  "completed": [
+    {
+      "label": "tune-llama-noidle-qa",
+      "returncode": 0,
+      "driver_wall_seconds": 45.40052374987863
+    },
+    {
+      "label": "tune-llama-checkpoint4-qa",
+      "returncode": 0,
+      "driver_wall_seconds": 57.64969066600315
+    },
+    {
+      "label": "tune-llama-noidle-checkpoint4-qa",
+      "returncode": 0,
+      "driver_wall_seconds": 44.340707666939124
+    },
+    {
+      "label": "tune-vllm-batch4096-qa",
+      "returncode": 0,
+      "driver_wall_seconds": 40.26552374986932
+    },
+    {
+      "label": "tune-fleet-rows512-qa",
+      "returncode": 0,
+      "driver_wall_seconds": 28.991086041089147
+    }
+  ],
+  "total": 5
+}

@@ -1,0 +1,107 @@
+{
+  "scope": "read-only installed-source/config/log audit; no GPU/model jobs, installs, code/config edits or job changes",
+  "external_model_used_for_this_followup": false,
+  "llama_commit": "6cb3e672e8d10fd4feab1a048bf2967c40623133",
+  "installed_vllm_metal_version": "0.32.0",
+  "source_hashes": {
+    "llama_arguments": {
+      "path": "/tmp/fleet-site-llama.cpp/common/arg.cpp",
+      "sha256": "83cd576c95940ac4f84059da3c5b34914c15a94a834a608743389f2d43f25ea2"
+    },
+    "llama_server": {
+      "path": "/tmp/fleet-site-llama.cpp/tools/server/server-context.cpp",
+      "sha256": "bc44c602e3638f81ce0ea2300f6f3dc1ea4599f42dc9f32bd3e555de214c6ee3"
+    },
+    "vllm_envs": {
+      "path": "/opt/homebrew/Cellar/vllm-metal/0.32.0/libexec/lib/python3.12/site-packages/vllm_metal/envs.py",
+      "sha256": "257bbacb0cc66fa12b9e537d3b00b046c6162d24c3fd15b20d2c1be84c867f84"
+    },
+    "vllm_cache_policy": {
+      "path": "/opt/homebrew/Cellar/vllm-metal/0.32.0/libexec/lib/python3.12/site-packages/vllm_metal/v1/cache_policy.py",
+      "sha256": "569a00e1a38d7c944d108f48dd7f23cb24581464c89a1384e66a28db30ae0641"
+    },
+    "common_harness": {
+      "path": "bench/engine_comparison.py",
+      "sha256": "02d38bc402dc97b629ea74dbd37b0b17e0680c8e1468ec837d9e266bfad0a310"
+    },
+    "common_requests": {
+      "path": "bench/throughput_workflows.py",
+      "sha256": "0a354981e9f880147811db9e8b2c240798ad1a125c6010147bc7d8509dd539eb"
+    }
+  },
+  "configs_sha256": {
+    "vllm-n16.json": "ba42351ac162d1d3f62b842e2cf08463676a329cdf78b140430d06e804fd9138",
+    "llama-n8.json": "35685ffa3a971a3ba6dbf59a508ed0eaacb23be52988350b309fb18616f3ac97",
+    "llama-n8-noidle-checkpoint4.json": "dc293bbfdff790c42c71ddeb5cebad912eacb23300f58d033dadcf3397eda797",
+    "fleet-n8.json": "5920dd26f9e6b7a46f1e2df30e23fc66f0bb59833eb5bff5c86967708514de80",
+    "llama-n16.json": "6f92ca7faef97bddfb1b2f42fc874b6c957ad41a8cdb4fe7a6434a6b1d8d59d4",
+    "fleet-n16.json": "5f2da633e24fe6903ba84db74162527d5b4ec8b79affdaf34b818c18823ba67e",
+    "llama-n8-noidle.json": "7fdb75dfb14ac3cad4c313f68d7ce6eb5b2d447726494a7ef63c5788f244e3b8",
+    "vllm-n8.json": "57c7a8289f6641312c9a2de8d9f14027bf485e23ba4325e43501d54506176315",
+    "llama-n8-largebatch.json": "b363cfc4013e197fe8970939fd816f13e3c63141e5494fa6554b4338f7e13b4c",
+    "llama-n8-checkpoint4.json": "93a1e354d3f6968ffd00f0cdbbc17993d82d033dbc6297a9cb8fbe81a7a5cdc2"
+  },
+  "all_primary_job_configs_match_frozen_plan": true,
+  "job_checks": [
+    {
+      "label": "fleet-review-n8-a",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "vllm-review-n8-a",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "llama-review-n8-a",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "llama-qa-n8-a",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "fleet-qa-n8-a",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "vllm-qa-n8-a",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "llama-review-n8-b",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "vllm-review-n8-b",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "fleet-review-n8-b",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "vllm-qa-n8-b",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "fleet-qa-n8-b",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "llama-qa-n8-b",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "fleet-cap256-n8-a",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "llama-cap256-n8-a",
+      "config_hash_matches_plan": true
+    },
+    {
+      "label": "vllm-cap256-n8-a",
+      "config_hash_matches_plan": true
+    }
+  ]
+}

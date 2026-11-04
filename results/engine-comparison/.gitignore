@@ -1,0 +1,11 @@
+/runs/*/trace/responses/
+/runs/*/quality/responses/
+/runs/*/trace/calls.jsonl
+/runs/*/trace/events.jsonl
+/runs/*/quality/calls.jsonl
+/runs/*/quality/events.jsonl
+/runs/*/server.log
+/runs/*/trace.log
+/runs/*/quality.log
+/runs/*/resources.csv
+/runs/*/warmup.json

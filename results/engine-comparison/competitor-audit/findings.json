@@ -1,0 +1,38 @@
+{
+  "assessment": "No obvious deliberate competitor handicap in the frozen configs. Main matrix should remain frozen. llama idle-state policy is a plausible avoidable workload-specific disadvantage and merits retuning after completion.",
+  "recommendations": [
+    {
+      "priority": 1,
+      "engine": "llama.cpp",
+      "candidate": "--no-cache-idle-slots",
+      "evidence": "Installed server-context.cpp:3071-3083 saves every idle slot to RAM upon each new task and prompt_clear()s unified-KV idle slots; current trace shows repeated RAM save/restores and RAM cache near4GiB. Disabling this policy retains resident cache and does not disable normal prefix reuse.",
+      "status": "root plans post-matrix sensitivity; do not change running jobs",
+      "limit": "Potential gain only; source semantics do not prove that copies dominate measured wall time."
+    },
+    {
+      "priority": 2,
+      "engine": "llama.cpp",
+      "candidate": "ctx-checkpoints4, cache-ram3292MiB, same other settings",
+      "evidence": "Each private recurrent checkpoint is50.251MiB; 2 extra checkpoints x8slots is~804MiB, taken from4096MiB RAM to retain7606MiB nominal cache envelope. Current2 is below default32, but32 would substantially exceed equal budget. Tail checkpoints at4 and4+ubatch offsets often suffice for growing ChatML histories; inspect restore positions and recomputation.",
+      "status": "root plans post-matrix sensitivity",
+      "limit": "More checkpoints can also increase copies and reduce RAM snapshot residency; not automatically better."
+    },
+    {
+      "priority": 3,
+      "engine": "vllm-metal",
+      "candidate": "Retain current native precision and verified448blocks config",
+      "evidence": "Installed0.32.0 logs confirm MLX GPU, NAX prefill, compiled MLP32blocks, BF16 attention andFP32 recurrence;448blocks physically7.44GiB. DECODE_PIPELINE defaultsTrue, DISABLE_NAX defaultsFalse in installed envs.py; compiled MLP defaultsFalse but config explicitly enables it. No obvious absent optimization requires immediate change.",
+      "limit": "This is Metal plugin performance, not a claim about vLLM CUDA; block budgets and cache hit statistics differ across engines."
+    }
+  ],
+  "controls_and_caveats": [
+    "73728 llama context positions are unified total backing, and startup reports n_ctx_slot73728; not9216 per slot. Current trace fits this envelope and all33layers are GPU offloaded withFlashAttention enabled.",
+    "Installed llama default checkpoints32/minstep8192 andRAM8192MiB are not equivalent-memory fair defaults; comparing max-default32 without budget accounting would change the experiment.",
+    "GGUF Q4_K_M is5.19BPW with mixed tensor types and differs from MLX affine4bit. Treat this as a practical format comparison, not identical-weight engine isolation.",
+    "NativeFP16 vsBF16 attention is equal byte width but different arithmetic; output-token counts and graded answers should accompany throughput.",
+    "The frozen controls retain independent unrelated warmup snapshots/caches; warmup timing excluded and trace-prefix cold policy is documented. Do not alter warmup only for a retuned engine.",
+    "The shared request builder explicitly sends enable_thinking matching reasoning_effort. vLLM generation-configvllm avoids model-specific generation defaults.",
+    "Preserve current15-job matrix as frozen evidence. Compare retuned llama config in fresh serial trials, ideally repeat winning candidate on both review andQA rather than choosing it only from one noisy trial.",
+    "No speculation in any primary arm; do not add it solely to one engine in an otherwise capability-controlled table. A separate best-config/speculation comparison would need compatible drafter support and explicit output/cost notes."
+  ]
+}

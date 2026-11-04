@@ -1,0 +1,82 @@
+[
+  {
+    "workload": "review",
+    "requests": 32,
+    "matched_prompt_token_counts": {
+      "fleet": 32,
+      "vllm": 32,
+      "llama": 32
+    },
+    "same_answer_text": {
+      "fleet": 32,
+      "vllm": 32,
+      "llama": 32
+    },
+    "note": "Text matching does not grade capped reasoning outputs.",
+    "matched_request_body_hashes": {
+      "fleet": 32,
+      "vllm": 32,
+      "llama": 32
+    }
+  },
+  {
+    "workload": "qa",
+    "requests": 32,
+    "matched_prompt_token_counts": {
+      "fleet": 32,
+      "vllm": 32,
+      "llama": 32
+    },
+    "same_answer_text": {
+      "fleet": 32,
+      "vllm": 32,
+      "llama": 32
+    },
+    "note": "Text matching does not grade capped reasoning outputs.",
+    "matched_request_body_hashes": {
+      "fleet": 32,
+      "vllm": 32,
+      "llama": 32
+    }
+  },
+  {
+    "workload": "cap256",
+    "requests": 32,
+    "matched_prompt_token_counts": {
+      "fleet": 32,
+      "vllm": 32,
+      "llama": 32
+    },
+    "same_answer_text": {
+      "fleet": 32,
+      "vllm": 27,
+      "llama": 24
+    },
+    "note": "Text matching does not grade capped reasoning outputs.",
+    "matched_request_body_hashes": {
+      "fleet": 32,
+      "vllm": 32,
+      "llama": 32
+    }
+  },
+  {
+    "workload": "review-n16",
+    "requests": 64,
+    "matched_prompt_token_counts": {
+      "fleet": 64,
+      "vllm": 64,
+      "llama": 64
+    },
+    "same_answer_text": {
+      "fleet": 64,
+      "vllm": 64,
+      "llama": 64
+    },
+    "note": "Text matching does not grade capped reasoning outputs.",
+    "matched_request_body_hashes": {
+      "fleet": 64,
+      "vllm": 64,
+      "llama": 64
+    }
+  }
+]

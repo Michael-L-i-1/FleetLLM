@@ -1,0 +1,24 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "time_utc": "Wed Nov  4 04:17:39 UTC 2026",
+  "power": {
+    "returncode": 0,
+    "stdout": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=25755747)\t45%; charging; 7:46 remaining present: true\n",
+    "stderr": ""
+  },
+  "thermal": {
+    "returncode": 0,
+    "stdout": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded\n",
+    "stderr": ""
+  },
+  "llama_version": {
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "version: 0.8.0-dev (build 1, commit 6cb3e67)\nbuilt with AppleClang 21.0.0.21000401 for Darwin arm64\n"
+  },
+  "llama_commit": {
+    "returncode": 0,
+    "stdout": "6cb3e672e8d10fd4feab1a048bf2967c40623133\n",
+    "stderr": ""
+  }
+}

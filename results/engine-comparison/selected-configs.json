@@ -1,0 +1,50 @@
+{
+  "criterion": "All candidates32/32QA+6/6shortprobes,no caps or failures. Keep defaultbatch when differences are near-flat. Choose llama noidle2 over noidle4 because same timing with less checkpoint budget. Fresh validation follows; no selected-case speedup taken from tuning trial.",
+  "selected": {
+    "fleet": "fleet-n8.json",
+    "vllm": "vllm-n8.json",
+    "llama": "llama-n8-noidle.json"
+  },
+  "tuning": [
+    {
+      "label": "tune-llama-noidle-qa",
+      "seconds": 34.426235667197034,
+      "correct": 32,
+      "total": 32,
+      "short_correct": 6,
+      "short_total": 6
+    },
+    {
+      "label": "tune-llama-checkpoint4-qa",
+      "seconds": 47.67416470893659,
+      "correct": 32,
+      "total": 32,
+      "short_correct": 6,
+      "short_total": 6
+    },
+    {
+      "label": "tune-llama-noidle-checkpoint4-qa",
+      "seconds": 34.45745124993846,
+      "correct": 32,
+      "total": 32,
+      "short_correct": 6,
+      "short_total": 6
+    },
+    {
+      "label": "tune-vllm-batch4096-qa",
+      "seconds": 17.31957529205829,
+      "correct": 32,
+      "total": 32,
+      "short_correct": 6,
+      "short_total": 6
+    },
+    {
+      "label": "tune-fleet-rows512-qa",
+      "seconds": 19.92065562494099,
+      "correct": 32,
+      "total": 32,
+      "short_correct": 6,
+      "short_total": 6
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "engine": "fleet",
+  "base": "http://127.0.0.1:8090/v1",
+  "model": "qwen35-4b",
+  "command": [
+    "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/build/fleet-serve",
+    "--model",
+    "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Qwen3.5-4B-4bit/snapshots/0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+    "--device",
+    "metal",
+    "--name",
+    "qwen35-4b",
+    "--budget-gb",
+    "16",
+    "--kv-gb",
+    "8",
+    "--max-active",
+    "16",
+    "--admit",
+    "--row-budget",
+    "128",
+    "--prompt-checkpoints",
+    "--recurrent-prefix-dedup",
+    "--recurrent-state-move",
+    "--recurrent-cache-priority",
+    "--port",
+    "8090",
+    "--recurrent-fraction",
+    "0.5"
+  ],
+  "env": {
+    "FLEET_Q35_NAX_ATTN": "1",
+    "FLEET_TRACE_STATS": "1"
+  },
+  "cache_note": "16-session scaling probe, same~8GBcombinedcache envelope. llama:3968MiB attention+804resident+1608checkpoints+1248RAM=7628MiB. Fleet: recurrent fraction.5; vLLM448blocks unchanged. All FP32recurrent/native16bit attention."
+}

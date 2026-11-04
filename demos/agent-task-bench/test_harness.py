@@ -97,6 +97,8 @@ class HarnessTest(unittest.TestCase):
             for name,history in b.histories.items():
                 self.assertEqual(sum(m['role']=='system' for m in history),1)
                 self.assertEqual(sum(m['content'].startswith('CURRENT ROUND') for m in history),3)
+                self.assertTrue(all(m['content'].endswith('never return raw HTML or code outside the JSON action.')
+                                    for m in history if m['content'].startswith('CURRENT ROUND')))
                 self.assertIn('OK1',json.dumps(history));self.assertIn('OK3',json.dumps(history))
             prefixes={request['messages'][1]['content'].split('YOUR ROLE:')[0] for request in self.observed}
             self.assertEqual(len(prefixes),1)

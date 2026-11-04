@@ -286,7 +286,8 @@ class Benchmark:
         delta = '\n'.join(current.get('worker_instructions',{}).get(path,'') for path in sorted(owned))
         messages.append({'role':'user','content':f"CURRENT ROUND {self.current_round}: {self.round_title}\n"+
                          current.get('instructions','')+'\n'+delta+'\n'+brief+
-                         '\nKeep previous requirements. Current workspace is authoritative; read files before revising stale content.'})
+                         '\nKeep previous requirements. Current workspace is authoritative; read files before revising stale content.'+
+                         '\nRespond with one JSON tool action using action/path/content. Put source inside content; never return raw HTML or code outside the JSON action.'})
         status = 'call_limit'
         invalid_streak = 0
         turn = -1

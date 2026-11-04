@@ -1,5 +1,5 @@
 #!/bin/sh
-# Run the locally pinned Pi + Fleet integration after bootstrap.
+# Run the pinned Pi + Fleet integration with a supported local Node runtime.
 set -eu
 repo=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cli="$repo/integrations/fleetpi/vendor/pi/packages/fleetpi/dist/cli.js"
@@ -7,4 +7,16 @@ if [ ! -f "$cli" ]; then
   printf '%s\n' 'Run python3 integrations/fleetpi/bootstrap.py first.' >&2
   exit 1
 fi
-exec node "$cli" "$@"
+supports_node() {
+  [ -x "$1" ] && "$1" -e 'const [major,minor]=process.versions.node.split(".").map(Number);process.exit((major>22||(major===22&&minor>=19))&&typeof require("node:zlib").createZstdDecompress==="function"?0:1)' >/dev/null 2>&1
+}
+if [ -n "${FLEETPI_NODE:-}" ]; then
+  if supports_node "$FLEETPI_NODE"; then exec "$FLEETPI_NODE" "$cli" "$@"; fi
+  printf '%s\n' 'FLEETPI_NODE must point to Node >=22.19 with zstd support.' >&2
+  exit 1
+fi
+for candidate in "$(command -v node || true)" /opt/homebrew/bin/node /usr/local/bin/node; do
+  if supports_node "$candidate"; then exec "$candidate" "$cli" "$@"; fi
+done
+printf '%s\n' 'FleetPi requires Node >=22.19. Install a current Node, or set FLEETPI_NODE to its executable.' >&2
+exit 1

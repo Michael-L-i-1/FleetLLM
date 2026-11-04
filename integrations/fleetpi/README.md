@@ -10,6 +10,8 @@ make -j6
 ./fleetpi
 ```
 
+`fleetpi` uses a supported Node (>=22.19), preferring your active runtime and falling back to an installed Homebrew Node when an older nvm version is active. You can set `FLEETPI_NODE` to an explicit supported executable.
+
 `fleetpi` starts Fleet, opens Pi's terminal interface with the local Glimmer model, shows engine activity and KV headroom in its footer, and stops its engine when the session closes. It keeps its interactive configuration and logs in `~/.fleetpi`. The pinned model must already be in the Hugging Face cache; no weights or credentials are bundled.
 
 For the eight-agent festival website demo:

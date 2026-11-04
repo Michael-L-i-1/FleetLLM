@@ -31,3 +31,16 @@ evals/third_party/
 
 /results/fleetpi/video/dashboard.html
 /results/fleetpi/video/timeline.ffconcat
+
+/results/fleetpi/live-demo/
+/results/fleetpi/presentation/*jsonl
+/results/fleetpi/presentation/*stderr
+/results/fleetpi/presentation/video/composite-frames/
+
+/results/fleetpi/presentation/live-terminal.json
+/results/fleetpi/presentation/video/.render/
+/results/fleetpi/presentation/video/presentation.html
+
+/results/fleetpi/presentation/video/
+/results/fleetpi/presentation/quiet-video/.render/
+/results/fleetpi/presentation/quiet-video/presentation.html

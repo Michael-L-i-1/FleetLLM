@@ -1,0 +1,49 @@
+#[path = __MONEY__] mod money;
+#[path = __DATE__] mod date;
+#[path = __CSV__] mod csv;
+#[path = __LABELS__] mod labels;
+#[path = __TAGS__] mod tags;
+#[path = __FILTER__] mod filter;
+#[path = __SUMMARY__] mod summary;
+#[path = __AUDIT__] mod audit;
+#[derive(Clone, Debug, PartialEq)]
+pub struct Record { pub id:String, pub date:String, pub vendor:String, pub cents:i64, pub tags:Vec<String> }
+fn row(id:&str,date:&str,vendor:&str,cents:i64)->Record { Record{id:id.into(),date:date.into(),vendor:vendor.into(),cents,tags:vec!["sample".into()]} }
+#[test] fn money() {
+    for (s,n) in [("0",0),("001.2",120),("+12.34",1234),("-0.01",-1),("-0",0),("92233720368547758.07",i64::MAX),("-92233720368547758.08",i64::MIN)] { assert_eq!(money::parse(s),Some(n),"parse {s}"); }
+    for s in ["","+","-",".5","1.","1.234"," 1","1 ","1e2","--1","NaN","92233720368547758.08","-92233720368547758.09","99999999999999999999999"] { assert_eq!(money::parse(s),None,"reject {s}"); }
+    for n in -300i64..=300 { let a=n.abs();let expected=format!("{}{}.{:02}",if n<0 {"-"}else{""},a/100,a%100);assert_eq!(money::format(n),expected);assert_eq!(money::parse(&expected),Some(n)); }
+    assert_eq!(money::format(i64::MIN),"-92233720368547758.08");assert_eq!(money::format(i64::MAX),"92233720368547758.07");
+}
+#[test] fn date() {
+    for s in ["0001-01-01","9999-12-31","2000-02-29","2024-02-29","1900-02-28","2024-04-30"] {assert!(date::valid(s),"valid {s}");}
+    for s in ["0000-01-01","2023-02-29","1900-02-29","2100-02-29","2024-04-31","2024-00-01","2024-13-01","2024-01-00","2024-01-32","2024-2-01","24-02-01","2024/02/01","２０２４-02-01","2024-02-01 ",""] {assert!(!date::valid(s),"invalid {s}");}
+}
+#[test] fn csv() {
+    for (s,want) in [("",vec![""]),("a,b,",vec!["a","b",""]),("\"a,b\",\"say \"\"hi\"\"\",c",vec!["a,b","say \"hi\"","c"]),("\"\",, x ",vec!["",""," x "]),(" café ,\"MÜNCHEN\"",vec![" café ","MÜNCHEN"])] {assert_eq!(csv::parse_line(s),Some(want.iter().map(|s|s.to_string()).collect()),"csv {s}");}
+    for s in ["\"unfinished","a\"b,c","\"a\"x,b"," \"a\",b","a\nb","\"a\r\nb\"","\"a\" "] {assert_eq!(csv::parse_line(s),None,"reject {s:?}");}
+}
+#[test] fn labels() {
+    for (s,want) in [("  COFFEE   BAR  ","coffee bar"),("\tGreen\n MARKET\r\n","green market"),(" Café\tMÜNCHEN ","café mÜnchen"),("ABC_123-Store","abc_123-store"),(" \t\r\n", ""),("a\u{000b}b\u{000c}c","a b c"),("\u{00a0}A\u{00a0}","\u{00a0}a\u{00a0}")] {assert_eq!(labels::normalize(s),want,"label {s:?}");}
+}
+#[test] fn tags() {
+    for (s,want) in [("",vec![]),(" ; ; ",vec![]),("work; Food; food; ;x_y;X-Y ",vec!["food","work","x-y","x_y"]),("Z;a;A;0",vec!["0","a","z"])] {assert_eq!(tags::parse(s),Some(want.iter().map(|s|s.to_string()).collect()),"tags {s}");}
+    for s in ["no spaces","a/b","café","a,b","x.y","valid;bad!","\u{00a0}work"] {assert_eq!(tags::parse(s),None,"reject {s}");}
+}
+#[test] fn filter() {
+    let rows=vec![row("late","2024-03-31","x",1),row("first","2024-03-01","y",2),row("before","2024-02-29","x",3),row("middle","2024-03-15","z",4)];
+    assert_eq!(filter::between(&rows,"2024-03-01","2024-03-31"),vec![rows[0].clone(),rows[1].clone(),rows[3].clone()]);
+    assert_eq!(filter::between(&rows,"2024-03-01","2024-03-01"),vec![rows[1].clone()]);
+    for (a,b) in [("bad","2024-03-31"),("2024-03-01","2024-02-29"),("2023-02-29","2024-03-31")] {assert!(filter::between(&rows,a,b).is_empty());}
+    assert_eq!(rows.len(),4);
+}
+#[test] fn summary() {
+    let rows=vec![row("a","2024-01-01","Beta",-101),row("b","2024-01-02","alpha",101),row("c","2024-01-03","Beta",101),row("d","2024-01-03","empty",0)];
+    assert_eq!(summary::group(&rows),vec![("Beta".into(),2,0),("alpha".into(),1,101),("empty".into(),1,0)]);
+    assert!(summary::group(&[]).is_empty());assert_eq!(rows[0].cents,-101);
+}
+#[test] fn audit() {
+    let rows=vec![row("z","2024-01-01","one",1),row("a","2024-01-02","two",2),row("z","2024-01-03","other",99),row("b","2024-01-04","three",3),row("a","2024-01-05","other",99),row("a","2024-01-06","other",99),row("A","2024-01-07","four",4)];
+    let (kept,dups)=audit::dedupe(&rows);assert_eq!(kept,vec![rows[0].clone(),rows[1].clone(),rows[3].clone(),rows[6].clone()]);assert_eq!(dups,vec!["a".to_string(),"z".to_string()]);
+    assert_eq!(audit::dedupe(&[]),(vec![],vec![]));assert_eq!(rows.len(),7);
+}

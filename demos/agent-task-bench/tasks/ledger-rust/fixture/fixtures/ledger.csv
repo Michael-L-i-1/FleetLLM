@@ -1,0 +1,12 @@
+id,date,vendor,amount,tags
+r1,2024-02-28,  COFFEE   BAR ,12.50,food; WORK
+r2,2024-02-29,"Book, Shop",-5.25,gift;books
+r3,2024-03-01,coffee bar,2.5,food;food
+r2,2024-03-02,duplicate ignored,999.00,other
+r4,2024-03-15,Green Market,+0.25,food;local
+r5,2023-12-31,Book Shop,10,
+r6,2024-03-31,coffee bar,-15.00,refund
+bad1,2023-02-29,Invalid Date,1.00,
+bad2,2024-02-28,Invalid Amount,1.234,
+bad3,2024-02-28,Invalid Tag,1.00,no spaces
+bad4,2024-02-28,,1.00,

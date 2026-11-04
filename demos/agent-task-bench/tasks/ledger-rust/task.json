@@ -1,0 +1,82 @@
+{
+  "id": "ledger-rust",
+  "title": "Port Legacy Ledger from C to Rust",
+  "fixture": "fixture",
+  "instructions": "Complete the eight Rust module ports described in README.md, matching reference.c behavior and the protected main.rs integration. Read relevant existing files, implement real general behavior using std only, preserve APIs, and finish only after your owned work is complete. Never edit protected files. Eight workers own disjoint modules; the coordinator integrates and repairs until the protected acceptance checker passes. Single-agent mode must implement all eight modules and the same complete application. Success is all11 protected acceptance checks passing, not a claim in model text.",
+  "editable_files": [
+    "money.rs",
+    "date.rs",
+    "csv.rs",
+    "labels.rs",
+    "tags.rs",
+    "filter.rs",
+    "summary.rs",
+    "audit.rs"
+  ],
+  "workers": [
+    {
+      "name": "money",
+      "file": "money.rs",
+      "brief": "Port strict money parsing/formatting from reference.c into money.rs. Exact i64 cents, no floats, strict decimal grammar, overflow rejection, canonical two decimals including i64::MIN."
+    },
+    {
+      "name": "date",
+      "file": "date.rs",
+      "brief": "Port Gregorian ISO date validation into date.rs. Exact ASCII YYYY-MM-DD, years1..9999, month lengths and century leap rules."
+    },
+    {
+      "name": "csv",
+      "file": "csv.rs",
+      "brief": "Port the one-record CSV parser into csv.rs. Preserve empty fields/whitespace/UTF8, quoted commas and doubled quotes; reject stray or unmatched quotes, CR/LF and trailing material after closing quote."
+    },
+    {
+      "name": "labels",
+      "file": "labels.rs",
+      "brief": "Port vendor normalization into labels.rs: trim/collapse ASCII whitespace only, lowercase ASCII letters only, preserve non-ASCII characters."
+    },
+    {
+      "name": "tags",
+      "file": "tags.rs",
+      "brief": "Port tag parsing into tags.rs: semicolon split, ASCII trim/lowercase, skip empties, reject labels outside ASCII alnum/_/-, sorted deduplicated result."
+    },
+    {
+      "name": "filter",
+      "file": "filter.rs",
+      "brief": "Port inclusive date-range selection into filter.rs, preserving input order and cloning records. Use the stable date::valid API; another worker ports date.rs. Invalid/reversed bounds return empty."
+    },
+    {
+      "name": "summary",
+      "file": "summary.rs",
+      "brief": "Port vendor aggregation into summary.rs. Group exact vendor strings, count and sum cents, retain zero totals, sort lexicographically, leave original records unchanged."
+    },
+    {
+      "name": "audit",
+      "file": "audit.rs",
+      "brief": "Port stable first-wins ID deduplication into audit.rs. Case-sensitive identity, preserve first records in order, sorted unique duplicate IDs as second return value; do not mutate input."
+    }
+  ],
+  "read_only_files": [
+    "README.md",
+    "main.rs",
+    "reference.c",
+    "fixtures/ledger.csv"
+  ],
+  "protected_paths": [
+    "README.md",
+    "main.rs",
+    "reference.c",
+    "fixtures/ledger.csv"
+  ],
+  "validation_command": [
+    "python3",
+    "{task_dir}/check.py",
+    "--workspace",
+    "{workspace}",
+    "--output",
+    "{output}"
+  ],
+  "validation_cwd": "{workspace}",
+  "success_field": "success",
+  "expected_checks": 11,
+  "validation_note": "Checker stays outside workspace. It compiles workspace/main.rs plus protected module API probes with rustc, and canonical task fixture/reference.c with cc in temporary directories. No network/dependencies. JSON stdout and optional output JSON, exit0 only when all11groups pass."
+}

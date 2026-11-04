@@ -15,10 +15,11 @@ def run(*args, cwd=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skip-install", action="store_true")
+    parser.add_argument("--patch", type=Path, help="Use the frozen trial patch in a fresh checkout")
     args = parser.parse_args()
     pin = json.loads((HERE / "UPSTREAM.json").read_text())
     target = HERE / "vendor/pi"
-    patch = HERE / "fleetpi.patch"
+    patch = args.patch.resolve() if args.patch else HERE / "fleetpi.patch"
     if not patch.exists():
         raise SystemExit("Missing fleetpi.patch; integration source export is incomplete")
     expected = json.loads((HERE / "model-data.json").read_text())["sha256"]

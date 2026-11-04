@@ -18,7 +18,7 @@ For the eight-agent festival website demo:
 ./fleetpi demo festival --mode fleet8
 ```
 
-Use Ctrl-C once to cancel and save progress, then `--resume --output <same-directory>` to continue. Each agent has an actual Pi session and a JSON progress ledger. Completed rounds and page checks are recorded. A second Ctrl-C forces termination. Only the process group started by this invocation is stopped.
+Use Ctrl-C once to cancel and save progress, then `--resume --output <same-directory>` to continue. Each agent has an actual Pi session and a JSON progress ledger. Completed rounds and page checks are recorded with atomic state publication. Verified page status is invalidated when content changes. Current-attempt and cumulative usage are reported separately; crash-incomplete accounting stays explicitly unknown. Overall success requires every staged round to pass. A second Ctrl-C forces termination. Only the process group started by this invocation is stopped.
 
 ## Compare and record
 
@@ -28,6 +28,8 @@ The optional vLLM-Metal baseline needs the locally installed 0.32.0 package. Its
 python3 integrations/fleetpi/configure.py
 ./fleetpi demo festival --compare
 ```
+
+For an interrupted comparison, resume its individual case with `--mode <mode> --resume --output <case-directory>`; the completed case outputs remain intact.
 
 The comparison runs one engine at a time: FleetPi/Fleet with eight agents, upstream Pi/vLLM with eight agents, and upstream Pi/vLLM with one agent. All use the same checkpoint, file tools, task facts, protected browser checker and common token limits. vLLM retains its native default caching and batching. Required model/tool/reasoning parser flags are compatibility settings.
 
@@ -54,6 +56,6 @@ Baseline modes use the same guarded Pi built-in read/edit/write/ls tools and che
 
 ## Reproducible fork
 
-`UPSTREAM.json` pins the MIT-licensed Pi revision. `fleetpi.patch` contains the new workspace package and build integration; upstream core files are unchanged. `bootstrap.py` clones that revision, checks/applies the patch, verifies the offline model-catalog archive and builds the fork. Vendor source, dependencies, generated files and local machine configuration are ignored. The upstream MIT notice remains in the checkout and is copied to `PI-LICENSE` here.
+`UPSTREAM.json` pins the MIT-licensed Pi revision. `fleetpi.patch` contains the new workspace package and build integration; upstream core files are unchanged. `bootstrap.py` clones that revision, checks/applies the patch, verifies the offline model-catalog archive and builds the fork. Vendor source, dependencies, generated files and local machine configuration are ignored. In a fresh checkout, `bootstrap.py --patch results/fleetpi/frozen/fleetpi-trial.patch` reconstructs the measured harness version instead of subsequent robustness fixes. The upstream MIT notice remains in the checkout and is copied to `PI-LICENSE` here.
 
 Model-free tests live in the fork's `packages/fleetpi/test`. They exercise real Pi sessions against a faux provider, compaction/restart, guarded tool edits, admission/cancellation, immutable checker snapshots and full three-round orchestration. `scripts/smoke.mjs` separately checks two concurrent real Glimmer agents on either engine before the timed trial.

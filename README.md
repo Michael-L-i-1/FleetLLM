@@ -88,6 +88,24 @@ throughput, `--share`, `--draft`, `--check`, `--check-spec`), `./build/fleet ppl
 GGUF file, a safetensors directory, or an alias (`llama8b-mlx4`, `llama1b-mlx4`,
 `glimmer`, `glimmer-mlx4`, `glimmer-draft`, `qwen3`) resolved in the Hugging Face cache.
 
+## FleetPi coding-agent demo
+
+[FleetPi](integrations/fleetpi/README.md) combines a pinned Pi coding-agent fork
+with Fleet request admission, shared project context, durable progress and a
+terminal dashboard. The current demo targets Muse Glimmer 30B MLX four-bit on a
+48 GB Apple silicon Mac. It uses real Pi file tools and browser checks across
+an eight-page website with three stakeholder rounds.
+
+```sh
+python3 integrations/fleetpi/bootstrap.py
+./fleetpi                          # starts Fleet and opens Pi
+./fleetpi demo festival            # eight page agents with live progress
+```
+
+See the integration guide for the default vLLM comparison, recording and resume
+commands. The [demo results](results/fleetpi/README.md) preserve the exact trial
+configuration, output sites, metrics and actual development recording.
+
 ## Repository
 
 ```

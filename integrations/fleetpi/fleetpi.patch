@@ -58,49 +58,32 @@ index badb6e9..b8d5123 100644
  		"build:native:win32": "npm --prefix packages/tui run build:native:win32",
 diff --git a/packages/fleetpi/README.md b/packages/fleetpi/README.md
 new file mode 100644
-index 0000000..0cff5c8
+index 0000000..0e05231
 --- /dev/null
 +++ b/packages/fleetpi/README.md
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,22 @@
 +# FleetPi
 +
-+Pi coding agents on the Fleet engine, plus the Lantern Commons festival demo and a
-+fair three-way comparison against vLLM. Contract: `integrations/fleetpi/INTERFACE.md`
-+in the parent repository.
++A private workspace in the pinned Pi fork: real coding-agent sessions on Fleet, with hardware-aware request admission, durable progress and a terminal festival demo. Upstream Pi core is unchanged.
 +
-+```
-+fleetpi                                  start Fleet, open Pi interactively
-+fleetpi demo festival                    eight Pi agents on Fleet (fleet8)
-+fleetpi demo festival --compare          fleet8, then vllm8, then vllm1
-+```
++The supported demo is Muse Glimmer 30B MLX affine four-bit on a 48 GB Apple silicon Mac. Common limits are 96,000 context tokens and 4,096 output tokens per response. The same real Pi file tools, browser tests and task facts are used by Fleet8, default-performance vLLM8 and vLLM1. Required Glimmer compatibility corrections are isolated from the installed backend.
 +
-+## Layout
++From the FleetLLM repository root:
 +
-+| Module | Concept |
-+|---|---|
-+| `task/festival-task.ts` | protected manifest, Pi-adapted instructions, page ownership per mode |
-+| `task/prompts.ts` | exact round, repair and resume prompt text |
-+| `workspace/path-guard.ts` | fs guard beneath Pi's real read/edit/write/ls (all modes) |
-+| `workspace/workspace.ts` | workspace copy and protected-file hashes |
-+| `checker/checker-service.ts` | protected `check.py` on snapshots, memoized, bounded |
-+| `tools/common-tools.ts` | guarded built-in tools + `check_site` (all modes, no bash) |
-+| `model/local-model.ts` | common `models.json` registration |
-+| `session/open-session.ts` | one isolated Pi SDK session per agent |
-+| `ledger/progress-ledger.ts` | durable pages/checks/pending task (file + session mirror) |
-+| `fleet/admission-queue.ts` | decode-slot queue: priority, aging, KV pressure, abort-safe |
-+| `fleet/fleet-telemetry.ts` | `/v1/fleet/capabilities` and `/v1/fleet/stats` |
-+| `fleet/fleet-extension.ts` | enhanced-only Pi extension: admission + ledger re-injection |
-+| `engine/*` | hardware profile and single-server supervisor |
-+| `run/*` | per-agent runtime, round orchestration, events, accounting |
-+| `ui/dashboard.ts` | live terminal view driven by events |
-+
-+## Tests (model-free)
-+
-+```
-+node ../../node_modules/vitest/dist/cli.js --run
++```sh
++python3 integrations/fleetpi/bootstrap.py
++make -j6
++./fleetpi
++./fleetpi demo festival
 +```
 +
-+Faux Pi provider and a fake checker command; no network, GPU or model.
++runFestival() exposes the same runner programmatically without starting a server. The CLI owns and stops one engine process group. beforeRun supports an awaited initial screenshot before any inference. Ctrl-C saves progress; resume uses atomic state, real Pi SessionManager transcripts and a hash-validated ledger. Interrupted comparisons resume one case with its explicit mode/output directory.
++
++Overall workflow success requires every staged round to pass. finalPassed separately reports final cumulative acceptance. totals covers the current attempt; runTotals is cumulative only with complete accounting. Unknown crash intervals are labeled, not invented. Output/task-wall throughput includes tools and checks. Buffered tool delivery is not GPU decode speed; stream metrics are null.
++
++Model-free tests exercise guarded edits, shared context, admission/tool waits, compaction/restart, immutable checker evidence, process-tree cancellation, provider errors and accounting. Run npm test --workspace @earendil-works/fleetpi from the fork root.
++
++See the host repository's integrations/fleetpi/README.md and INTERFACE.md for commands, API contracts, exact baselines, recording and provenance. Measured source is frozen separately from later reliability fixes.
 diff --git a/packages/fleetpi/package.json b/packages/fleetpi/package.json
 new file mode 100644
 index 0000000..a526f45
@@ -151,14 +134,14 @@ index 0000000..a526f45
 +}
 diff --git a/packages/fleetpi/src/checker/checker-service.ts b/packages/fleetpi/src/checker/checker-service.ts
 new file mode 100644
-index 0000000..ecb0b6b
+index 0000000..edd7bbf
 --- /dev/null
 +++ b/packages/fleetpi/src/checker/checker-service.ts
-@@ -0,0 +1,251 @@
+@@ -0,0 +1,389 @@
 +// Runs the protected browser checker on immutable workspace snapshots, shared by every mode.
 +
 +import { spawn } from "node:child_process";
-+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
++import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 +import { dirname, join } from "node:path";
 +import { type FestivalTask, pageNameOf } from "../task/festival-task.ts";
 +import { type ProtectedSnapshot, pageHashes, sha256, verifyProtectedFiles } from "../workspace/workspace.ts";
@@ -206,6 +189,7 @@ index 0000000..ecb0b6b
 +	concurrency: number;
 +	command?: CheckCommand;
 +	python?: string;
++	onExecution?: (execution: { resultPath: string; seconds: number; aborted: boolean }) => void;
 +}
 +
 +interface RawCheckResult {
@@ -214,45 +198,89 @@ index 0000000..ecb0b6b
 +	failures?: string[];
 +}
 +
++interface CheckJob {
++	promise: Promise<CheckOutcome>;
++	controller: AbortController;
++	subscribers: number;
++	settled: boolean;
++}
++
 +/** Checker with a common concurrency limit and memoization by (page hashes, round). */
 +export class CheckerService {
 +	private readonly options: CheckerServiceOptions;
 +	private readonly command: CheckCommand;
-+	private readonly memo = new Map<string, Promise<CheckOutcome>>();
++	private readonly memo = new Map<string, CheckJob>();
 +	private readonly waiters: Array<() => void> = [];
 +	private running = 0;
-+	private sequence = 0;
++	private executions = 0;
++	private executionSeconds = 0;
++	private readonly pending = new Set<Promise<CheckOutcome>>();
 +
 +	constructor(options: CheckerServiceOptions) {
 +		this.options = options;
 +		this.command = options.command ?? pythonCheckCommand(options.python ?? "python3");
 +	}
 +
++	/** Actual command executions, counted once regardless of memo subscribers or agent count. */
++	accounting(): { checkerRuns: number; checkerSeconds: number } {
++		return { checkerRuns: this.executions, checkerSeconds: this.executionSeconds };
++	}
++
++	/** Wait until cancelled commands have exited before final accounting and disposal. */
++	async drain(): Promise<void> {
++		await Promise.allSettled(this.pending);
++	}
++
 +	/** Check the current workspace for a round; identical content shares one evaluation. */
 +	async check(round: number, label: string, signal?: AbortSignal): Promise<CheckOutcome> {
++		signal?.throwIfAborted();
 +		const { task, workspace, protectedSnapshot } = this.options;
 +		verifyProtectedFiles(task, workspace, protectedSnapshot);
 +		// Copy first, then hash the copy: the memo key and the checked bytes are the same
 +		// immutable snapshot even if an agent writes while this check is being prepared.
-+		const id = `${String(++this.sequence).padStart(4, "0")}-r${round}-${label}`;
-+		const base = join(this.options.outputDir, "checks", id);
++		const directory = join(this.options.outputDir, "checks");
++		mkdirSync(directory, { recursive: true });
++		// Exclusive creation prevents resume from replacing or deleting previous evidence.
++		const base = mkdtempSync(join(directory, `r${round}-${label}-`));
 +		const snapshot = join(base, "workspace");
 +		this.copySnapshot(snapshot);
 +		const hashes = pageHashes(task, snapshot);
 +		const key = sha256(JSON.stringify({ round, hashes }));
 +		const existing = this.memo.get(key);
-+		if (existing) {
++		if (existing && !existing.controller.signal.aborted) {
 +			rmSync(base, { recursive: true, force: true });
-+			return { ...(await existing), memoized: true };
++			return { ...(await this.subscribe(existing, signal)), memoized: true };
 +		}
-+		const pending = this.evaluate(round, base, snapshot, hashes, signal);
-+		this.memo.set(key, pending);
++		const controller = new AbortController();
++		const pending = this.evaluate(round, base, snapshot, hashes, controller.signal);
++		this.pending.add(pending);
++		const job: CheckJob = { promise: pending, controller, subscribers: 0, settled: false };
++		this.memo.set(key, job);
 +		// Failed or aborted evaluations must not poison later identical requests.
 +		pending.then(
-+			(outcome) => outcome.infrastructureError && this.memo.delete(key),
-+			() => this.memo.delete(key),
++			(outcome) => {
++				this.pending.delete(pending);
++				job.settled = true;
++				if (outcome.infrastructureError && this.memo.get(key) === job) this.memo.delete(key);
++			},
++			() => {
++				this.pending.delete(pending);
++				job.settled = true;
++				if (this.memo.get(key) === job) this.memo.delete(key);
++			},
 +		);
-+		return pending;
++		return this.subscribe(job, signal);
++	}
++
++	private async subscribe(job: CheckJob, signal?: AbortSignal): Promise<CheckOutcome> {
++		job.subscribers++;
++		try {
++			return await abortable(job.promise, signal);
++		} finally {
++			job.subscribers--;
++			// One cancelled agent must not kill a check another agent still needs.
++			if (job.subscribers === 0 && !job.settled) job.controller.abort();
++		}
 +	}
 +
 +	private async evaluate(
@@ -262,13 +290,18 @@ index 0000000..ecb0b6b
 +		hashes: Record<string, string>,
 +		signal?: AbortSignal,
 +	): Promise<CheckOutcome> {
-+		await this.acquire();
++		await this.acquire(signal);
 +		const started = performance.now();
++		const resultPath = join(base, "outcome.json");
++		let executed = false;
 +		try {
++			signal?.throwIfAborted();
 +			const output = join(base, "result");
 +			let raw: unknown;
 +			let infrastructureError: string | undefined;
 +			try {
++				executed = true;
++				this.executions++;
 +				raw = await this.command({
 +					taskDir: this.options.task.taskDir,
 +					workspace: snapshot,
@@ -277,19 +310,26 @@ index 0000000..ecb0b6b
 +					signal,
 +				});
 +			} catch (error) {
++				signal?.throwIfAborted();
 +				infrastructureError = error instanceof Error ? error.message : String(error);
 +			}
++			signal?.throwIfAborted();
 +			const outcome = summarize(this.options.task, round, raw, infrastructureError);
 +			const result: CheckOutcome = {
 +				...outcome,
 +				pageHashes: hashes,
 +				seconds: (performance.now() - started) / 1000,
-+				resultPath: join(base, "outcome.json"),
++				resultPath,
 +				memoized: false,
 +			};
 +			writeFileSync(result.resultPath, `${JSON.stringify(result, null, 2)}\n`);
 +			return result;
 +		} finally {
++			if (executed) {
++				const seconds = (performance.now() - started) / 1000;
++				this.executionSeconds += seconds;
++				this.options.onExecution?.({ resultPath, seconds, aborted: signal?.aborted ?? false });
++			}
 +			this.release();
 +		}
 +	}
@@ -304,19 +344,43 @@ index 0000000..ecb0b6b
 +		}
 +	}
 +
-+	private async acquire(): Promise<void> {
++	private async acquire(signal?: AbortSignal): Promise<void> {
++		signal?.throwIfAborted();
 +		if (this.running < this.options.concurrency) {
 +			this.running++;
 +			return;
 +		}
-+		await new Promise<void>((resolve) => this.waiters.push(resolve));
-+		this.running++;
++		let grant: (() => void) | undefined;
++		const ready = new Promise<void>((resolve) => {
++			grant = resolve;
++			this.waiters.push(resolve);
++		});
++		try {
++			await abortable(ready, signal);
++		} catch (error) {
++			const index = grant ? this.waiters.indexOf(grant) : -1;
++			if (index >= 0) this.waiters.splice(index, 1);
++			else this.release(); // The permit was transferred just before the abort.
++			throw error;
++		}
 +	}
 +
 +	private release(): void {
-+		this.running--;
-+		this.waiters.shift()?.();
++		const next = this.waiters.shift();
++		if (next)
++			next(); // Transfer the reserved slot; no new caller can overtake the waiter.
++		else this.running--;
 +	}
++}
++
++function abortable<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
++	if (!signal) return promise;
++	if (signal.aborted) return Promise.reject(signal.reason);
++	return new Promise<T>((resolve, reject) => {
++		const aborted = () => reject(signal.reason);
++		signal.addEventListener("abort", aborted, { once: true });
++		promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", aborted));
++	});
 +}
 +
 +/** Group raw checker output by page; checks without a page prefix are global. */
@@ -372,32 +436,89 @@ index 0000000..ecb0b6b
 +}
 +
 +const CHECK_TIMEOUT_MS = 180_000;
++const CHECK_TERMINATION_GRACE_MS = 1_000;
 +
 +/** The production checker: python3 check.py --workspace W --output O --round R. */
 +export function pythonCheckCommand(python: string): CheckCommand {
 +	return ({ taskDir, workspace, output, round, signal }) =>
 +		new Promise((resolve, reject) => {
++			signal?.throwIfAborted();
++			const processGroup = process.platform !== "win32";
 +			const child = spawn(
 +				python,
 +				[join(taskDir, "check.py"), "--workspace", workspace, "--output", output, "--round", String(round)],
-+				{ cwd: taskDir, stdio: ["ignore", "pipe", "pipe"], signal, timeout: CHECK_TIMEOUT_MS },
++				// Descendants inherit this owned group, including check.py's Node/browser children.
++				{ cwd: taskDir, stdio: ["ignore", "pipe", "pipe"], detached: processGroup },
 +			);
 +			let stdout = "";
 +			let stderr = "";
++			let spawnError: Error | undefined;
++			let stopping = false;
++			let stopReason: unknown;
++			let closed = false;
++			let exitCode: number | null = null;
++			let escalation: ReturnType<typeof setTimeout> | undefined;
++			const timeout = setTimeout(
++				() => stop(new Error(`checker timed out after ${CHECK_TIMEOUT_MS} ms`)),
++				CHECK_TIMEOUT_MS,
++			);
++			const aborted = () => stop(signal?.reason);
++
++			function signalOwnedProcesses(killSignal: NodeJS.Signals): void {
++				try {
++					if (processGroup && child.pid) process.kill(-child.pid, killSignal);
++					else child.kill(killSignal); // Windows fallback: Node cannot signal POSIX groups.
++				} catch (error) {
++					if ((error as NodeJS.ErrnoException).code !== "ESRCH") spawnError = error as Error;
++				}
++			}
++
++			function stop(reason: unknown): void {
++				if (stopping) return;
++				stopping = true;
++				stopReason = reason;
++				clearTimeout(timeout);
++				signal?.removeEventListener("abort", aborted);
++				signalOwnedProcesses("SIGTERM");
++				// Keep escalation even if Python exits first: an ignored TERM in a browser
++				// must not survive merely because its parent closed its output pipes.
++				escalation = setTimeout(() => {
++					escalation = undefined;
++					signalOwnedProcesses("SIGKILL");
++					if (closed) finish();
++				}, CHECK_TERMINATION_GRACE_MS);
++			}
++
++			function finish(): void {
++				clearTimeout(timeout);
++				if (escalation) clearTimeout(escalation);
++				signal?.removeEventListener("abort", aborted);
++				if (stopping || spawnError) {
++					reject(spawnError ?? stopReason);
++					return;
++				}
++				const line = stdout.trim().split("\n").at(-1) ?? "";
++				try {
++					resolve(JSON.parse(line));
++				} catch {
++					reject(new Error(`checker exited ${exitCode} without JSON: ${stderr.slice(-400)}`));
++				}
++			}
++
++			signal?.addEventListener("abort", aborted, { once: true });
 +			child.stdout.on("data", (chunk) => {
 +				stdout += chunk;
 +			});
 +			child.stderr.on("data", (chunk) => {
 +				stderr += chunk;
 +			});
-+			child.on("error", reject);
-+			child.on("close", (code) => {
-+				const line = stdout.trim().split("\n").at(-1) ?? "";
-+				try {
-+					resolve(JSON.parse(line));
-+				} catch {
-+					reject(new Error(`checker exited ${code} without JSON: ${stderr.slice(-400)}`));
-+				}
++			child.once("error", (error) => {
++				spawnError = error;
++			});
++			child.once("close", (code) => {
++				closed = true;
++				exitCode = code;
++				if (!escalation) finish();
 +			});
 +		});
 +}
@@ -408,10 +529,10 @@ index 0000000..ecb0b6b
 +}
 diff --git a/packages/fleetpi/src/cli.ts b/packages/fleetpi/src/cli.ts
 new file mode 100644
-index 0000000..b1a6a9b
+index 0000000..409b8fd
 --- /dev/null
 +++ b/packages/fleetpi/src/cli.ts
-@@ -0,0 +1,283 @@
+@@ -0,0 +1,296 @@
 +#!/usr/bin/env node
 +// fleetpi command line: interactive Pi on Fleet, and the festival demo / three-way comparison.
 +
@@ -576,9 +697,16 @@ index 0000000..b1a6a9b
 +	const mode = (values.mode ?? "fleet8") as FestivalMode;
 +	if (!MODES.includes(mode)) return { error: `unknown mode ${values.mode}` };
 +	if (values.compare && values.mode) return { error: "--compare runs all three modes; omit --mode" };
++	if (values.compare && values.resume)
++		return {
++			error: "Resume the interrupted case with --mode fleet8|vllm8|vllm1 --resume --output <case-directory>; completed comparison cases stay preserved",
++		};
 +	if (values.compare && values["base-url"]) return { error: "--compare owns its servers; omit --base-url" };
 +	if (values["base-url"] && !values.model) return { error: "--base-url requires --model" };
 +	if (values.resume && !values.output) return { error: "--resume requires --output" };
++	const port = Number(values.port ?? 8090);
++	if (!Number.isInteger(port) || port < 1 || port > 65535)
++		return { error: "--port must be an integer from 1 to 65535" };
 +	const repoRoot = resolve(values["repo-root"] ?? defaultRepoRoot());
 +	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 +	return {
@@ -586,7 +714,7 @@ index 0000000..b1a6a9b
 +		output: resolve(values.output ?? join(repoRoot, "results/fleetpi/runs", stamp)),
 +		taskDir: resolve(values["task-dir"] ?? join(repoRoot, "demos/agent-task-bench/tasks/festival-site")),
 +		repoRoot,
-+		port: Number(values.port ?? 8090),
++		port,
 +		baseUrl: values["base-url"],
 +		model: values.model,
 +		fleetBin: values["fleet-bin"],
@@ -611,7 +739,7 @@ index 0000000..b1a6a9b
 +			modelPath: options.modelPath,
 +		});
 +	}
-+	return vllmServerSpec({ repoRoot: options.repoRoot, configPath: options.vllmConfig, logPath });
++	return vllmServerSpec({ repoRoot: options.repoRoot, configPath: options.vllmConfig, logPath, port: options.port });
 +}
 +
 +interface Ui {
@@ -651,6 +779,12 @@ index 0000000..b1a6a9b
 +			mode,
 +			{
 +				passed: result.passed,
++				finalPassed: result.finalPassed,
++				totalsScope: result.totalsScope,
++				attemptId: result.attemptId,
++				runTotals: result.runTotals,
++				accountingComplete: result.accountingComplete,
++				unknownWallInterval: result.unknownWallInterval,
 +				wallSeconds: result.totals.wallSeconds,
 +				outputTokens: result.totals.outputTokens,
 +				promptTokens: result.totals.promptTokens,
@@ -676,7 +810,7 @@ index 0000000..b1a6a9b
 +			.map((round) => `r${round.round} ${round.checksPassed}/${round.checksTotal}`)
 +			.join("  ");
 +		process.stdout.write(
-+			`${mode.padEnd(7)} ${result.passed ? "PASSED" : "not passed"}  ${result.totals.wallSeconds.toFixed(0)}s  ${rounds}  ${result.totals.workflowOutputTokensPerSecond.toFixed(1)} workflow output tok/s  ${result.outputDir}\n`,
++			`${mode.padEnd(7)} ${result.passed ? "PASSED" : "not passed"}  ${result.totals.wallSeconds.toFixed(0)}s this attempt  ${rounds}  ${result.totals.workflowOutputTokensPerSecond.toFixed(1)} workflow output tok/s  ${result.outputDir}\n`,
 +		);
 +	}
 +}
@@ -697,10 +831,10 @@ index 0000000..b1a6a9b
 +);
 diff --git a/packages/fleetpi/src/engine/engine-supervisor.ts b/packages/fleetpi/src/engine/engine-supervisor.ts
 new file mode 100644
-index 0000000..fae20aa
+index 0000000..7ab7888
 --- /dev/null
 +++ b/packages/fleetpi/src/engine/engine-supervisor.ts
-@@ -0,0 +1,188 @@
+@@ -0,0 +1,204 @@
 +// Owns exactly one model server process: refuses occupied ports, waits for health, stops the whole group.
 +
 +import { type ChildProcess, spawn } from "node:child_process";
@@ -869,9 +1003,25 @@ index 0000000..fae20aa
 +];
 +
 +/** vLLM server spec from the existing default config, adding the required native-tool flags. */
-+export function vllmServerSpec(options: { repoRoot: string; configPath: string; logPath: string }): ServerSpec {
++export function vllmServerSpec(options: {
++	repoRoot: string;
++	configPath: string;
++	logPath: string;
++	port?: number;
++}): ServerSpec {
 +	const config = JSON.parse(readFileSync(options.configPath, "utf8")) as VllmConfigFile;
 +	const [command, ...args] = config.command;
++	let baseUrl = config.base ?? "http://127.0.0.1:8090/v1";
++	if (options.port !== undefined) {
++		if (!Number.isInteger(options.port) || options.port < 1 || options.port > 65535)
++			throw new Error("port must be an integer from 1 to 65535");
++		const index = args.indexOf("--port");
++		if (index >= 0) args[index + 1] = String(options.port);
++		else args.push("--port", String(options.port));
++		const url = new URL(baseUrl);
++		url.port = String(options.port);
++		baseUrl = url.toString().replace(/\/$/, "");
++	}
 +	for (const [flag, value] of VLLM_TOOL_FLAGS) {
 +		if (args.includes(flag)) continue;
 +		args.push(flag);
@@ -882,7 +1032,7 @@ index 0000000..fae20aa
 +		command,
 +		args,
 +		cwd: options.repoRoot,
-+		baseUrl: config.base ?? "http://127.0.0.1:8090/v1",
++		baseUrl,
 +		logPath: options.logPath,
 +		env: config.env,
 +		unsetEnv: config.unset_env,
@@ -1560,15 +1710,18 @@ index 0000000..8d4c8c6
 +}
 diff --git a/packages/fleetpi/src/ledger/progress-ledger.ts b/packages/fleetpi/src/ledger/progress-ledger.ts
 new file mode 100644
-index 0000000..3425114
+index 0000000..852ab40
 --- /dev/null
 +++ b/packages/fleetpi/src/ledger/progress-ledger.ts
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,269 @@
 +// Durable per-agent progress (completed pages, checks, pending task) that survives compaction and restart.
 +
-+import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
++import { existsSync, readFileSync } from "node:fs";
++import { join } from "node:path";
 +import type { SessionManager } from "@earendil-works/pi-coding-agent";
 +import type { CheckOutcome } from "../checker/checker-service.ts";
++import { writeJsonAtomic } from "../run/atomic-json.ts";
++import { sha256 } from "../workspace/workspace.ts";
 +
 +/** Custom session entry type carrying ledger snapshots inside the Pi session file. */
 +export const LEDGER_ENTRY_TYPE = "fleetpi-ledger";
@@ -1580,6 +1733,8 @@ index 0000000..3425114
 +export interface PageProgress {
 +	passedRound: number | null;
 +	sha256: string | null;
++	/** True only while the current bytes still match the checked snapshot. */
++	verified: boolean;
 +	failures: string[];
 +}
 +
@@ -1604,7 +1759,7 @@ index 0000000..3425114
 +
 +/** Serialized ledger. */
 +export interface LedgerState {
-+	version: 1;
++	version: 2;
 +	agentId: string;
 +	ownedFiles: string[];
 +	round: number;
@@ -1613,6 +1768,8 @@ index 0000000..3425114
 +	pendingTask: PendingTask | null;
 +	compactions: number;
 +	sessionFile: string | null;
++	turnsThisRound: number;
++	repairsThisRound: number;
 +}
 +
 +const MAX_CHECKS = 24;
@@ -1621,6 +1778,7 @@ index 0000000..3425114
 +export class ProgressLedger {
 +	readonly path: string;
 +	private current: LedgerState;
++	private workspace: string | undefined;
 +
 +	constructor(path: string, state: LedgerState) {
 +		this.path = path;
@@ -1630,10 +1788,10 @@ index 0000000..3425114
 +	/** A fresh ledger for an agent. */
 +	static create(path: string, agentId: string, ownedFiles: readonly string[]): ProgressLedger {
 +		const pages = Object.fromEntries(
-+			ownedFiles.map((file) => [file, { passedRound: null, sha256: null, failures: [] }]),
++			ownedFiles.map((file) => [file, { passedRound: null, sha256: null, verified: false, failures: [] }]),
 +		);
 +		return new ProgressLedger(path, {
-+			version: 1,
++			version: 2,
 +			agentId,
 +			ownedFiles: [...ownedFiles],
 +			round: 0,
@@ -1642,6 +1800,8 @@ index 0000000..3425114
 +			pendingTask: null,
 +			compactions: 0,
 +			sessionFile: null,
++			turnsThisRound: 0,
++			repairsThisRound: 0,
 +		});
 +	}
 +
@@ -1649,7 +1809,7 @@ index 0000000..3425114
 +	static load(path: string): ProgressLedger | undefined {
 +		if (!existsSync(path)) return undefined;
 +		const state = JSON.parse(readFileSync(path, "utf8")) as LedgerState;
-+		if (state.version !== 1) throw new Error(`unsupported ledger version in ${path}`);
++		if (state.version !== 2) throw new Error(`unsupported ledger version in ${path}`);
 +		return new ProgressLedger(path, state);
 +	}
 +
@@ -1658,9 +1818,45 @@ index 0000000..3425114
 +		return this.current;
 +	}
 +
++	/** Bind live content so context summaries cannot advertise stale passing checks. */
++	bindWorkspace(workspace: string): void {
++		this.workspace = workspace;
++		this.refreshVerification();
++	}
++
++	/** A write invalidates the checked status until the new bytes are evaluated. */
++	invalidate(file: string): void {
++		const page = this.current.pages[file];
++		if (!page?.verified) return;
++		this.current = { ...this.current, pages: { ...this.current.pages, [file]: { ...page, verified: false } } };
++		this.save();
++	}
++
++	/** Reset durable budgets only when releasing a new round. */
++	startRound(): void {
++		this.current = { ...this.current, turnsThisRound: 0, repairsThisRound: 0 };
++		this.save();
++	}
++
++	/** Persist a completed assistant turn before another request can be admitted. */
++	recordTurns(turns: number): void {
++		this.current = { ...this.current, turnsThisRound: turns };
++		this.save();
++	}
++
 +	/** Record that a round or repair task was issued. */
 +	setPending(task: PendingTask): void {
-+		this.current = { ...this.current, round: Math.max(this.current.round, task.round), pendingTask: task };
++		// Replaying the pending repair on resume consumes its original repair slot.
++		const replay =
++			this.current.pendingTask?.issuedAtUnix === task.issuedAtUnix &&
++			this.current.pendingTask.round === task.round &&
++			this.current.pendingTask.kind === task.kind;
++		this.current = {
++			...this.current,
++			round: Math.max(this.current.round, task.round),
++			pendingTask: task,
++			repairsThisRound: this.current.repairsThisRound + (task.kind === "repair" && !replay ? 1 : 0),
++		};
 +		this.save();
 +	}
 +
@@ -1677,13 +1873,14 @@ index 0000000..3425114
 +			const page = outcome.pages[file];
 +			const previous = pages[file];
 +			pages[file] = page.passed
-+				? { passedRound: outcome.round, sha256: hashes[file] ?? null, failures: [] }
++				? { passedRound: outcome.round, sha256: hashes[file] ?? null, verified: true, failures: [] }
 +				: {
 +						passedRound:
 +							previous.passedRound !== null && previous.passedRound < outcome.round
 +								? previous.passedRound
 +								: null,
 +						sha256: hashes[file] ?? null,
++						verified: false,
 +						failures: page.failures.slice(0, 20),
 +					};
 +		}
@@ -1697,6 +1894,7 @@ index 0000000..3425114
 +			atUnix: Date.now() / 1000,
 +		};
 +		this.current = { ...this.current, pages, checks: [...this.current.checks, check].slice(-MAX_CHECKS) };
++		this.refreshVerification();
 +		this.save();
 +	}
 +
@@ -1714,17 +1912,24 @@ index 0000000..3425114
 +
 +	/** Pages whose checks all passed in the current round. */
 +	completedPages(): string[] {
-+		return this.current.ownedFiles.filter((file) => this.current.pages[file].passedRound === this.current.round);
++		this.refreshVerification();
++		return this.current.ownedFiles.filter((file) => {
++			const page = this.current.pages[file];
++			return page.verified && page.passedRound === this.current.round;
++		});
 +	}
 +
 +	/** Model-facing summary used by the enhanced mode after compaction and on resume. */
 +	render(): string {
++		this.refreshVerification();
 +		const lines = [`Progress ledger for ${this.current.agentId} (authoritative, maintained by the FleetPi runner):`];
 +		lines.push(`Current round: ${this.current.round}. Owned files: ${this.current.ownedFiles.join(", ")}.`);
 +		for (const file of this.current.ownedFiles) {
 +			const page = this.current.pages[file];
 +			const status =
-+				page.passedRound === this.current.round ? "all checks pass this round" : "not yet passing this round";
++				page.verified && page.passedRound === this.current.round
++					? "all checks pass this round"
++					: "not verified for current bytes this round; recheck";
 +			lines.push(
 +				`- ${file}: ${status}${page.failures.length ? `; last failures: ${page.failures.slice(0, 6).join(" | ")}` : ""}`,
 +			);
@@ -1741,11 +1946,28 @@ index 0000000..3425114
 +		return lines.join("\n");
 +	}
 +
++	private refreshVerification(): void {
++		if (!this.workspace) return;
++		let changed = false;
++		const pages = { ...this.current.pages };
++		for (const file of this.current.ownedFiles) {
++			const page = pages[file];
++			if (!page.verified) continue;
++			const path = join(this.workspace, file);
++			if (!existsSync(path) || sha256(readFileSync(path)) !== page.sha256) {
++				pages[file] = { ...page, verified: false };
++				changed = true;
++			}
++		}
++		if (changed) {
++			this.current = { ...this.current, pages };
++			this.save();
++		}
++	}
++
 +	/** Atomically write the ledger file. */
 +	save(): void {
-+		const temporary = `${this.path}.tmp`;
-+		writeFileSync(temporary, `${JSON.stringify(this.current, null, 2)}\n`);
-+		renameSync(temporary, this.path);
++		writeJsonAtomic(this.path, this.current);
 +	}
 +}
 +
@@ -1840,10 +2062,10 @@ index 0000000..e8e4139
 +}
 diff --git a/packages/fleetpi/src/run/agent-runtime.ts b/packages/fleetpi/src/run/agent-runtime.ts
 new file mode 100644
-index 0000000..3cb2a1c
+index 0000000..b551411
 --- /dev/null
 +++ b/packages/fleetpi/src/run/agent-runtime.ts
-@@ -0,0 +1,289 @@
+@@ -0,0 +1,314 @@
 +// One agent: its guarded tools, Pi session, durable ledger and accounting, and task execution.
 +
 +import { existsSync, mkdirSync, readdirSync } from "node:fs";
@@ -1893,7 +2115,6 @@ index 0000000..3cb2a1c
 +	private session: AgentSession | undefined;
 +	private nextPriority: AdmissionPriority = "fresh";
 +	private turnLimited = false;
-+	private repairs = 0;
 +
 +	constructor(assignment: AgentAssignment, context: AgentContext, resume: boolean) {
 +		this.assignment = assignment;
@@ -1902,14 +2123,16 @@ index 0000000..3cb2a1c
 +		this.guard = new PathGuard(context.workspace, assignment.ownedFiles, {
 +			onDenied: (denial, operation) =>
 +				log.emit("guard_block", { agent: assignment.agentId, tool: operation, ...denial }),
-+			onWrite: (path, content, operation) =>
++			onWrite: (path, content, operation) => {
++				this.currentLedger.invalidate(path);
 +				log.emit("file_write", {
 +					agent: assignment.agentId,
 +					path,
 +					sha256: sha256(content),
 +					bytes: Buffer.byteLength(content),
 +					tool: operation,
-+				}),
++				});
++			},
 +		});
 +		mkdirSync(join(context.outputDir, "ledger"), { recursive: true });
 +		mkdirSync(this.sessionDir, { recursive: true });
@@ -1918,6 +2141,7 @@ index 0000000..3cb2a1c
 +		this.ledgerFromFile = loaded !== undefined;
 +		this.resume = resume;
 +		this.currentLedger = loaded ?? ProgressLedger.create(ledgerPath, assignment.agentId, assignment.ownedFiles);
++		this.currentLedger.bindWorkspace(context.workspace);
 +		this.observer = new SessionObserver({
 +			agentId: assignment.agentId,
 +			log,
@@ -1928,6 +2152,7 @@ index 0000000..3cb2a1c
 +				void this.session?.abort();
 +			},
 +			onCompaction: () => this.currentLedger.recordCompaction(),
++			onTurn: (turns) => this.currentLedger.recordTurns(turns),
 +		});
 +	}
 +
@@ -1948,7 +2173,7 @@ index 0000000..3cb2a1c
 +
 +	/** Repair prompts issued in the current round. */
 +	get repairsThisRound(): number {
-+		return this.repairs;
++		return this.ledger.state.repairsThisRound;
 +	}
 +
 +	/** The open Pi session. */
@@ -1979,40 +2204,62 @@ index 0000000..3cb2a1c
 +			const mirrored = latestLedgerEntry(this.session.sessionManager);
 +			if (mirrored) {
 +				this.currentLedger = new ProgressLedger(this.currentLedger.path, mirrored);
++				this.currentLedger.bindWorkspace(this.context.workspace);
 +				this.currentLedger.save();
 +			}
 +		}
 +		this.currentLedger.setSessionFile(this.session.sessionFile);
++		this.observer.view.turnsThisRound = this.ledger.state.turnsThisRound;
++		this.turnLimited = this.observer.view.turnsThisRound >= this.context.maxTurnsPerRound;
 +		this.observer.attach(this.session);
 +	}
 +
 +	/** Reset per-round counters when a new round is released. */
 +	startRound(): void {
++		this.ledger.startRound();
 +		this.observer.startTask();
 +		this.turnLimited = false;
-+		this.repairs = 0;
 +	}
 +
 +	/** Run one prompt to settlement (Pi's prompt() resolves after retries and recovery). */
-+	async runTask(task: PendingTask): Promise<TaskOutcome> {
++	async runTask(task: PendingTask, signal?: AbortSignal): Promise<TaskOutcome> {
 +		const session = this.piSession;
-+		if (task.kind === "repair") this.repairs++;
++		if (signal?.aborted) return "aborted";
++		if (this.turnLimited) return "turn_limit";
 +		this.nextPriority = task.kind === "repair" ? "repair" : "fresh";
 +		this.ledger.setPending(task);
 +		appendLedgerEntry(session.sessionManager, this.ledger);
 +		this.observer.setState("queued");
 +		const toolCallsBefore = this.observer.view.totals.toolCalls;
 +		let outcome: TaskOutcome = "settled";
++		const abort = () => {
++			void session.abort();
++		};
++		signal?.addEventListener("abort", abort, { once: true });
++		// Abort can arrive during Pi's asynchronous prompt preflight, before a run exists.
++		// Reapply it at agent_start so that preflight cannot resurrect cancelled work.
++		const unsubscribe = session.subscribe((event) => {
++			if (event.type === "agent_start" && signal?.aborted) abort();
++		});
 +		try {
 +			await session.prompt(task.prompt);
-+			if (this.turnLimited) outcome = "turn_limit";
++			if (signal?.aborted) outcome = "aborted";
++			else if (lastStopReason(session) === "error") {
++				outcome = "failed";
++				this.context.log.emit("agent_error", { agent: this.agentId, error: "provider settled with an error" });
++			} else if (this.turnLimited) outcome = "turn_limit";
 +			else if (lastStopReason(session) === "aborted") outcome = "aborted";
 +		} catch (error) {
-+			outcome = "failed";
-+			this.context.log.emit("agent_error", {
-+				agent: this.agentId,
-+				error: error instanceof Error ? error.message : String(error),
-+			});
++			outcome = signal?.aborted ? "aborted" : "failed";
++			if (outcome === "failed") {
++				this.context.log.emit("agent_error", {
++					agent: this.agentId,
++					error: error instanceof Error ? error.message : String(error),
++				});
++			}
++		} finally {
++			unsubscribe();
++			signal?.removeEventListener("abort", abort);
 +		}
 +		// A settled task without any tool call usually means the endpoint returned tool markup as
 +		// text (no native tool parsing). Report it loudly instead of scoring a silent no-op.
@@ -2048,7 +2295,6 @@ index 0000000..3cb2a1c
 +
 +	/** Record a check computed elsewhere (official round check). */
 +	recordCheck(outcome: CheckOutcome, official: boolean): void {
-+		this.observer.addCheckerRun(outcome.seconds, outcome.memoized);
 +		// Hashes of the checked snapshot, so the ledger never pairs a result with newer bytes.
 +		this.ledger.recordCheck(outcome, outcome.pageHashes, official);
 +		const owned = this.assignment.ownedFiles.map((file) => outcome.pages[file]);
@@ -2063,6 +2309,7 @@ index 0000000..3cb2a1c
 +			ownedChecksTotal: owned.reduce((sum, page) => sum + page.checksTotal, 0),
 +			seconds: outcome.seconds,
 +			memoized: outcome.memoized,
++			resultPath: outcome.resultPath,
 +			infrastructureError: outcome.infrastructureError ?? null,
 +		});
 +	}
@@ -2132,6 +2379,33 @@ index 0000000..3cb2a1c
 +		.filter((name) => name.endsWith(".jsonl"))
 +		.sort();
 +	return files.length > 0 ? join(dir, files[files.length - 1]) : undefined;
++}
+diff --git a/packages/fleetpi/src/run/atomic-json.ts b/packages/fleetpi/src/run/atomic-json.ts
+new file mode 100644
+index 0000000..fd3c5ae
+--- /dev/null
++++ b/packages/fleetpi/src/run/atomic-json.ts
+@@ -0,0 +1,21 @@
++// Publishes complete JSON files with a same-directory temporary file and atomic rename.
++
++import { randomUUID } from "node:crypto";
++import { existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
++
++/** Publish complete JSON; callers must already own the destination directory. */
++export function writeJsonAtomic(path: string, value: object): void {
++	const temporary = `${path}.${randomUUID()}.tmp`;
++	try {
++		writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" });
++		renameSync(temporary, path);
++	} finally {
++		rmSync(temporary, { force: true });
++	}
++}
++
++/** Publish one unique attempt ID, refusing accidental reuse by this single-writer runner. */
++export function writeAttemptAtomic(path: string, value: object): void {
++	if (existsSync(path)) throw new Error(`refusing to replace existing attempt: ${path}`);
++	writeJsonAtomic(path, value);
 +}
 diff --git a/packages/fleetpi/src/run/event-log.ts b/packages/fleetpi/src/run/event-log.ts
 new file mode 100644
@@ -2219,14 +2493,16 @@ index 0000000..dd0c984
 +}
 diff --git a/packages/fleetpi/src/run/festival-runner.ts b/packages/fleetpi/src/run/festival-runner.ts
 new file mode 100644
-index 0000000..b880f7f
+index 0000000..6cfc793
 --- /dev/null
 +++ b/packages/fleetpi/src/run/festival-runner.ts
-@@ -0,0 +1,492 @@
+@@ -0,0 +1,643 @@
 +// runFestival: releases the three stakeholder rounds to real Pi sessions in one of the three fair modes.
 +
++import { randomUUID } from "node:crypto";
 +import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 +import { join, resolve } from "node:path";
++import { isDeepStrictEqual } from "node:util";
 +import type { Api, Model } from "@earendil-works/pi-ai";
 +import type { ModelRuntime } from "@earendil-works/pi-coding-agent";
 +import { type CheckCommand, CheckerService, type CheckOutcome } from "../checker/checker-service.ts";
@@ -2243,11 +2519,19 @@ index 0000000..b880f7f
 +	roundPrompt,
 +	sharedProjectContext,
 +} from "../task/prompts.ts";
-+import { DEFAULT_LIMITS, type FestivalMode, type FleetEvent, type RunLimits, type Totals } from "../types.ts";
++import {
++	DEFAULT_LIMITS,
++	emptyTotals,
++	type FestivalMode,
++	type FleetEvent,
++	type RunLimits,
++	type Totals,
++} from "../types.ts";
 +import { prepareWorkspace, snapshotProtectedFiles, verifyProtectedFiles } from "../workspace/workspace.ts";
 +import { type AgentContext, AgentRuntime, type TaskOutcome } from "./agent-runtime.ts";
++import { writeAttemptAtomic, writeJsonAtomic } from "./atomic-json.ts";
 +import { EventLog } from "./event-log.ts";
-+import { type RoundResult, type RunState, RunStateStore } from "./run-state.ts";
++import { type RoundResult, type RunAttempt, type RunState, RunStateStore } from "./run-state.ts";
 +import { diffTotals, sumTotals, withWall } from "./totals.ts";
 +
 +/** Inputs of one festival run. Root's benchmark wrapper uses this directly. */
@@ -2281,10 +2565,21 @@ index 0000000..b880f7f
 +export interface FestivalResult {
 +	mode: FestivalMode;
 +	passed: boolean;
++	/** Final cumulative site score can pass even if an earlier required milestone failed. */
++	finalPassed: boolean;
 +	cancelled: boolean;
 +	timedOut: boolean;
 +	infrastructureError?: string;
 +	totals: Totals;
++	/** totals covers this attempt only; historical rounds can predate it. */
++	totalsScope: "attempt";
++	attemptId: string;
++	/** Null after an unclean interruption: incomplete usage must not look benchmark-comparable. */
++	runTotals: Totals | null;
++	accountingComplete: boolean;
++	/** Crashed attempts use their last active-time checkpoint, with an unknown lost interval. */
++	wallBudgetPolicy: "active-time-checkpoints";
++	unknownWallInterval: boolean;
 +	rounds: RoundResult[];
 +	quality: Array<{ round: number; checksPassed: number; checksTotal: number; failures: string[] }>;
 +	outputDir: string;
@@ -2320,7 +2615,10 @@ index 0000000..b880f7f
 +	private readonly cancel = new AbortController();
 +	private roundAbort = new AbortController();
 +	private timedOut = false;
++	private roundTimedOut = false;
 +	private taskStarted = performance.now();
++	private attempt: RunAttempt | undefined;
++	private checkpointRound: (() => void) | undefined;
 +
 +	private constructor(fields: {
 +		options: RunFestivalOptions;
@@ -2353,7 +2651,7 @@ index 0000000..b880f7f
 +	}
 +
 +	static async create(options: RunFestivalOptions): Promise<FestivalRun> {
-+		const limits = { ...DEFAULT_LIMITS, ...options.limits };
++		let limits = { ...DEFAULT_LIMITS, ...options.limits };
 +		const outputDir = resolve(options.outputDir);
 +		const resume = options.resume === true;
 +		const unexpected = existsSync(outputDir) ? readdirSync(outputDir).filter((name) => !SETUP_ENTRIES.has(name)) : [];
@@ -2370,11 +2668,29 @@ index 0000000..b880f7f
 +		if (resume) {
 +			state = store.load();
 +			if (state.mode !== options.mode) throw new Error(`cannot resume a ${state.mode} run as ${options.mode}`);
++			if (state.finished) throw new Error("cannot resume a finished run; its summary is immutable");
++			limits = { ...state.limits, ...options.limits };
++			if (
++				state.model !== options.model ||
++				state.baseUrl !== options.baseUrl ||
++				state.taskDir !== task.taskDir ||
++				!isDeepStrictEqual(limits, state.limits) ||
++				!isDeepStrictEqual(options.sessionSettings ?? null, state.sessionSettings)
++			) {
++				throw new Error("cannot resume with a different model, endpoint, task, limits or session settings");
++			}
 +			verifyProtectedFiles(task, workspace, state.protectedSnapshot);
++			const interrupted = state.attempts.at(-1);
++			if (interrupted && interrupted.totals === null) {
++				// The lost interval after the last checkpoint is unknown. Keep its active-time
++				// lower bound and flag incomplete accounting; time spent stopped is never work.
++				state.activeRound = null;
++				store.save(state);
++			}
 +		} else {
 +			prepareWorkspace(task, workspace);
 +			state = {
-+				version: 1,
++				version: 2,
 +				mode: options.mode,
 +				taskDir: task.taskDir,
 +				baseUrl: options.baseUrl,
@@ -2384,6 +2700,10 @@ index 0000000..b880f7f
 +				protectedSnapshot: snapshotProtectedFiles(task, workspace),
 +				rounds: [],
 +				finished: false,
++				sessionSettings: options.sessionSettings ?? null,
++				attempts: [],
++				roundProgress: {},
++				activeRound: null,
 +			};
 +			store.save(state);
 +		}
@@ -2401,6 +2721,7 @@ index 0000000..b880f7f
 +			concurrency: limits.checkerConcurrency,
 +			command: options.checkCommand,
 +			python: options.pythonPath,
++			onExecution: (execution) => log.emit("checker_execution", execution),
 +		});
 +		const sharedContext = sharedProjectContext(task, workspace);
 +		const enhanced = options.mode === "fleet8";
@@ -2453,6 +2774,10 @@ index 0000000..b880f7f
 +		await this.options.beforeRun?.({ workspace: this.workspace, outputDir: this.outputDir });
 +		// The task clock starts after setup and the hook, so neither counts as task time.
 +		this.taskStarted = performance.now();
++		const priorWall = this.state.attempts.reduce((sum, attempt) => sum + attempt.wallBudgetSeconds, 0);
++		this.attempt = { id: randomUUID(), startedAtUnix: Date.now() / 1000, totals: null, wallBudgetSeconds: 0 };
++		this.state.attempts.push(this.attempt);
++		this.store.save(this.state);
 +		if (!this.options.resume && this.options.startTimeUnix === undefined) {
 +			this.state.startTimeUnix = Date.now() / 1000;
 +			this.log.resetClock(this.state.startTimeUnix);
@@ -2460,11 +2785,20 @@ index 0000000..b880f7f
 +		}
 +		const onCancel = () => this.abortEverything();
 +		this.options.signal?.addEventListener("abort", onCancel, { once: true });
-+		const runTimer = setTimeout(() => {
++		if (this.options.signal?.aborted) onCancel();
++		const expire = () => {
 +			this.timedOut = true;
 +			this.roundAbort.abort();
 +			void Promise.all(this.agents.map((agent) => agent.abort()));
-+		}, this.limits.runWallSeconds * 1000);
++		};
++		const remainingWall = Math.max(0, this.limits.runWallSeconds - priorWall);
++		if (remainingWall === 0) expire();
++		const runTimer = setTimeout(expire, remainingWall * 1000);
++		const checkpointTimer = setInterval(() => {
++			if (this.attempt) this.attempt.wallBudgetSeconds = (performance.now() - this.taskStarted) / 1000;
++			this.checkpointRound?.();
++			this.store.save(this.state);
++		}, 1000);
 +		let infrastructureError: string | undefined;
 +		try {
 +			this.log.emit(this.options.resume ? "run_resume" : "run_start", {
@@ -2474,8 +2808,17 @@ index 0000000..b880f7f
 +				limits: this.limits,
 +				baseUrl: this.options.baseUrl,
 +				model: this.options.model,
++				attemptId: this.attempt.id,
++				totalsScope: "attempt",
++				remainingWallSeconds: remainingWall,
++				accountingComplete: this.state.attempts.slice(0, -1).every((attempt) => attempt.totals !== null),
++				wallBudgetPolicy: "active-time-checkpoints",
++				unknownWallInterval: this.state.attempts.slice(0, -1).some((attempt) => attempt.totals === null),
 +			});
-+			for (const agent of this.agents) await agent.open();
++			for (const agent of this.agents) {
++				if (this.stopped()) break;
++				await agent.open();
++			}
 +			this.startTelemetry();
 +			for (const round of this.task.rounds) {
 +				if (this.state.rounds.some((done) => done.round === round.id)) continue;
@@ -2490,12 +2833,18 @@ index 0000000..b880f7f
 +				}
 +			}
 +		} catch (error) {
-+			infrastructureError = error instanceof Error ? error.message : String(error);
-+			this.log.emit("infrastructure_error", { error: infrastructureError });
++			if (!this.cancel.signal.aborted && !this.timedOut && !this.roundTimedOut) {
++				infrastructureError = error instanceof Error ? error.message : String(error);
++				this.log.emit("infrastructure_error", { error: infrastructureError });
++				this.roundAbort.abort();
++			}
 +		} finally {
 +			clearTimeout(runTimer);
++			clearInterval(checkpointTimer);
 +			this.options.signal?.removeEventListener("abort", onCancel);
 +			this.telemetry?.stop();
++			await Promise.all(this.agents.map((agent) => agent.abort()));
++			await this.checker.drain();
 +			this.queue?.dispose();
 +			for (const agent of this.agents) agent.dispose();
 +		}
@@ -2504,10 +2853,15 @@ index 0000000..b880f7f
 +
 +	private async runRound(round: FestivalRound): Promise<RoundResult | undefined> {
 +		this.roundAbort = new AbortController();
-+		const roundTimer = setTimeout(() => {
++		const progress = this.state.roundProgress[round.id] ?? { wallSeconds: 0, totals: emptyTotals() };
++		const expire = () => {
++			this.roundTimedOut = true;
 +			this.roundAbort.abort();
 +			void Promise.all(this.agents.map((agent) => agent.abort()));
-+		}, this.limits.roundWallSeconds * 1000);
++		};
++		const remainingWall = Math.max(0, this.limits.roundWallSeconds - progress.wallSeconds);
++		if (remainingWall === 0) expire();
++		const roundTimer = setTimeout(expire, remainingWall * 1000);
 +		const before = this.currentTotals();
 +		const started = performance.now();
 +		const outcomes: Record<string, TaskOutcome[]> = Object.fromEntries(
@@ -2516,82 +2870,101 @@ index 0000000..b880f7f
 +		this.log.setRound(round.id, round.title);
 +		this.log.emit("round_start", { title: round.title });
 +		this.log.setPhase("working");
++		this.state.activeRound = round.id;
++		const checkpointRound = () => {
++			const wallSeconds = progress.wallSeconds + (performance.now() - started) / 1000;
++			this.state.roundProgress[round.id] = {
++				wallSeconds,
++				totals: withWall(sumTotals([progress.totals, diffTotals(this.currentTotals(), before)]), wallSeconds),
++			};
++		};
++		this.checkpointRound = checkpointRound;
++		this.store.save(this.state);
 +		try {
++			if (this.stopped()) return undefined;
 +			if (this.options.mode === "fleet8") await this.runReadyRepairs(round, outcomes);
 +			else await this.runBarrierRepairs(round, outcomes);
++			// A user cancellation leaves the round unfinished so a restart can continue it.
++			if (this.stopped()) return undefined;
++			this.log.setPhase("official_check");
++			const official = await this.checker.check(round.id, "official", this.checkSignal());
++			if (this.stopped()) return undefined;
++			throwIfInfrastructure(official);
++			const officialResultPath = join(this.outputDir, "official", `round-${round.id}.json`);
++			mkdirSync(join(this.outputDir, "official"), { recursive: true });
++			writeFileSync(officialResultPath, `${JSON.stringify(official, null, 2)}\n`);
++			for (const agent of this.agents) {
++				agent.recordCheck(official, true);
++				if (agent.ledger.state.pendingTask?.round === round.id) agent.ledger.clearPending();
++			}
++			const pagesPassed = Object.fromEntries(
++				this.task.editableFiles.map((file) => [file, official.pages[file].passed]),
++			);
++			const timedOut = this.roundAbort.signal.aborted;
++			this.log.emit("round_complete", {
++				title: round.title,
++				passed: official.passed,
++				checksPassed: official.checksPassed,
++				checksTotal: official.checksTotal,
++				pagesPassed,
++				timedOut,
++			});
++			this.log.setPhase("done");
++			const wallSeconds = progress.wallSeconds + (performance.now() - started) / 1000;
++			return {
++				round: round.id,
++				title: round.title,
++				wallSeconds,
++				passed: official.passed,
++				checksPassed: official.checksPassed,
++				checksTotal: official.checksTotal,
++				failures: official.failures,
++				pagesPassed,
++				agentOutcomes: outcomes,
++				timedOut,
++				totals: withWall(sumTotals([progress.totals, diffTotals(this.currentTotals(), before)]), wallSeconds),
++				officialResultPath,
++				infrastructureError: official.infrastructureError,
++			};
 +		} finally {
 +			clearTimeout(roundTimer);
++			// Include cancelled checker execution before persisting the round's consumed budget.
++			if (this.stopped()) await this.checker.drain();
++			checkpointRound();
++			this.checkpointRound = undefined;
++			this.state.activeRound = null;
++			this.store.save(this.state);
 +		}
-+		// A user cancellation leaves the round unfinished so a restart can continue it.
-+		if (this.cancel.signal.aborted) return undefined;
-+		this.log.setPhase("official_check");
-+		const official = await this.checker.check(round.id, "official");
-+		const officialResultPath = join(this.outputDir, "official", `round-${round.id}.json`);
-+		mkdirSync(join(this.outputDir, "official"), { recursive: true });
-+		writeFileSync(officialResultPath, `${JSON.stringify(official, null, 2)}\n`);
-+		for (const agent of this.agents) {
-+			agent.recordCheck(official, true);
-+			if (agent.ledger.state.pendingTask?.round === round.id) agent.ledger.clearPending();
-+		}
-+		const pagesPassed = Object.fromEntries(
-+			this.task.editableFiles.map((file) => [file, official.pages[file].passed]),
-+		);
-+		const timedOut = this.roundAbort.signal.aborted;
-+		this.log.emit("round_complete", {
-+			title: round.title,
-+			passed: official.passed,
-+			checksPassed: official.checksPassed,
-+			checksTotal: official.checksTotal,
-+			pagesPassed,
-+			timedOut,
-+		});
-+		this.log.setPhase("done");
-+		const wallSeconds = (performance.now() - started) / 1000;
-+		return {
-+			round: round.id,
-+			title: round.title,
-+			wallSeconds,
-+			passed: official.passed,
-+			checksPassed: official.checksPassed,
-+			checksTotal: official.checksTotal,
-+			failures: official.failures,
-+			pagesPassed,
-+			agentOutcomes: outcomes,
-+			timedOut,
-+			totals: withWall(diffTotals(this.currentTotals(), before), wallSeconds),
-+			officialResultPath,
-+			infrastructureError: official.infrastructureError,
-+		};
 +	}
 +
 +	// Enhanced: each agent is checked and repaired as soon as it settles, while others keep working.
 +	private async runReadyRepairs(round: FestivalRound, outcomes: Record<string, TaskOutcome[]>): Promise<void> {
-+		await Promise.all(
-+			this.agents.map(async (agent) => {
-+				const initial = this.initialTask(agent, round);
-+				if (initial) outcomes[agent.agentId].push(await agent.runTask(initial));
-+				while (this.canRepair(agent, outcomes[agent.agentId])) {
-+					const check = await agent.check(round.id, `${agent.agentId}-ready`, false);
-+					throwIfInfrastructure(check);
-+					if (agent.ownsPassing(check)) break;
-+					outcomes[agent.agentId].push(await agent.runTask(this.repairTask(agent, round, check)));
-+				}
-+			}),
-+		);
++		await this.runAgents(async (agent) => {
++			if (this.stopped()) return;
++			const initial = this.initialTask(agent, round);
++			if (initial) outcomes[agent.agentId].push(await agent.runTask(initial, this.checkSignal()));
++			while (this.canRepair(agent, outcomes[agent.agentId])) {
++				const check = await agent.check(round.id, `${agent.agentId}-ready`, false, this.checkSignal());
++				if (this.stopped()) return;
++				throwIfInfrastructure(check);
++				if (agent.ownsPassing(check)) break;
++				outcomes[agent.agentId].push(await agent.runTask(this.repairTask(agent, round, check), this.checkSignal()));
++			}
++		});
 +	}
 +
 +	// Baselines: ordinary concurrent sessions, then one shared check and repairs per pass.
 +	private async runBarrierRepairs(round: FestivalRound, outcomes: Record<string, TaskOutcome[]>): Promise<void> {
-+		await Promise.all(
-+			this.agents.map(async (agent) => {
-+				const initial = this.initialTask(agent, round);
-+				if (initial) outcomes[agent.agentId].push(await agent.runTask(initial));
-+			}),
-+		);
++		await this.runAgents(async (agent) => {
++			if (this.stopped()) return;
++			const initial = this.initialTask(agent, round);
++			if (initial) outcomes[agent.agentId].push(await agent.runTask(initial, this.checkSignal()));
++		});
 +		for (let pass = 0; pass < this.limits.repairPassesPerRound; pass++) {
 +			if (this.stopped()) return;
 +			this.log.setPhase("repair");
-+			const check = await this.checker.check(round.id, `repair-${pass + 1}`);
++			const check = await this.checker.check(round.id, `repair-${pass + 1}`, this.checkSignal());
++			if (this.stopped()) return;
 +			throwIfInfrastructure(check);
 +			for (const agent of this.agents) agent.recordCheck(check, false);
 +			const failing = this.agents.filter(
@@ -2600,10 +2973,29 @@ index 0000000..b880f7f
 +			if (failing.length === 0) return;
 +			await Promise.all(
 +				failing.map(async (agent) =>
-+					outcomes[agent.agentId].push(await agent.runTask(this.repairTask(agent, round, check))),
++					outcomes[agent.agentId].push(
++						await agent.runTask(this.repairTask(agent, round, check), this.checkSignal()),
++					),
 +				),
 +			);
 +		}
++	}
++
++	private async runAgents(work: (agent: AgentRuntime) => Promise<void>): Promise<void> {
++		const failures: unknown[] = [];
++		await Promise.allSettled(
++			this.agents.map(async (agent) => {
++				try {
++					await work(agent);
++				} catch (error) {
++					failures.push(error);
++					this.roundAbort.abort();
++					await Promise.all(this.agents.map((other) => other.abort()));
++					throw error;
++				}
++			}),
++		);
++		if (failures.length > 0) throw failures[0];
 +	}
 +
 +	// Decide the first task of a round for an agent, honouring a persisted pending task on resume.
@@ -2636,12 +3028,16 @@ index 0000000..b880f7f
 +
 +	private canRepair(agent: AgentRuntime, history: TaskOutcome[]): boolean {
 +		const last = history.at(-1);
-+		if (last === "aborted" || last === "failed") return false;
++		if (last === "aborted" || last === "failed" || last === "turn_limit") return false;
 +		return !this.stopped() && agent.repairsThisRound < this.limits.repairPassesPerRound;
 +	}
 +
 +	private stopped(): boolean {
 +		return this.cancel.signal.aborted || this.roundAbort.signal.aborted || this.timedOut;
++	}
++
++	private checkSignal(): AbortSignal {
++		return AbortSignal.any([this.cancel.signal, this.roundAbort.signal]);
 +	}
 +
 +	private abortEverything(): void {
@@ -2672,23 +3068,44 @@ index 0000000..b880f7f
 +	}
 +
 +	private currentTotals(): Totals {
-+		return sumTotals(this.agents.map((agent) => agent.observer.view.totals));
++		const totals = sumTotals(this.agents.map((agent) => agent.observer.view.totals));
++		return { ...totals, ...this.checker.accounting() };
 +	}
 +
 +	private finish(infrastructureError: string | undefined): FestivalResult {
 +		// Monotonic task wall of this execution: excludes setup and beforeRun (and, on resume,
 +		// the downtime before the restart).
 +		const totals = withWall(this.currentTotals(), (performance.now() - this.taskStarted) / 1000);
++		const attempt = this.attempt;
++		if (!attempt) throw new Error("run attempt was not started");
++		attempt.totals = totals;
++		attempt.wallBudgetSeconds = totals.wallSeconds;
++		const accountingComplete = this.state.attempts.every((entry) => entry.totals !== null);
++		const runTotals = accountingComplete
++			? sumTotals(this.state.attempts.map((entry) => entry.totals as Totals))
++			: null;
 +		const rounds = [...this.state.rounds].sort((a, b) => a.round - b.round);
 +		const final = rounds.find((round) => round.round === 3);
 +		const cancelled = this.cancel.signal.aborted;
 +		const result: FestivalResult = {
 +			mode: this.options.mode,
-+			passed: final?.passed === true && !infrastructureError,
++			passed:
++				rounds.length === this.task.rounds.length &&
++				rounds.every((round) => round.passed) &&
++				!infrastructureError &&
++				!cancelled &&
++				!this.stopped(),
++			finalPassed: final?.passed === true,
 +			cancelled,
-+			timedOut: this.timedOut,
++			timedOut: this.timedOut || this.roundTimedOut,
 +			infrastructureError,
 +			totals,
++			totalsScope: "attempt",
++			attemptId: attempt.id,
++			runTotals,
++			accountingComplete,
++			wallBudgetPolicy: "active-time-checkpoints",
++			unknownWallInterval: !accountingComplete,
 +			rounds,
 +			quality: rounds.map((round) => ({
 +				round: round.round,
@@ -2698,15 +3115,23 @@ index 0000000..b880f7f
 +			})),
 +			outputDir: this.outputDir,
 +		};
-+		this.state.finished = !cancelled;
++		this.state.finished = !cancelled && !infrastructureError && rounds.length === this.task.rounds.length;
 +		this.store.save(this.state);
-+		writeFileSync(join(this.outputDir, "summary.json"), `${JSON.stringify(result, null, 2)}\n`);
++		mkdirSync(join(this.outputDir, "attempts"), { recursive: true });
++		writeAttemptAtomic(join(this.outputDir, "attempts", `${attempt.id}.json`), result);
++		writeJsonAtomic(join(this.outputDir, "summary.json"), result);
 +		this.log.emit("run_end", {
 +			passed: result.passed,
 +			cancelled,
-+			timedOut: this.timedOut,
++			timedOut: result.timedOut,
 +			infrastructureError: infrastructureError ?? null,
 +			totals,
++			totalsScope: result.totalsScope,
++			attemptId: attempt.id,
++			runTotals,
++			accountingComplete,
++			wallBudgetPolicy: result.wallBudgetPolicy,
++			unknownWallInterval: result.unknownWallInterval,
 +		});
 +		return result;
 +	}
@@ -2717,16 +3142,18 @@ index 0000000..b880f7f
 +}
 diff --git a/packages/fleetpi/src/run/run-state.ts b/packages/fleetpi/src/run/run-state.ts
 new file mode 100644
-index 0000000..3f13cee
+index 0000000..e8a841a
 --- /dev/null
 +++ b/packages/fleetpi/src/run/run-state.ts
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,78 @@
 +// Resumable run state (state.json): configuration, protected hashes and completed rounds.
 +
-+import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
++import { existsSync, readFileSync } from "node:fs";
++import type { SessionSettings } from "../session/open-session.ts";
 +import type { FestivalMode, RunLimits, Totals } from "../types.ts";
 +import type { ProtectedSnapshot } from "../workspace/workspace.ts";
 +import type { TaskOutcome } from "./agent-runtime.ts";
++import { writeJsonAtomic } from "./atomic-json.ts";
 +
 +/** Result of one released round. */
 +export interface RoundResult {
@@ -2747,7 +3174,7 @@ index 0000000..3f13cee
 +
 +/** Persisted run state. */
 +export interface RunState {
-+	version: 1;
++	version: 2;
 +	mode: FestivalMode;
 +	taskDir: string;
 +	baseUrl: string;
@@ -2757,6 +3184,20 @@ index 0000000..3f13cee
 +	protectedSnapshot: ProtectedSnapshot;
 +	rounds: RoundResult[];
 +	finished: boolean;
++	sessionSettings: SessionSettings | null;
++	attempts: RunAttempt[];
++	/** Active time and counters from completed attempts or the last interrupted checkpoint. */
++	roundProgress: Record<number, { wallSeconds: number; totals: Totals }>;
++	activeRound: number | null;
++}
++
++/** An execution of the runner; missing totals explicitly mark an unclean interruption. */
++export interface RunAttempt {
++	id: string;
++	startedAtUnix: number;
++	totals: Totals | null;
++	/** Active time debited at clean shutdown or the last checkpoint; never includes downtime. */
++	wallBudgetSeconds: number;
 +}
 +
 +/** Atomic JSON persistence for RunState. */
@@ -2771,23 +3212,24 @@ index 0000000..3f13cee
 +	load(): RunState {
 +		if (!existsSync(this.path)) throw new Error(`cannot resume: ${this.path} does not exist`);
 +		const state = JSON.parse(readFileSync(this.path, "utf8")) as RunState;
-+		if (state.version !== 1) throw new Error(`unsupported run state version in ${this.path}`);
++		if (state.version !== 2)
++			throw new Error(
++				`unsupported run state version in ${this.path}; frozen version-1 trials must remain immutable`,
++			);
 +		return state;
 +	}
 +
 +	/** Write state atomically. */
 +	save(state: RunState): void {
-+		const temporary = `${this.path}.tmp`;
-+		writeFileSync(temporary, `${JSON.stringify(state, null, 2)}\n`);
-+		renameSync(temporary, this.path);
++		writeJsonAtomic(this.path, state);
 +	}
 +}
 diff --git a/packages/fleetpi/src/run/session-observer.ts b/packages/fleetpi/src/run/session-observer.ts
 new file mode 100644
-index 0000000..65ae173
+index 0000000..06042cb
 --- /dev/null
 +++ b/packages/fleetpi/src/run/session-observer.ts
-@@ -0,0 +1,305 @@
+@@ -0,0 +1,304 @@
 +// Turns one agent's Pi session events into per-call accounting, agent states and durable events.
 +
 +import { appendFileSync } from "node:fs";
@@ -2849,6 +3291,7 @@ index 0000000..65ae173
 +	maxTurnsPerRound: number;
 +	onTurnLimit: () => void;
 +	onCompaction?: () => void;
++	onTurn?: (turns: number) => void;
 +}
 +
 +/** Subscribes to one AgentSession and accounts every call, tool and compaction. */
@@ -2875,7 +3318,7 @@ index 0000000..65ae173
 +	}
 +
 +	/** Attach to a (possibly reopened) session. */
-+	attach(session: AgentSession): void {
++	attach(session: Pick<AgentSession, "subscribe">): void {
 +		this.unsubscribe?.();
 +		this.unsubscribe = session.subscribe((event) => this.handle(event));
 +	}
@@ -2902,13 +3345,6 @@ index 0000000..65ae173
 +	/** Add admission wait time measured by the queue. */
 +	addAdmissionWait(ms: number): void {
 +		this.view.totals.admissionWaitSeconds += ms / 1000;
-+	}
-+
-+	/** Add checker time measured by check_site. */
-+	addCheckerRun(seconds: number, memoized: boolean): void {
-+		if (memoized) return;
-+		this.view.totals.checkerRuns++;
-+		this.view.totals.checkerSeconds += seconds;
 +	}
 +
 +	private handle(event: AgentSessionEvent): void {
@@ -2995,6 +3431,7 @@ index 0000000..65ae173
 +		this.callStart = null;
 +		this.accountCall(record);
 +		this.view.turnsThisRound++;
++		this.options.onTurn?.(this.view.turnsThisRound);
 +		if (this.view.turnsThisRound >= this.options.maxTurnsPerRound) this.options.onTurnLimit();
 +	}
 +
@@ -3007,14 +3444,16 @@ index 0000000..65ae173
 +		totals.outputTokens += record.output;
 +		totals.totalTokens += record.total;
 +		totals.reasoningTokens += record.reasoning;
-+		const streamMs = record.firstTokenUnixMs === null ? 0 : record.endUnixMs - record.firstTokenUnixMs;
-+		const tokPerSec = streamMs > 0 ? (record.output * 1000) / streamMs : null;
-+		if (streamMs > 0) {
-+			totals.streamedOutputTokens += record.output;
-+			totals.streamSeconds += streamMs / 1000;
-+			totals.streamTokensPerSecond = totals.streamedOutputTokens / totals.streamSeconds;
++		// Both incremental and buffered transports have a full call clock. Delta delivery
++		// timing cannot establish engine decode speed, even when multiple deltas arrive.
++		const requestMs = record.endUnixMs - record.startUnixMs;
++		const requestTokPerSec = requestMs > 0 ? (record.output * 1000) / requestMs : null;
++		if (requestMs > 0) {
++			totals.requestOutputTokens += record.output;
++			totals.requestSeconds += requestMs / 1000;
++			totals.requestTokensPerSecond = totals.requestOutputTokens / totals.requestSeconds;
 +		}
-+		this.view.lastTokPerSec = tokPerSec;
++		this.view.lastTokPerSec = requestTokPerSec;
 +		appendFileSync(this.options.callsPath, `${JSON.stringify(record)}\n`);
 +		this.options.log.emit("call_end", {
 +			agent: record.agent,
@@ -3024,8 +3463,10 @@ index 0000000..65ae173
 +			output: record.output,
 +			ms: record.endUnixMs - record.startUnixMs,
 +			firstTokenMs: record.firstTokenUnixMs === null ? null : record.firstTokenUnixMs - record.startUnixMs,
-+			// Client-observed stream rate for this call, not engine decode speed.
-+			tokPerSec,
++			// Kept null so old consumers cannot mistake delivery bursts for decode speed.
++			tokPerSec: null,
++			requestTokPerSec,
++			firstDeltaMs: record.firstTokenUnixMs === null ? null : record.firstTokenUnixMs - record.startUnixMs,
 +			stopReason: record.stopReason,
 +			toolCalls: record.toolCalls,
 +		});
@@ -3095,18 +3536,22 @@ index 0000000..65ae173
 +}
 diff --git a/packages/fleetpi/src/run/totals.ts b/packages/fleetpi/src/run/totals.ts
 new file mode 100644
-index 0000000..fd3dd6b
+index 0000000..05e3dbf
 --- /dev/null
 +++ b/packages/fleetpi/src/run/totals.ts
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,41 @@
 +// Arithmetic over Totals: sums across agents, per-round differences and derived rates.
 +
 +import { emptyTotals, type Totals } from "../types.ts";
 +
-+type Rate = "streamTokensPerSecond" | "workflowOutputTokensPerSecond";
++type Rate = "streamTokensPerSecond" | "requestTokensPerSecond" | "workflowOutputTokensPerSecond";
 +type Counter = Exclude<keyof Totals, Rate>;
 +
-+const RATES: ReadonlySet<string> = new Set<Rate>(["streamTokensPerSecond", "workflowOutputTokensPerSecond"]);
++const RATES: ReadonlySet<string> = new Set<Rate>([
++	"streamTokensPerSecond",
++	"requestTokensPerSecond",
++	"workflowOutputTokensPerSecond",
++]);
 +const COUNTERS = Object.keys(emptyTotals()).filter((key): key is Counter => !RATES.has(key));
 +
 +/** Sum totals (wall time is set by the caller with withWall). */
@@ -3130,7 +3575,9 @@ index 0000000..fd3dd6b
 +}
 +
 +function withRates(totals: Totals): Totals {
-+	totals.streamTokensPerSecond = totals.streamSeconds > 0 ? totals.streamedOutputTokens / totals.streamSeconds : 0;
++	totals.streamTokensPerSecond = null;
++	totals.requestTokensPerSecond =
++		totals.requestSeconds > 0 ? totals.requestOutputTokens / totals.requestSeconds : null;
 +	totals.workflowOutputTokensPerSecond = totals.wallSeconds > 0 ? totals.outputTokens / totals.wallSeconds : 0;
 +	return totals;
 +}
@@ -3526,10 +3973,10 @@ index 0000000..6affc97
 +}
 diff --git a/packages/fleetpi/src/types.ts b/packages/fleetpi/src/types.ts
 new file mode 100644
-index 0000000..4d57dab
+index 0000000..27fd5f4
 --- /dev/null
 +++ b/packages/fleetpi/src/types.ts
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,116 @@
 +// Shared FleetPi vocabulary: run modes, limits, events and result totals.
 +
 +/** The three fair benchmark arms. */
@@ -3601,13 +4048,18 @@ index 0000000..4d57dab
 +	checkerRuns: number;
 +	checkerSeconds: number;
 +	admissionWaitSeconds: number;
-+	/** Output tokens of turn calls that produced a first non-empty delta (excludes compaction). */
++	/** Reserved: delivery deltas do not establish which tokens were streamed incrementally. */
 +	streamedOutputTokens: number;
-+	/** First non-empty content/reasoning/tool-argument delta to message end, summed over those calls.
-+	 * This is client-observed streaming time, not engine decode time: buffered tool calls arrive late. */
++	/** Reserved until the transport provides a reliable incremental-generation clock. */
 +	streamSeconds: number;
-+	/** streamedOutputTokens / streamSeconds; a per-stream client view, not a decode benchmark. */
-+	streamTokensPerSecond: number;
++	/** Unknown: buffered delivery must never be presented as generation throughput. */
++	streamTokensPerSecond: null;
++	/** Full observed call duration, including admission, prefill and delivery. */
++	requestSeconds: number;
++	/** Output from calls with a positive observed duration. */
++	requestOutputTokens: number;
++	/** requestOutputTokens / requestSeconds; not engine decode throughput. */
++	requestTokensPerSecond: number | null;
 +	/** Headline workflow throughput: all output tokens / task wall seconds. */
 +	workflowOutputTokensPerSecond: number;
 +}
@@ -3634,16 +4086,19 @@ index 0000000..4d57dab
 +		admissionWaitSeconds: 0,
 +		streamedOutputTokens: 0,
 +		streamSeconds: 0,
-+		streamTokensPerSecond: 0,
++		streamTokensPerSecond: null,
++		requestSeconds: 0,
++		requestOutputTokens: 0,
++		requestTokensPerSecond: null,
 +		workflowOutputTokensPerSecond: 0,
 +	};
 +}
 diff --git a/packages/fleetpi/src/ui/dashboard.ts b/packages/fleetpi/src/ui/dashboard.ts
 new file mode 100644
-index 0000000..92e4aba
+index 0000000..08603c5
 --- /dev/null
 +++ b/packages/fleetpi/src/ui/dashboard.ts
-@@ -0,0 +1,209 @@
+@@ -0,0 +1,216 @@
 +// In-place terminal dashboard driven only by FleetEvents (the same events written to events.jsonl).
 +
 +import type { FleetEvent } from "../types.ts";
@@ -3671,10 +4126,11 @@ index 0000000..92e4aba
 +}
 +
 +const RENDER_MS = 250;
++type DashboardOutput = Pick<NodeJS.WriteStream, "write" | "columns">;
 +
 +/** Renders agent states, throughput, cache reuse and check progress; logs go to files, not here. */
 +export class Dashboard {
-+	private readonly out: NodeJS.WriteStream;
++	private readonly out: DashboardOutput;
 +	private readonly title: string;
 +	private readonly rows = new Map<string, AgentRow>();
 +	private readonly roundResults: string[] = [];
@@ -3682,11 +4138,12 @@ index 0000000..92e4aba
 +	private header = "starting";
 +	private elapsed = 0;
 +	private startUnix = Date.now() / 1000;
++	private attemptStartUnix: number | undefined;
 +	private lastLines = 0;
 +	private timer: ReturnType<typeof setInterval> | undefined;
 +	private notes: string[] = [];
 +
-+	constructor(out: NodeJS.WriteStream, title: string) {
++	constructor(out: DashboardOutput, title: string) {
 +		this.out = out;
 +		this.title = title;
 +	}
@@ -3714,13 +4171,17 @@ index 0000000..92e4aba
 +
 +	/** Fold one event into the view. */
 +	handle(event: FleetEvent): void {
-+		this.elapsed = event.elapsed;
-+		this.startUnix = event.t_unix - event.elapsed;
++		if (event.event === "run_start" || event.event === "run_resume") this.attemptStartUnix = event.t_unix;
++		this.startUnix = this.attemptStartUnix ?? event.t_unix - event.elapsed;
++		this.elapsed = Math.max(0, event.t_unix - this.startUnix);
 +		const agent = typeof event.agent === "string" ? this.row(event.agent) : undefined;
 +		switch (event.event) {
 +			case "run_start":
 +			case "run_resume":
++				this.rows.clear();
++				this.roundResults.length = 0;
 +				for (const entry of (event.agents as Array<{ agent: string }>) ?? []) this.row(entry.agent);
++				if (event.event === "run_resume") this.note("Resumed: timer and agent counters cover this attempt.");
 +				break;
 +			case "round_start":
 +			case "phase":
@@ -3742,7 +4203,7 @@ index 0000000..92e4aba
 +					agent.output += Number(event.output ?? 0);
 +					agent.prompt += Number(event.prompt ?? 0);
 +					agent.cached += Number(event.cached ?? 0);
-+					if (typeof event.tokPerSec === "number") agent.tokPerSec = event.tokPerSec;
++					agent.tokPerSec = typeof event.requestTokPerSec === "number" ? event.requestTokPerSec : null;
 +				}
 +				break;
 +			case "check":
@@ -3750,10 +4211,10 @@ index 0000000..92e4aba
 +					agent.ownedChecks = `${event.ownedChecksPassed}/${event.ownedChecksTotal}${event.official ? " (official)" : ""}`;
 +				break;
 +			case "file_write":
-+				if (agent) agent.lastWrite = `${String(event.path).replace(/^pages\//, "")} @${formatClock(event.elapsed)}`;
++				if (agent) agent.lastWrite = `${String(event.path).replace(/^pages\//, "")} @${formatClock(this.elapsed)}`;
 +				break;
 +			case "compaction":
-+				if (agent) agent.compactions++;
++				if (agent && !event.aborted && event.tokensBefore !== null) agent.compactions++;
 +				break;
 +			case "engine_stats":
 +				this.engine = {
@@ -3765,7 +4226,7 @@ index 0000000..92e4aba
 +				break;
 +			case "round_complete":
 +				this.roundResults.push(
-+					`round ${event.round}: ${event.passed ? "PASS" : "fail"} ${event.checksPassed}/${event.checksTotal} at ${formatClock(event.elapsed)}${event.timedOut ? " (wall limit)" : ""}`,
++					`round ${event.round}: ${event.passed ? "PASS" : "fail"} ${event.checksPassed}/${event.checksTotal} at ${formatClock(this.elapsed)}${event.timedOut ? " (wall limit)" : ""}`,
 +				);
 +				break;
 +			case "no_tool_calls":
@@ -3826,13 +4287,14 @@ index 0000000..92e4aba
 +			`${this.title}  ·  ${formatClock(elapsed)}  ·  ${this.header}`,
 +			`engine: active ${engine.active ?? "n/a"} queued ${engine.queued ?? "n/a"} KV free ${engine.kvFree === null ? "n/a" : `${(engine.kvFree * 100).toFixed(0)}%`} shared-prefix ${engine.sharedPrefix ?? "n/a"}  ·  prompt cache reuse ${reuse}  ·  output ${totals.output} tok`,
 +			"",
-+			`${pad("agent", 14)}${pad("state", 12)}${pad("for", 7)}${pad("calls", 6)}${pad("tok/s", 7)}${pad("out", 8)}${pad("cache", 7)}${pad("checks", 16)}${pad("cmp", 4)}last write`,
++			"call t/s = output / full observed call time; includes queue and prefill",
++			`${pad("agent", 14)}${pad("state", 12)}${pad("for", 7)}${pad("calls", 6)}${pad("call t/s", 9)}${pad("out", 8)}${pad("cache", 7)}${pad("checks", 16)}${pad("cmp", 4)}last write`,
 +		];
 +		for (const row of this.rows.values()) {
 +			const state = row.queued ? "queued" : row.state;
 +			const cache = row.prompt > 0 ? `${((100 * row.cached) / row.prompt).toFixed(0)}%` : "-";
 +			lines.push(
-+				`${pad(row.agent, 14)}${pad(state, 12)}${pad(formatClock(now - row.since), 7)}${pad(String(row.calls), 6)}${pad(row.tokPerSec === null ? "-" : row.tokPerSec.toFixed(1), 7)}${pad(String(row.output), 8)}${pad(cache, 7)}${pad(row.ownedChecks, 16)}${pad(String(row.compactions), 4)}${row.lastWrite}`,
++				`${pad(row.agent, 14)}${pad(state, 12)}${pad(formatClock(now - row.since), 7)}${pad(String(row.calls), 6)}${pad(row.tokPerSec === null ? "-" : row.tokPerSec.toFixed(1), 9)}${pad(String(row.output), 8)}${pad(cache, 7)}${pad(row.ownedChecks, 16)}${pad(String(row.compactions), 4)}${row.lastWrite}`,
 +			);
 +		}
 +		if (this.roundResults.length > 0) lines.push("", ...this.roundResults);
@@ -4330,6 +4792,179 @@ index 0000000..d108452
 +		expect(agent.ledger.state.pendingTask?.prompt).toBe("wait for a slot");
 +	});
 +});
+diff --git a/packages/fleetpi/test/atomic-json.test.ts b/packages/fleetpi/test/atomic-json.test.ts
+new file mode 100644
+index 0000000..5631b9c
+--- /dev/null
++++ b/packages/fleetpi/test/atomic-json.test.ts
+@@ -0,0 +1,48 @@
++// Atomic-publication regressions; no model, server or browser is involved.
++
++import * as fs from "node:fs";
++import { tmpdir } from "node:os";
++import { dirname, join } from "node:path";
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { writeAttemptAtomic, writeJsonAtomic } from "../src/run/atomic-json.ts";
++
++vi.mock("node:fs", { spy: true });
++
++const directories: string[] = [];
++afterEach(() => {
++	vi.clearAllMocks();
++	while (directories.length) fs.rmSync(directories.pop() as string, { recursive: true, force: true });
++});
++
++function destination(): string {
++	const directory = fs.mkdtempSync(join(tmpdir(), "fleetpi-atomic-"));
++	directories.push(directory);
++	return join(directory, "state.json");
++}
++
++describe("atomic JSON publication", () => {
++	it("keeps the previous valid file if publication fails after the temporary write", () => {
++		const path = destination();
++		fs.writeFileSync(path, '{"generation":1}\n');
++		vi.mocked(fs.renameSync).mockImplementationOnce((temporary, target) => {
++			expect(target).toBe(path);
++			expect(dirname(String(temporary))).toBe(dirname(path));
++			expect(JSON.parse(fs.readFileSync(temporary, "utf8"))).toEqual({ generation: 2 });
++			expect(JSON.parse(fs.readFileSync(path, "utf8"))).toEqual({ generation: 1 });
++			throw new Error("interrupted before rename");
++		});
++		expect(() => writeJsonAtomic(path, { generation: 2 })).toThrow("interrupted before rename");
++		expect(JSON.parse(fs.readFileSync(path, "utf8"))).toEqual({ generation: 1 });
++		expect(fs.readdirSync(dirname(path))).toEqual(["state.json"]);
++	});
++
++	it("publishes complete attempts and refuses to replace existing attempt evidence", () => {
++		const path = destination();
++		writeAttemptAtomic(path, { attempt: "one", complete: true });
++		const original = fs.readFileSync(path, "utf8");
++		expect(JSON.parse(original)).toEqual({ attempt: "one", complete: true });
++		expect(fs.readdirSync(dirname(path))).toEqual(["state.json"]);
++		expect(() => writeAttemptAtomic(path, { attempt: "other" })).toThrow("refusing to replace");
++		expect(fs.readFileSync(path, "utf8")).toBe(original);
++	});
++});
+diff --git a/packages/fleetpi/test/checker-process.test.ts b/packages/fleetpi/test/checker-process.test.ts
+new file mode 100644
+index 0000000..5ec91d4
+--- /dev/null
++++ b/packages/fleetpi/test/checker-process.test.ts
+@@ -0,0 +1,113 @@
++// Real, model-free process-tree cancellation; no Python, browser or model is required.
++
++import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { setTimeout as delay } from "node:timers/promises";
++import { describe, expect, it } from "vitest";
++import { pythonCheckCommand } from "../src/checker/checker-service.ts";
++
++// Node executes this check.py fixture instead of Python. The child inherits the
++// checker's process group but not its pipes, so Python/leader close is insufficient.
++const CHECKER_TREE = `
++const { spawn } = require("node:child_process");
++const { renameSync, writeFileSync } = require("node:fs");
++const { join } = require("node:path");
++const workspace = process.argv[process.argv.indexOf("--workspace") + 1];
++if (process.argv.includes("--grandchild")) {
++  process.on("SIGTERM", () => writeFileSync(join(workspace, "grandchild-term"), "received"));
++  setInterval(() => {}, 1000);
++  writeFileSync(join(workspace, "pids.tmp"), JSON.stringify({ parent: process.ppid, grandchild: process.pid }));
++  renameSync(join(workspace, "pids.tmp"), join(workspace, "pids.json"));
++} else {
++  process.on("SIGTERM", () => {
++    writeFileSync(join(workspace, "parent-term"), "received");
++    process.exit(0);
++  });
++  spawn(process.execPath, [__filename, "--workspace", workspace, "--grandchild"], { stdio: "ignore" });
++  setInterval(() => {}, 1000);
++}
++`;
++
++async function waitUntil(predicate: () => boolean): Promise<void> {
++	const deadline = performance.now() + 5_000;
++	while (!predicate()) {
++		if (performance.now() >= deadline) throw new Error("checker fixture did not reach expected process state");
++		await delay(20);
++	}
++}
++
++function alive(pid: number): boolean {
++	try {
++		process.kill(pid, 0);
++		return true;
++	} catch (error) {
++		if ((error as NodeJS.ErrnoException).code === "ESRCH") return false;
++		throw error;
++	}
++}
++
++describe("owned checker processes", () => {
++	it.skipIf(process.platform === "win32")(
++		"kills an ignored-TERM grandchild even after the checker leader has exited",
++		async () => {
++			const directory = mkdtempSync(join(tmpdir(), "fleetpi-checker-tree-"));
++			writeFileSync(join(directory, "check.py"), CHECKER_TREE);
++			const controller = new AbortController();
++			const reason = new Error("fixture cancelled");
++			const command = pythonCheckCommand(process.execPath)({
++				taskDir: directory,
++				workspace: directory,
++				output: join(directory, "result"),
++				round: 1,
++				signal: controller.signal,
++			});
++			// Attach rejection handling before cancellation, including fixture setup failures.
++			const completed = command.then(
++				(value) => ({ value, error: undefined }),
++				(error: unknown) => ({ value: undefined, error }),
++			);
++			let pids: { parent: number; grandchild: number } | undefined;
++			try {
++				const pidPath = join(directory, "pids.json");
++				await waitUntil(() => existsSync(pidPath));
++				pids = JSON.parse(readFileSync(pidPath, "utf8")) as { parent: number; grandchild: number };
++				expect(alive(pids.parent)).toBe(true);
++				expect(alive(pids.grandchild)).toBe(true);
++				controller.abort(reason);
++				const outcome = await completed;
++				expect(outcome.error).toBe(reason);
++				expect(existsSync(join(directory, "parent-term"))).toBe(true);
++				expect(existsSync(join(directory, "grandchild-term"))).toBe(true);
++				const { parent, grandchild } = pids;
++				await waitUntil(() => !alive(parent) && !alive(grandchild));
++			} finally {
++				controller.abort(reason);
++				await completed;
++				// Failure cleanup is scoped to the fixture's process group, never a name match.
++				if (pids) {
++					try {
++						process.kill(-pids.parent, "SIGKILL");
++					} catch (error) {
++						if ((error as NodeJS.ErrnoException).code !== "ESRCH") console.error("fixture cleanup failed", error);
++					}
++				}
++				rmSync(directory, { recursive: true, force: true });
++			}
++		},
++		15_000,
++	);
++
++	it("rejects pre-aborted work before launching an executable", async () => {
++		const reason = new Error("already cancelled");
++		await expect(
++			pythonCheckCommand("executable-must-not-be-started")({
++				taskDir: tmpdir(),
++				workspace: tmpdir(),
++				output: "unused",
++				round: 1,
++				signal: AbortSignal.abort(reason),
++			}),
++		).rejects.toBe(reason);
++	});
++});
 diff --git a/packages/fleetpi/test/checker-service.test.ts b/packages/fleetpi/test/checker-service.test.ts
 new file mode 100644
 index 0000000..3594619
@@ -4408,6 +5043,50 @@ index 0000000..3594619
 +		const fixed = await fixture.checker.check(1, "y");
 +		expect(fixed.memoized).toBe(false);
 +		expect(fixed.passed).toBe(true);
++	});
++});
+diff --git a/packages/fleetpi/test/engine-server-spec.test.ts b/packages/fleetpi/test/engine-server-spec.test.ts
+new file mode 100644
+index 0000000..c0e3794
+--- /dev/null
++++ b/packages/fleetpi/test/engine-server-spec.test.ts
+@@ -0,0 +1,38 @@
++// Configuration regressions only: no process or model is started.
++import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { afterEach, describe, expect, it } from "vitest";
++import { vllmServerSpec } from "../src/engine/engine-supervisor.ts";
++
++const cleanup: string[] = [];
++afterEach(() => {
++	for (const dir of cleanup.splice(0)) rmSync(dir, { recursive: true, force: true });
++});
++function spec(command: string[], port?: number) {
++	const root = mkdtempSync(join(tmpdir(), "fleetpi-spec-"));
++	cleanup.push(root);
++	const configPath = join(root, "config.json");
++	writeFileSync(configPath, JSON.stringify({ command, base: "http://127.0.0.1:8090/v1" }));
++	return vllmServerSpec({ repoRoot: root, configPath, logPath: join(root, "engine.log"), port });
++}
++describe("vLLM local server address", () => {
++	it("keeps an explicit CLI port consistent with the health/API address", () => {
++		const result = spec(["vllm", "serve", "model", "--port", "8090"], 9091);
++		expect(result.args.slice(result.args.indexOf("--port"), result.args.indexOf("--port") + 2)).toEqual([
++			"--port",
++			"9091",
++		]);
++		expect(result.baseUrl).toBe("http://127.0.0.1:9091/v1");
++	});
++	it("adds a missing port and retains required model compatibility flags", () => {
++		const result = spec(["vllm", "serve", "model"], 9092);
++		expect(result.args).toContain("9092");
++		expect(result.args).toContain("--tool-call-parser");
++		expect(result.baseUrl).toBe("http://127.0.0.1:9092/v1");
++	});
++	it("rejects an invalid port before starting any process", () => {
++		for (const port of [-1, 0, 65536, NaN, 8090.5])
++			expect(() => spec(["vllm", "serve", "model"], port)).toThrow(/port/);
 +	});
 +});
 diff --git a/packages/fleetpi/test/festival-runner.test.ts b/packages/fleetpi/test/festival-runner.test.ts
@@ -5041,6 +5720,422 @@ index 0000000..4329cd4
 +				expect(new PathGuard(workspace, agent.ownedFiles).writable).toEqual(agent.ownedFiles);
 +			}
 +		}
++	});
++});
+diff --git a/packages/fleetpi/test/posttrial-regressions.test.ts b/packages/fleetpi/test/posttrial-regressions.test.ts
+new file mode 100644
+index 0000000..edaf4a7
+--- /dev/null
++++ b/packages/fleetpi/test/posttrial-regressions.test.ts
+@@ -0,0 +1,410 @@
++// Model-free regressions for the post-trial cancellation, evidence, resume and metric fixes.
++
++import { readdirSync, readFileSync, writeFileSync } from "node:fs";
++import { dirname, join } from "node:path";
++import { PassThrough } from "node:stream";
++import type { TranscriptContext } from "@earendil-works/pi-ai";
++import { fauxAssistantMessage } from "@earendil-works/pi-ai/compat";
++import type { AgentSessionEvent } from "@earendil-works/pi-coding-agent";
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { type CheckCommand, CheckerService } from "../src/checker/checker-service.ts";
++import { FleetTelemetry } from "../src/fleet/fleet-telemetry.ts";
++import { ProgressLedger } from "../src/ledger/progress-ledger.ts";
++import { EventLog } from "../src/run/event-log.ts";
++import { type RunFestivalOptions, runFestival } from "../src/run/festival-runner.ts";
++import type { RunState } from "../src/run/run-state.ts";
++import { SessionObserver } from "../src/run/session-observer.ts";
++import { sumTotals } from "../src/run/totals.ts";
++import { loadFestivalTask } from "../src/task/festival-task.ts";
++import { DEFAULT_LIMITS, emptyTotals, type FleetEvent } from "../src/types.ts";
++import { Dashboard } from "../src/ui/dashboard.ts";
++import { snapshotProtectedFiles } from "../src/workspace/workspace.ts";
++import {
++	agentContext,
++	createFaux,
++	createRunFixture,
++	HOME,
++	openAgent,
++	rawCheckResult,
++	TASK_DIR,
++	tempDir,
++	textOf,
++} from "./support.ts";
++
++const task = loadFestivalTask(TASK_DIR);
++const cleanups: Array<() => void> = [];
++afterEach(() => {
++	vi.restoreAllMocks();
++	while (cleanups.length) cleanups.pop()?.();
++});
++
++function deferred<T>() {
++	let resolve!: (value: T) => void;
++	const promise = new Promise<T>((done) => {
++		resolve = done;
++	});
++	return { promise, resolve };
++}
++
++describe("buffered delivery metrics", () => {
++	it("clears unavailable call rates and starts the resumed dashboard clock at this attempt", () => {
++		vi.spyOn(Date, "now").mockReturnValue(100000000);
++		const out = Object.assign(new PassThrough(), { columns: 160 });
++		const chunks: string[] = [];
++		out.on("data", (chunk) => chunks.push(chunk.toString()));
++		const dashboard = new Dashboard(out, "FleetPi");
++		const base = { t_unix: 100000, elapsed: 86400, mode: "fleet8" as const, round: 1 };
++		dashboard.handle({ ...base, event: "run_resume", agents: [{ agent: "home" }] });
++		dashboard.handle({ ...base, event: "call_end", agent: "home", requestTokPerSec: 100 });
++		dashboard.stop();
++		expect(chunks.join("")).toContain("100.0");
++		chunks.length = 0;
++		dashboard.handle({ ...base, event: "call_end", agent: "home", requestTokPerSec: null });
++		dashboard.stop();
++		expect(chunks.join("")).not.toContain("100.0");
++		expect(chunks.join("")).not.toContain("1440:00");
++		expect(chunks.join("")).toContain("cover this attempt");
++		out.destroy();
++	});
++
++	it("does not turn a one-millisecond delivery burst into generation throughput", () => {
++		const { dir, cleanup } = tempDir("buffered-metric");
++		cleanups.push(cleanup);
++		const log = new EventLog(join(dir, "events.jsonl"), "fleet8", 0);
++		const events: FleetEvent[] = [];
++		log.subscribe((event) => events.push(event));
++		const observer = new SessionObserver({
++			agentId: "home",
++			log,
++			callsPath: join(dir, "calls.jsonl"),
++			maxTurnsPerRound: 40,
++			onTurnLimit: () => {},
++		});
++		let emit!: (event: AgentSessionEvent) => void;
++		observer.attach({
++			subscribe: (listener) => {
++				emit = listener;
++				return () => {};
++			},
++		});
++		const now = vi.spyOn(Date, "now");
++		const message = fauxAssistantMessage("buffered result");
++		message.usage = { ...message.usage, output: 100 };
++		now.mockReturnValue(1000);
++		emit({ type: "turn_start" });
++		now.mockReturnValue(1999);
++		emit({
++			type: "message_update",
++			message,
++			assistantMessageEvent: {
++				type: "text_delta",
++				contentIndex: 0,
++				delta: "buffered result",
++				partial: message,
++			},
++		});
++		now.mockReturnValue(2000);
++		emit({ type: "message_end", message });
++		const end = events.find((event) => event.event === "call_end");
++		expect(end).toMatchObject({ tokPerSec: null, requestTokPerSec: 100, firstDeltaMs: 999, ms: 1000 });
++		expect(sumTotals([observer.view.totals])).toMatchObject({
++			streamTokensPerSecond: null,
++			streamedOutputTokens: 0,
++			streamSeconds: 0,
++			requestTokensPerSecond: 100,
++			requestSeconds: 1,
++			requestOutputTokens: 100,
++		});
++	});
++});
++
++describe("checker evidence and cancellation", () => {
++	function setup(name: string, command: CheckCommand, concurrency = 1) {
++		const fixture = createRunFixture(name, "vllm8", command);
++		cleanups.push(fixture.cleanup);
++		const options = {
++			task: fixture.task,
++			workspace: fixture.workspace,
++			outputDir: fixture.outputDir,
++			protectedSnapshot: snapshotProtectedFiles(fixture.task, fixture.workspace),
++			concurrency,
++			command,
++		};
++		return { fixture, options, checker: new CheckerService(options) };
++	}
++
++	it("never reuses old snapshot/result paths after recreating the service", async () => {
++		const { options, checker } = setup("unique-checks", async ({ round }) => rawCheckResult(task, round));
++		const first = await checker.check(1, "home");
++		const original = readFileSync(first.resultPath, "utf8");
++		const snapshot = readFileSync(join(dirname(first.resultPath), "workspace/pages/home.html"), "utf8");
++		const restarted = new CheckerService(options);
++		const next = await restarted.check(1, "home");
++		await restarted.check(1, "home"); // A memo hit removes only its own newly-created directory.
++		expect(next.resultPath).not.toBe(first.resultPath);
++		expect(readFileSync(first.resultPath, "utf8")).toBe(original);
++		expect(readFileSync(join(dirname(first.resultPath), "workspace/pages/home.html"), "utf8")).toBe(snapshot);
++	});
++
++	it("one cancelled subscriber does not abort another subscriber's shared checker", async () => {
++		const gate = deferred<unknown>();
++		let commandSignal: AbortSignal | undefined;
++		const { checker } = setup("shared-abort", async ({ signal }) => {
++			commandSignal = signal;
++			return gate.promise;
++		});
++		const cancel = new AbortController();
++		const first = checker.check(1, "a", cancel.signal);
++		const second = checker.check(1, "b");
++		cancel.abort();
++		await expect(first).rejects.toMatchObject({ name: "AbortError" });
++		expect(commandSignal?.aborted).toBe(false);
++		gate.resolve(rawCheckResult(task, 1));
++		expect((await second).passed).toBe(true);
++		expect(checker.accounting().checkerRuns).toBe(1);
++	});
++
++	it("removes cancelled queued checks without invoking their command", async () => {
++		const gate = deferred<unknown>();
++		let commands = 0;
++		const { checker } = setup("queued-check", async () => {
++			commands++;
++			return gate.promise;
++		});
++		const first = checker.check(1, "a");
++		const cancel = new AbortController();
++		const queued = checker.check(2, "b", cancel.signal);
++		cancel.abort();
++		await expect(queued).rejects.toMatchObject({ name: "AbortError" });
++		gate.resolve(rawCheckResult(task, 1));
++		await first;
++		await checker.drain();
++		expect(commands).toBe(1);
++	});
++});
++
++describe("durable ledger and terminal errors", () => {
++	it("invalidates a passing snapshot after a write and after restart", async () => {
++		const fixture = createRunFixture("stale-ledger", "fleet8", async ({ round }) => rawCheckResult(task, round));
++		cleanups.push(fixture.cleanup);
++		const path = join(fixture.outputDir, "ledger.json");
++		const ledger = ProgressLedger.create(path, "home", HOME.ownedFiles);
++		ledger.bindWorkspace(fixture.workspace);
++		ledger.setPending({ round: 1, kind: "round", prompt: "Build", issuedAtUnix: 1 });
++		const checked = await fixture.checker.check(1, "home");
++		ledger.recordCheck(checked, checked.pageHashes, false);
++		expect(ledger.completedPages()).toEqual(HOME.ownedFiles);
++		writeFileSync(join(fixture.workspace, "pages/home.html"), "changed after check");
++		const resumed = ProgressLedger.load(path) as ProgressLedger;
++		resumed.bindWorkspace(fixture.workspace);
++		expect(resumed.completedPages()).toEqual([]);
++		expect(resumed.render()).toContain("not verified for current bytes");
++		// An old check finishing after a write still cannot verify the newer content.
++		resumed.recordCheck(checked, checked.pageHashes, false);
++		expect(resumed.completedPages()).toEqual([]);
++		expect(resumed.state.pages["pages/home.html"].sha256).toBe(checked.pageHashes["pages/home.html"]);
++	});
++
++	it("keeps a provider error pending and restores consumed turn/repair counts", async () => {
++		const fixture = createRunFixture("terminal-error", "vllm1", async ({ round }) => rawCheckResult(task, round));
++		cleanups.push(fixture.cleanup);
++		const faux = await createFaux("terminal-error", fixture.outputDir);
++		cleanups.push(faux.cleanup);
++		const context = agentContext(fixture, faux, { enhanced: false, sessionSettings: { retry: { enabled: false } } });
++		context.maxTurnsPerRound = 2;
++		const agent = await openAgent(HOME, context);
++		faux.faux.setResponses([fauxAssistantMessage("", { stopReason: "error", errorMessage: "invalid request" })]);
++		const pending = { round: 1, kind: "repair" as const, prompt: "Repair", issuedAtUnix: 1 };
++		expect(await agent.runTask(pending)).toBe("failed");
++		expect(agent.ledger.state.pendingTask).toEqual(pending);
++		expect(agent.ledger.state.turnsThisRound).toBe(1);
++		expect(agent.repairsThisRound).toBe(1);
++		agent.dispose();
++		const resumed = await openAgent(HOME, context, true);
++		cleanups.push(() => resumed.dispose());
++		faux.faux.setResponses([fauxAssistantMessage("Done")]);
++		expect(await resumed.runTask(pending)).toBe("turn_limit");
++		expect(resumed.ledger.state.turnsThisRound).toBe(2);
++		expect(resumed.repairsThisRound).toBe(1); // Replayed repair uses its existing slot.
++		const calls = faux.faux.state.callCount;
++		expect(await resumed.runTask(pending)).toBe("turn_limit");
++		expect(faux.faux.state.callCount).toBe(calls);
++	});
++
++	it("keeps exhausted provider retries failed and pending", async () => {
++		const fixture = createRunFixture("exhausted-error", "vllm1", async ({ round }) => rawCheckResult(task, round));
++		cleanups.push(fixture.cleanup);
++		const faux = await createFaux("exhausted-error", fixture.outputDir);
++		cleanups.push(faux.cleanup);
++		const agent = await openAgent(
++			HOME,
++			agentContext(fixture, faux, {
++				enhanced: false,
++				sessionSettings: { retry: { enabled: true, maxRetries: 1, baseDelayMs: 1 } },
++			}),
++		);
++		cleanups.push(() => agent.dispose());
++		faux.faux.setResponses(
++			Array.from({ length: 2 }, () =>
++				fauxAssistantMessage("", { stopReason: "error", errorMessage: "overloaded_error" }),
++			),
++		);
++		const pending = { round: 1, kind: "round" as const, prompt: "Build", issuedAtUnix: 1 };
++		expect(await agent.runTask(pending)).toBe("failed");
++		expect(faux.faux.state.callCount).toBe(2);
++		expect(agent.ledger.state.pendingTask).toEqual(pending);
++	});
++});
++
++describe("runner cancellation and resume accounting", () => {
++	async function setup(name: string, mode: RunFestivalOptions["mode"] = "vllm1") {
++		const { dir, cleanup } = tempDir(name);
++		cleanups.push(cleanup);
++		const faux = await createFaux(name, dir);
++		cleanups.push(faux.cleanup);
++		faux.faux.setResponses(Array.from({ length: 100 }, () => fauxAssistantMessage("Done")));
++		const events: FleetEvent[] = [];
++		let checks = 0;
++		const options: RunFestivalOptions = {
++			mode,
++			taskDir: TASK_DIR,
++			outputDir: join(dir, "run"),
++			baseUrl: "http://127.0.0.1:1/v1",
++			model: "faux-glimmer",
++			modelRuntime: faux.runtime,
++			piModel: faux.model,
++			checkCommand: async ({ round }) => {
++				checks++;
++				return rawCheckResult(task, round);
++			},
++			telemetry: new FleetTelemetry("http://127.0.0.1:1/v1", 50, async () => new Response("", { status: 404 })),
++			onEvent: (event) => events.push(event),
++		};
++		return { options, faux, events, checks: () => checks };
++	}
++
++	it("does not call the staged workflow successful when only the final site passes", async () => {
++		const { options } = await setup("missed-milestone");
++		const result = await runFestival({
++			...options,
++			checkCommand: async ({ round }) => rawCheckResult(task, round, round === 1 ? ["pages/home.html"] : []),
++		});
++		expect(result.quality[0].checksPassed).toBeLessThan(result.quality[0].checksTotal);
++		expect(result.finalPassed).toBe(true);
++		expect(result.passed).toBe(false);
++	});
++
++	it("honors an already-aborted input without issuing model calls", async () => {
++		const { options, faux } = await setup("pre-aborted");
++		const cancel = new AbortController();
++		cancel.abort();
++		const result = await runFestival({ ...options, signal: cancel.signal });
++		expect(result.cancelled).toBe(true);
++		expect(result.infrastructureError).toBeUndefined();
++		expect(faux.faux.state.callCount).toBe(0);
++	});
++
++	it("does not launch a ready repair after cancellation during its checker", async () => {
++		const { options, faux } = await setup("cancel-ready", "fleet8");
++		const cancel = new AbortController();
++		let repairs = 0;
++		faux.faux.setResponses(
++			Array.from({ length: 100 }, () => (context: TranscriptContext) => {
++				const last = context.messages.findLast((message) => message.role === "user");
++				if (last && "content" in last && textOf(last.content).includes("still fail")) repairs++;
++				return fauxAssistantMessage("Done");
++			}),
++		);
++		const result = await runFestival({
++			...options,
++			signal: cancel.signal,
++			checkCommand: async ({ round }) => {
++				cancel.abort();
++				return rawCheckResult(task, round, task.editableFiles);
++			},
++		});
++		expect(result.cancelled).toBe(true);
++		expect(result.infrastructureError).toBeUndefined();
++		expect(result.rounds).toEqual([]);
++		expect(repairs).toBe(0);
++	});
++
++	it("charges shared baseline checks once rather than once for every agent", async () => {
++		const { options, checks } = await setup("shared-count", "vllm8");
++		const result = await runFestival(options);
++		expect(result.passed).toBe(true);
++		expect(checks()).toBe(3);
++		expect(result.totals.checkerRuns).toBe(checks());
++		expect(result.runTotals?.checkerRuns).toBe(checks());
++	});
++
++	it("preserves attempt evidence and accumulates clean resumed totals and active wall", async () => {
++		const { options, events } = await setup("resume-totals");
++		const cancel = new AbortController();
++		const first = await runFestival({
++			...options,
++			signal: cancel.signal,
++			onEvent: (event) => {
++				events.push(event);
++				if (event.event === "round_complete" && event.round === 1) cancel.abort();
++			},
++		});
++		const attemptPath = join(options.outputDir, "attempts", `${first.attemptId}.json`);
++		const original = readFileSync(attemptPath, "utf8");
++		const resumed = await runFestival({ ...options, resume: true });
++		expect(resumed.passed).toBe(true);
++		expect(resumed.totalsScope).toBe("attempt");
++		expect(resumed.runTotals?.calls).toBe(first.totals.calls + resumed.totals.calls);
++		expect(resumed.runTotals?.wallSeconds).toBeCloseTo(first.totals.wallSeconds + resumed.totals.wallSeconds, 6);
++		expect(resumed.accountingComplete).toBe(true);
++		expect(readFileSync(attemptPath, "utf8")).toBe(original);
++		expect(readdirSync(join(options.outputDir, "attempts"))).toHaveLength(2);
++		const restart = events.find((event) => event.event === "run_resume");
++		expect(restart?.remainingWallSeconds).toBeCloseTo(DEFAULT_LIMITS.runWallSeconds - first.totals.wallSeconds, 6);
++		await expect(runFestival({ ...options, resume: true })).rejects.toThrow("finished run");
++	});
++
++	it("rejects changed resume limits/model and does not charge overnight downtime after a crash", async () => {
++		const { options, events } = await setup("resume-unknown");
++		const cancel = new AbortController();
++		cancel.abort();
++		await runFestival({ ...options, signal: cancel.signal });
++		await expect(runFestival({ ...options, resume: true, model: "different" })).rejects.toThrow("different model");
++		await expect(runFestival({ ...options, resume: true, limits: { maxOutputTokens: 32 } })).rejects.toThrow(
++			"different model",
++		);
++		const path = join(options.outputDir, "state.json");
++		const state = JSON.parse(readFileSync(path, "utf8")) as RunState;
++		state.attempts[0].totals = null;
++		state.attempts[0].wallBudgetSeconds = 10;
++		state.attempts[0].startedAtUnix -= 86400;
++		writeFileSync(path, JSON.stringify(state));
++		const resumed = await runFestival({ ...options, resume: true });
++		expect(resumed.passed).toBe(true);
++		expect(resumed.runTotals).toBeNull();
++		expect(resumed.accountingComplete).toBe(false);
++		expect(resumed.unknownWallInterval).toBe(true);
++		expect(events.find((event) => event.event === "run_resume")?.remainingWallSeconds).toBe(
++			DEFAULT_LIMITS.runWallSeconds - 10,
++		);
++	});
++
++	it.each(["round", "run"] as const)("does not reset an exhausted %s wall budget on resume", async (scope) => {
++		const { options, faux } = await setup(`budget-${scope}`);
++		const cancel = new AbortController();
++		cancel.abort();
++		await runFestival({ ...options, signal: cancel.signal });
++		const path = join(options.outputDir, "state.json");
++		const state = JSON.parse(readFileSync(path, "utf8")) as RunState;
++		if (scope === "round") {
++			state.roundProgress[1] = { wallSeconds: DEFAULT_LIMITS.roundWallSeconds, totals: emptyTotals() };
++		} else {
++			state.attempts[0].wallBudgetSeconds = DEFAULT_LIMITS.runWallSeconds;
++		}
++		writeFileSync(path, JSON.stringify(state));
++		const resumed = await runFestival({ ...options, resume: true });
++		expect(resumed.timedOut).toBe(true);
++		expect(resumed.passed).toBe(false);
++		expect(faux.faux.state.callCount).toBe(0);
 +	});
 +});
 diff --git a/packages/fleetpi/test/support.ts b/packages/fleetpi/test/support.ts

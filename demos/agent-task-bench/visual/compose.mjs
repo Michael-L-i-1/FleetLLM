@@ -48,9 +48,9 @@ h1{margin:0;font:600 26px system-ui}header p{font-size:15px;color:#b0c4c3;margin
 main{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px 18px}.lane{background:#182428;border:1px solid #375054;border-radius:10px;overflow:hidden}
 .top{padding:16px;height:89px}.label{font:600 23px system-ui}.status{margin-top:8px;font-size:15px;color:#bed3ce}
 .viewport{height:400px;background:#fff;overflow:hidden}.viewport img{display:block;width:100%;height:100%;object-fit:contain;object-position:top;background:#fff}
-.meta{height:100px;padding:14px;font-size:14px;line-height:1.65;color:#b8cdca}.meta strong{color:#e4f4ed;font-weight:500}
+.meta{height:118px;padding:14px;font-size:14px;line-height:1.65;color:#b8cdca}.meta strong{color:#e4f4ed;font-weight:500}
 footer{padding:0 22px;font-size:13px;color:#9eb6b2}.done{color:#8de4ad}.failed{color:#ffbd9d}
-</style><header><div><h1></h1><p>Actual website snapshots · identical task · runs executed separately</p></div><div id="clock"></div></header><main>${lanes.map((_,i) => `<section class="lane"><div class="top"><div id="label${i}" class="label"></div><div id="status${i}" class="status"></div></div><div class="viewport"><img id="image${i}"></div><div class="meta"><strong id="metrics${i}"></strong><div id="sample${i}"></div></div></section>`).join('')}</main><footer></footer>`;
+</style><header><div><h1></h1><p>Actual website snapshots · identical task · runs executed separately</p></div><div id="clock"></div></header><main>${lanes.map((_,i) => `<section class="lane"><div class="top"><div id="label${i}" class="label"></div><div id="status${i}" class="status"></div></div><div class="viewport"><img id="image${i}"></div><div class="meta"><strong id="metrics${i}"></strong><div id="round${i}"></div><div id="sample${i}"></div></div></section>`).join('')}</main><footer></footer>`;
 fs.writeFileSync(path.join(output, 'dashboard.html'), dashboard);
 await page.goto(pathToFileURL(path.join(output, 'dashboard.html')).href);
 const index = [];
@@ -67,7 +67,7 @@ try {
       if (ended) frame = l.frames[l.frames.length - 1];
       else for (const f of l.frames) { if (f.elapsed <= effective) frame = f; else break; }
       return {label:l.label, ended, status:l.status, effective, snapshot:frame.elapsed,
-        image:pathToFileURL(frame.absolute).href, final_capture_failed: ended && l.final_capture_failed, metrics:ended ? (l.metrics || '') : 'Run metrics appear at finish'};
+        image:pathToFileURL(frame.absolute).href, round_info:frame.round_info || frame.last_event || {}, selected_page:frame.selected_page, final_capture_failed: ended && l.final_capture_failed, metrics:ended ? (l.metrics || '') : 'Run metrics appear at finish'};
     });
     await page.evaluate(({states,t,speed,title}) => {
       document.querySelector('h1').textContent = title;
@@ -79,6 +79,8 @@ try {
         status.className = 'status ' + (s.ended ? (/pass|success|complete/i.test(s.status) && !/fail|incomplete/i.test(s.status) ? 'done' : 'failed') : '');
         document.querySelector('#image'+i).src = s.image;
         document.querySelector('#metrics'+i).textContent = s.metrics;
+        const round = s.round_info;
+        document.querySelector('#round'+i).textContent = round.round == null ? '' : `Round ${round.round} · ${round.phase || ''}` + (s.selected_page ? ` · ${s.selected_page}` : '');
         document.querySelector('#sample'+i).textContent = `Actual snapshot at ${s.snapshotLabel}` + (s.final_capture_failed ? ' · FINAL CAPTURE FAILED: last successful view' : '');
       });
     }, {states:states.map(s => ({...s,effectiveLabel:timeLabel(s.effective),snapshotLabel:timeLabel(s.snapshot)})),t:{label:timeLabel(t)},speed,title:config.title || 'Muse Glimmer · real coding task comparison'});

@@ -70,3 +70,43 @@ just after the harness's finish event; it shows the unchanged final artifact.
 The compositor refuses missing screenshots or existing composite-frame folders.
 Use fresh output folders. It requires the existing Playwright dependency under
 `demos/site-refactor/node_modules` and `ffmpeg`; no new packages are installed.
+
+
+## Multiple real pages and task rounds
+
+For a task-specific renderer that produces several standalone pages, add:
+
+```sh
+--renderer /path/to/festival-site/render.py \
+--pages index.html,lineup.html,schedule.html,venues.html,tickets.html,accessibility.html,volunteer.html,faq.html \
+--entry index.html
+```
+
+With more than one page, each captured frame is a monitor dashboard containing a
+large actual page screenshot and real thumbnails of every declared page. This
+monitor is capture tooling, not part of the model's website or an aesthetic fix.
+The selected page follows the latest `file_write` event, then rotates across
+pages while waiting. Initial and final frames return to `--entry` so the three
+lanes' final views are directly comparable. The renderer may return
+`source_to_output` in its stdout JSON to map `pages/home.html` to `index.html`.
+Without that mapping, source and output basenames are matched.
+
+Screenshots are cached by rendered HTML SHA-256. Unchanged pages reuse their
+exact prior image and retain their original sample timestamp, avoiding eight
+browser redraws on every ten-second tick. Page hashes, image paths, timestamps,
+errors, and the selected page are preserved in each manifest entry's `pages` and
+`selected_page` fields. A `changed HTML` label only means a difference from the
+starter; it never means the page passed acceptance tests.
+
+Actual `round_start`, `phase`, `round_complete` and `file_write` events supply
+round title, phase, check outcome and latest file-write labels. The recorder does
+not infer completion from visual polish. These fields also appear in the
+three-lane video's stage captions. Omitting `--pages` preserves the original
+single-page coffee capture interface. The compositor retains the same real-time
+axis and its existing `max_run_seconds / speed + 3` output-duration bound.
+
+Validation: syntax checks, an eight-page browser smoke test with one genuine
+source edit and seven reused thumbnails, round/stage propagation, a three-status
+compositor test, and ffprobe duration verification (4 real seconds at 2× plus a
+3-second hold produced exactly 5.0 seconds). Synthetic smoke artifacts stay in
+system temporary storage and are not benchmark results.

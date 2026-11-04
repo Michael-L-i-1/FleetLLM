@@ -86,5 +86,13 @@ class HarnessTest(unittest.TestCase):
             self.assertEqual((b.workspace/'module0.txt').read_text(),'TODO')
             self.assertEqual(s['failed_calls'],1)
 
+    def test_validator_crash_is_infrastructure_not_a_repair_loop(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);task=self.fixture(root);base,_=self.server()
+            (task/'check.py').write_text('raise RuntimeError("broken grader interface")\n')
+            s=runner.Benchmark(self.args(task,root/'run',base,1)).run()
+            self.assertFalse(s['passed']);self.assertTrue(s['infrastructure_error'])
+            self.assertEqual(s['calls'],9)
+
 
 if __name__=='__main__':unittest.main()

@@ -13,6 +13,8 @@ import time
 import urllib.request
 
 HERE = Path(__file__).resolve().parent
+class InfrastructureError(RuntimeError):
+    pass
 PROTOCOL = '''You are a software engineering agent editing a local project. Complete the assigned work.
 Return exactly ONE JSON object per response, without Markdown or surrounding prose.
 Tools:
@@ -189,6 +191,11 @@ class Benchmark:
                 detail = json.loads(p.stdout)
             except ValueError:
                 detail = {'stdout':p.stdout[-10000:],'stderr':p.stderr[-10000:]}
+                result={'passed':False,'infrastructure_error':True,'returncode':p.returncode,
+                        'details':detail,'seconds':time.monotonic()-start}
+                write_json(target/'result.json',result)
+                self.event('check',result=result)
+                return result
             passed = p.returncode == 0 and detail.get('passed',detail.get('success',True)) is not False
             changed = [name for name,sha in self.protected.items()
                        if not (self.workspace/name).is_file() or hashlib.sha256((self.workspace/name).read_bytes()).hexdigest()!=sha]
@@ -197,7 +204,7 @@ class Benchmark:
                 detail['protected_files_changed'] = changed
             result = {'passed':passed,'returncode':p.returncode,'details':detail,'seconds':time.monotonic()-start}
         except Exception as error:
-            result = {'passed':False,'error':str(error),'seconds':time.monotonic()-start}
+            result = {'passed':False,'infrastructure_error':True,'error':str(error),'seconds':time.monotonic()-start}
         write_json(target/'result.json', result)
         if result['passed'] and self.first_pass_seconds is None:
             self.first_pass_seconds = time.monotonic()-self.started
@@ -222,6 +229,7 @@ class Benchmark:
                 if kind == 'done':
                     if can_check:
                         result = self.check()
+                        if result.get('infrastructure_error'):raise InfrastructureError('Protected checker failed to execute/return JSON')
                         if result['passed']:
                             status = 'done'
                             break
@@ -251,11 +259,14 @@ class Benchmark:
                     feedback = {'written':filename,'bytes':len(text.encode())}
                 elif kind == 'check' and can_check:
                     feedback = self.check()
+                    if feedback.get('infrastructure_error'):raise InfrastructureError('Protected checker failed to execute/return JSON')
                     if feedback['passed']:
                         status = 'done'
                         break
                 else:
                     raise ValueError('Unknown/unavailable action. Use read, write, done; integration may check.')
+            except InfrastructureError:
+                raise
             except Exception as error:
                 with self.lock:self.tool_errors += 1
                 feedback = {'error':str(error),'instruction':'Return a complete valid JSON tool action; preserve task behavior.'}
@@ -267,6 +278,7 @@ class Benchmark:
 
     def run(self):
         error = None
+        infrastructure_issue = False
         try:
             if self.a.capture:
                 self.capture = subprocess.Popen(['node',str(HERE/'visual/record.mjs'),'--workspace',str(self.workspace),
@@ -280,7 +292,7 @@ class Benchmark:
                     except (OSError,ValueError):initialized=False
                     if initialized:break
                     if self.capture.poll() is not None or time.monotonic()>until:
-                        raise RuntimeError('Recorder failed initial-frame handshake')
+                        raise InfrastructureError('Recorder failed initial-frame handshake')
                     time.sleep(.1)
             if self.a.agents == 1:
                 self.worker_results.append(self.agent('single',self.editable,
@@ -294,6 +306,7 @@ class Benchmark:
                     futures=[pool.submit(self.agent,w['name'],{w.get('file',w.get('path'))},w['brief'],self.a.worker_calls,False) for w in workers]
                     self.worker_results=[f.result() for f in as_completed(futures)]
                 initial=self.check()
+                if initial.get('infrastructure_error'):raise InfrastructureError('Protected checker failed to execute/return JSON')
                 if not initial['passed']:
                     remaining=max(0,self.a.max_calls-self.call_count)
                     self.worker_results.append(self.agent('integrator',self.editable,
@@ -303,6 +316,7 @@ class Benchmark:
             final=self.check()
         except Exception as exc:
             error=str(exc)
+            infrastructure_issue=isinstance(exc,InfrastructureError)
             self.event('run_error',error=error)
             final=self.check()
         finally:
@@ -317,6 +331,7 @@ class Benchmark:
         summary={'task':self.spec.get('name',self.task_dir.name),'agents':self.a.agents,'model':self.a.model,
                  'started_unix':self.start_epoch,'finished_unix':time.time(),
                  'passed':final['passed'],'error':error,'wall_seconds':elapsed,'time_to_first_passing_check_seconds':self.first_pass_seconds,
+                 'infrastructure_error':infrastructure_issue or bool(final.get('infrastructure_error')),
                  'completion_tokens':sum(c['usage'].get('completion_tokens',0) for c in good),
                  'prompt_tokens':sum(c['usage'].get('prompt_tokens',0) for c in good),'calls':self.call_count,
                  'failed_calls':sum(bool(c['error']) for c in self.calls),'tool_errors':self.tool_errors,

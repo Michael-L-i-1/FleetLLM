@@ -73,7 +73,7 @@
     "--workspace",
     "{workspace}",
     "--output",
-    "{output}"
+    "{output}/details.json"
   ],
   "validation_cwd": "{workspace}",
   "success_field": "success",

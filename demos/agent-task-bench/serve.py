@@ -84,6 +84,8 @@ def main():
                 meta['harness_returncode']=result.returncode
                 if (a.output/'task/summary.json').exists():
                     summary=json.loads((a.output/'task/summary.json').read_text());meta['task_passed']=summary['passed']
+                    if summary.get('infrastructure_error'):
+                        raise RuntimeError('Protected checker infrastructure failure; trial cannot be scored')
                 else:raise RuntimeError('Harness did not preserve a summary')
                 # A scored task failure is a complete trial, not an infrastructure success.
             meta['complete']=True

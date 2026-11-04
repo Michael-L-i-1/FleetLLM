@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <fcntl.h>
+#include <math.h>
 #include <unistd.h>
 
 double now_secs(void) {
@@ -30,7 +31,13 @@ static void *be_alloc(void *user, size_t bytes, void **handle) {
     return b->alloc_kv(b, bytes, handle);
 }
 
-engine *engine_new(model *m, backend *be, const tokenizer *tok, size_t kv_budget) {
+engine *engine_new(model *m, backend *be, const tokenizer *tok, size_t kv_budget) { return engine_new_with_recurrent_fraction(m, be, tok, kv_budget, .25); }
+
+engine *engine_new_with_recurrent_fraction(model *m, backend *be, const tokenizer *tok, size_t kv_budget, double fraction) {
+    if (!isfinite(fraction) || fraction < .05 || fraction > .90) {
+        fprintf(stderr, "recurrent fraction must be between .05 and .90\n");
+        exit(1);
+    }
     engine *e = calloc(1, sizeof *e);
     e->m = m;
     e->be = be;
@@ -39,7 +46,7 @@ engine *engine_new(model *m, backend *be, const tokenizer *tok, size_t kv_budget
     e->min_share = 16;
     const model_cfg *c = &m->c;
     size_t recurrent = (c->recurrent_floats * 4 + 16383) & ~(size_t)16383;
-    int slots = recurrent ? (int)(kv_budget / 4 / recurrent) : 0;
+    int slots = recurrent ? (int)((double)kv_budget * fraction / recurrent) : 0;
     if (recurrent && slots < 1) slots = 1;
     if (slots > 64) slots = 64;
     if (recurrent && kv_budget <= recurrent + (1u << 20)) {
@@ -49,7 +56,9 @@ engine *engine_new(model *m, backend *be, const tokenizer *tok, size_t kv_budget
     kv_init(&e->kv, c->n_full, c->n_swa, c->n_kv, c->hd, c->window, kv_budget - recurrent * slots, be->kv_elem, be_alloc, be);
     e->kv.recurrent_bytes = recurrent;
     e->kv.recurrent_limit = slots;
-    if (slots) fprintf(stderr, "[recurrent] %d state slots, %.2f MB each, reserved within KV budget; endpoint prefix snapshots only\n", slots, recurrent / 1e6);
+    if (slots)
+        fprintf(stderr, "[recurrent] %d state slots, %.2f MB each, reserved fraction %.2f within KV budget; endpoint prefix snapshots only\n", slots,
+                recurrent / 1e6, fraction);
     return e;
 }
 
@@ -171,6 +180,23 @@ static uint32_t exclusive_pages(const engine *e, const seq_t *s) {
     return n;
 }
 
+// Moving is only legal when the cached endpoint would immediately be retired
+// after the fork. Active/waited-on states remain owned by their original sequence.
+static bool can_move_recurrent(const engine *e, int id, int len) {
+    const seq_t *s = &e->seqs[id];
+    if (!e->recurrent_state_move || !e->m->c.n_linear || !s->live || !s->cached || s->generating || !s->done || s->swapped || len <= 0 ||
+        len + 64 < s->n_tokens || !kv_has_fork_at(&e->kv, &s->pages, len))
+        return false;
+    for (int i = 0; i < e->n_seqs; i++)
+        if (e->seqs[i].live && e->seqs[i].wait_len && e->seqs[i].wait_for == id && e->seqs[i].wait_gen == s->ng_gen) return false;
+    return true;
+}
+
+static bool can_reuse_sequence(const engine *e, int id, int len) {
+    const seq_t *s = &e->seqs[id];
+    return s->swapped ? len <= s->swap_len : kv_can_fork_at(&e->kv, &s->pages, len) || can_move_recurrent(e, id, len);
+}
+
 // The live sequence whose KV a new prompt can fork the longest prefix of.
 static int best_match(const engine *e, const int32_t *prompt, int n, int *len) {
     int best = -1;
@@ -181,7 +207,7 @@ static int best_match(const engine *e, const int32_t *prompt, int n, int *len) {
         int l = 0;
         while (l < s->n_tokens && l < n && s->tokens[l] == prompt[l]) l++;
         if (l > n - 1) l = n - 1;
-        bool forkable = s->swapped ? l <= s->swap_len : kv_can_fork_at(&e->kv, &s->pages, l);
+        bool forkable = can_reuse_sequence(e, i, l);
         if (l >= e->min_share && l > *len && forkable) { best = i; *len = l; }
     }
     return best;
@@ -220,6 +246,7 @@ uint32_t engine_avail_pages(engine *e) {
 
 int engine_create(engine *e, const int32_t *prompt, int n) {
     int best = -1, best_len = 0, lead = -1, lead_len = 0;
+    bool fullslot_match = false;
     for (int i = 0; i < e->n_seqs; i++) {
         seq_t *s = &e->seqs[i];
         if (!s->live) continue;
@@ -229,18 +256,43 @@ int engine_create(engine *e, const int32_t *prompt, int n) {
         if (l == s->n_tokens && !s->wait_len) while (w < s->n_tokens + s->n_pending && w < n && s->pending[w - s->n_tokens] == prompt[w]) w++;
         if (l > n - 1) l = n - 1; // keep one token to produce logits from
         if (w > n - 1) w = n - 1;
-        bool forkable = s->swapped ? l <= s->swap_len : kv_can_fork_at(&e->kv, &s->pages, l);
+        bool forkable = can_reuse_sequence(e, i, l);
+        if (l >= e->min_share && !forkable && e->kv.recurrent_bytes && e->kv.recurrent_used >= e->kv.recurrent_limit && !s->swapped &&
+            kv_has_fork_at(&e->kv, &s->pages, l))
+            fullslot_match = true;
         if (l >= e->min_share && l > best_len && forkable) { best = i; best_len = l; }
-        if (!e->m->c.n_linear && w > lead_len) { lead = i; lead_len = w; }
+        bool future_endpoint = !s->cached && !s->done && !s->swapped && w > s->n_tokens && (!s->generating || s->n_gen == 0);
+        bool can_wait = !e->m->c.n_linear || (e->recurrent_prefix_dedup && e->kv.recurrent_limit >= 2 && future_endpoint);
+        if (can_wait && w > lead_len) {
+            lead = i;
+            lead_len = w;
+        }
     }
     if (lead >= 0 && lead_len >= best_len + e->min_share) { // worth waiting for a leader still prefilling
         int id = engine_create_fresh(e, prompt, n);
         e->seqs[id].wait_for = lead;
+        e->seqs[id].wait_gen = e->seqs[lead].ng_gen;
         e->seqs[id].wait_len = lead_len;
         return id;
     }
     if (best >= 0 && e->seqs[best].swapped && (!swap_in(e, best) || !kv_can_fork_at(&e->kv, &e->seqs[best].pages, best_len))) best = -1;
-    if (best < 0) return engine_create_fresh(e, prompt, n);
+    if (best < 0) {
+        if (fullslot_match) e->st.fullslot_match_misses++;
+        return engine_create_fresh(e, prompt, n);
+    }
+    if (can_move_recurrent(e, best, best_len)) {
+        int id = new_seq(e); // reacquire source/child pointers after possible reallocation
+        seq_t *source = &e->seqs[best], *child = &e->seqs[id];
+        child->pages = kv_fork_at_move(&e->kv, &source->pages, best_len);
+        append(&child->tokens, &child->n_tokens, &child->cap_tokens, source->tokens, best_len);
+        append(&child->pending, &child->n_pending, &child->cap_pending, prompt + best_len, n - best_len);
+        child->t_start = now_secs();
+        child->prefix_cached = best_len;
+        e->st.shared_tokens += best_len;
+        e->st.state_moves++;
+        engine_release(e, best);
+        return id;
+    }
     touch(e, best);
     int id = engine_fork_at(e, best, best_len, prompt + best_len, n - best_len);
     // A session's next turn: the new sequence holds (shares) all of a retired one,
@@ -257,7 +309,8 @@ static void resolve_wait(engine *e, int id, bool force) {
     if (!s->wait_len) return;
     seq_t *l = &e->seqs[s->wait_for];
     int len = s->wait_len;
-    bool same = l->live && !l->swapped && l->n_tokens >= len && !memcmp(l->tokens, s->pending, sizeof(int32_t) * len);
+    bool same_leader = l->live && l->ng_gen == s->wait_gen;
+    bool same = same_leader && !l->swapped && l->n_tokens >= len && !memcmp(l->tokens, s->pending, sizeof(int32_t) * len);
     if (same && kv_can_fork_at(&e->kv, &l->pages, len)) {
         s->pages = kv_fork_at(&e->kv, &l->pages, len);
         if (e->draft) s->dpages = kv_fork_at(&e->dkv, &l->dpages, len < l->dpages.len ? len : l->dpages.len);
@@ -268,7 +321,7 @@ static void resolve_wait(engine *e, int id, bool force) {
         e->st.deduped_tokens += len;
         s->prefix_cached += len;
         s->wait_len = 0;
-    } else if (force || !l->live || l->swapped || l->n_tokens >= len || l->wait_len) {
+    } else if (force || !same_leader || l->cached || l->done || l->swapped || l->n_tokens >= len || l->wait_len) {
         s->wait_len = 0;
     }
 }
@@ -307,11 +360,44 @@ void engine_release(engine *e, int id) {
 
 void engine_retire(engine *e, int id) {
     seq_t *s = &e->seqs[id];
+    if (e->recurrent_prefix_dedup) s->wait_len = 0; // a cancelled waiter needs no future endpoint
     s->generating = false;
     s->done = true;
     s->cached = true;
     e->cached = realloc(e->cached, sizeof(int) * (e->n_cached + 1));
     e->cached[e->n_cached++] = id;
+}
+
+// Find a reclaimable state in retirement/LRU order. Never reclaim an active
+// sequence or an endpoint still promised to a waiting child. A capture may evict
+// only non-checkpoint endpoints; fresh prefill may also evict checkpoints last.
+static int cached_state_victim(const engine *e, int protect, bool endpoints_only) {
+    for (int pass = 0; pass < (endpoints_only ? 1 : 2); pass++)
+        for (int i = 0; i < e->n_cached; i++) {
+            int id = e->cached[i];
+            const seq_t *s = &e->seqs[id];
+            if (id == protect || !s->live || !s->cached || s->generating || !s->done || s->swapped || !s->pages.recurrent ||
+                s->is_prompt_checkpoint != (pass != 0))
+                continue;
+            bool waited_on = false;
+            for (int j = 0; j < e->n_seqs; j++)
+                if (e->seqs[j].live && e->seqs[j].wait_len && e->seqs[j].wait_for == id && e->seqs[j].wait_gen == s->ng_gen) {
+                    waited_on = true;
+                    break;
+                }
+            if (!waited_on) return id;
+        }
+    return -1;
+}
+
+static void evict_cached_state(engine *e, int id) {
+    if (e->seqs[id].pages.recurrent) {
+        if (e->seqs[id].is_prompt_checkpoint)
+            e->st.checkpoint_evictions++;
+        else
+            e->st.endpoint_evictions++;
+    }
+    engine_release(e, id);
 }
 
 // ---- KV swap (agents' KV is state, not a cache: restoring beats recomputing)
@@ -619,7 +705,17 @@ static void reuse_phase(engine *e, const int *ids, int n) {
 }
 
 // Prefill rows a sequence may take now: a planned move's start is a chunk boundary.
-static int input_cap(const seq_t *s, int want) {
+static int input_cap(const engine *e, int id, int want) {
+    const seq_t *s = &e->seqs[id];
+    // A recurrent endpoint cannot be recovered after advancing past it. Stop
+    // at the nearest live waiter, also when filling a partially used GEMM tile.
+    if (e->recurrent_prefix_dedup && e->m->c.n_linear)
+        for (int i = 0; i < e->n_seqs; i++) {
+            const seq_t *child = &e->seqs[i];
+            if (child->live && !child->done && !child->cached && child->wait_len > s->n_tokens && child->wait_for == id && child->wait_gen == s->ng_gen &&
+                child->wait_len - s->n_tokens < want)
+                want = child->wait_len - s->n_tokens;
+        }
     if (!s->checkpoint_saved && s->checkpoint_at > s->n_tokens && s->checkpoint_at - s->n_tokens < want) want = s->checkpoint_at - s->n_tokens;
     if (s->sp_planned && s->sp_at > s->n_tokens && s->sp_at - s->n_tokens < want) return s->sp_at - s->n_tokens;
     return want;
@@ -720,7 +816,11 @@ bool engine_step(engine *e, const int *ids, int n) {
         }
         for (int i = 0; i < n && budget > 0; i++) {
             seq_t *s = &e->seqs[ids[i]];
-            if (s->n_pending > 1 && !s->wait_len && !s->swapped) { int take = input_cap(s, s->n_pending < budget ? s->n_pending : budget); plan[np++] = (plan_item){ ids[i], take, 0 }; budget -= take; }
+            if (s->n_pending > 1 && !s->wait_len && !s->swapped) {
+                int take = input_cap(e, ids[i], s->n_pending < budget ? s->n_pending : budget);
+                plan[np++] = (plan_item){ids[i], take, 0};
+                budget -= take;
+            }
         }
     }
     if (!np) { free(plan); return false; }
@@ -732,7 +832,7 @@ bool engine_step(engine *e, const int *ids, int n) {
     for (int i = 0, extra = planned > 16 ? (planned + 31) / 32 * 32 - planned : 0; i < np && extra > 0; i++) {
         seq_t *s = &e->seqs[plan[i].seq];
         if (plan[i].spec || s->n_pending <= 1) continue;
-        int more = input_cap(s, plan[i].take + (s->n_pending - plan[i].take < extra ? s->n_pending - plan[i].take : extra)) - plan[i].take;
+        int more = input_cap(e, plan[i].seq, plan[i].take + (s->n_pending - plan[i].take < extra ? s->n_pending - plan[i].take : extra)) - plan[i].take;
         plan[i].take += more;
         extra -= more;
     }
@@ -759,8 +859,11 @@ bool engine_step(engine *e, const int *ids, int n) {
         int wanted = 0;
         for (int i = 0; i < np; i++)
             wanted += !e->seqs[plan[i].seq].pages.recurrent;
-        while (e->n_cached && e->kv.recurrent_used + wanted > e->kv.recurrent_limit)
-            engine_release(e, e->cached[0]);
+        while (e->n_cached && e->kv.recurrent_used + wanted > e->kv.recurrent_limit) {
+            int victim = e->recurrent_cache_priority ? cached_state_victim(e, -1, false) : e->cached[0];
+            if (victim < 0) break;
+            evict_cached_state(e, victim);
+        }
         while (np > 1 && e->kv.recurrent_used + wanted > e->kv.recurrent_limit) {
             wanted -= !e->seqs[plan[np - 1].seq].pages.recurrent;
             np--;
@@ -781,6 +884,7 @@ bool engine_step(engine *e, const int *ids, int n) {
                 exit(1);
             }
             preempt(e, victim);
+            e->st.slot_preemptions++;
         }
     }
     for (int i = 0; i < np; i++) n_rows += plan[i].take;
@@ -870,6 +974,12 @@ bool engine_step(engine *e, const int *ids, int n) {
         }
         kv_trim_window(&e->kv, &s->pages);
     }
+    // Resolve immediately while the leader still holds this exact endpoint.
+    // This does not allocate sequence IDs or invalidate the step's pointers.
+    // A full state-slot pool causes a safe recompute fallback, never a wait loop.
+    if (e->recurrent_prefix_dedup && e->m->c.n_linear)
+        for (int i = 0; i < e->n_seqs; i++)
+            if (e->seqs[i].live && !e->seqs[i].done && !e->seqs[i].cached && e->seqs[i].wait_len) resolve_wait(e, i, false);
     // Save only a computed endpoint. The clone owns its recurrent state and
     // shares attention pages through the existing COW mechanism.
     if (e->prompt_checkpoints)
@@ -877,14 +987,22 @@ bool engine_step(engine *e, const int *ids, int n) {
             int id = plan[i].seq, at = e->seqs[id].checkpoint_at;
             if (at > 0 && !e->seqs[id].checkpoint_saved && e->seqs[id].pages.len == at) {
                 e->seqs[id].checkpoint_saved = true;
+                if (e->recurrent_cache_priority && e->kv.recurrent_bytes && kv_has_fork_at(&e->kv, &e->seqs[id].pages, at))
+                    while (e->kv.recurrent_used >= e->kv.recurrent_limit) {
+                        int victim = cached_state_victim(e, id, true);
+                        if (victim < 0) break;
+                        evict_cached_state(e, victim);
+                    }
                 if (kv_can_fork_at(&e->kv, &e->seqs[id].pages, at)) {
                     int32_t empty = 0;
                     int saved = engine_fork_at(e, id, at, &empty, 0);
                     e->st.shared_tokens -= at; // preserving a checkpoint is not a served cache hit
                     e->seqs[saved].prefix_cached = 0;
+                    e->seqs[saved].is_prompt_checkpoint = true;
                     engine_retire(e, saved);
                     e->st.checkpoints++;
-                }
+                } else
+                    e->st.skipped_checkpoints++;
             }
         }
     free(pages);

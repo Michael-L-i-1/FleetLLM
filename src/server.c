@@ -219,6 +219,11 @@ static void *engine_loop(void *arg) {
                 r->t_done = wall();
                 engine_retire(e, r->seq); // keep the KV for prefix reuse (multi-turn agents) until memory is needed
                 sv->served++;
+                if (getenv("FLEET_TRACE_STATS"))
+                    fprintf(stderr,"[fleet_stats] served=%ld rows=%ld shared=%ld preemptions=%ld checkpoints=%ld skipped=%ld state_moves=%ld fullslot_misses=%ld slot_preemptions=%ld endpoint_evictions=%ld checkpoint_evictions=%ld states=%d/%d\n",
+                            sv->served,e->st.prefill_rows+e->st.decode_rows,e->st.shared_tokens,e->st.preemptions,e->st.checkpoints,
+                            e->st.skipped_checkpoints,e->st.state_moves,e->st.fullslot_match_misses,e->st.slot_preemptions,
+                            e->st.endpoint_evictions,e->st.checkpoint_evictions,e->kv.recurrent_used,e->kv.recurrent_limit);
             }
             pthread_cond_broadcast(&r->cv);
             pthread_mutex_unlock(&r->mu);
@@ -228,10 +233,12 @@ static void *engine_loop(void *arg) {
         double t = now_secs();
         if (t - t_log > 10) {
             fprintf(stderr, "[serve] %d active | %.1f tok/s generated | %ld served | %ld preemptions | %ld shared prompt tokens | swap %ld out %ld in (%.2fs, %.2f GB held)"
-                            " | %ld tokens reused in %ld spans (%.2fs) | drafts %ld/%ld accepted in %ld verifies\n",
+                            " | %ld tokens reused in %ld spans (%.2fs) | drafts %ld/%ld accepted in %ld verifies"
+                            " | forward_rows %ld checkpoints %ld skipped %ld state_moves %ld fullslot_misses %ld slot_preemptions %ld\n",
                     sv->n_active, (sv->gen_tokens - gen_log) / (t - t_log), sv->served, e->st.preemptions, e->st.shared_tokens, e->st.swap_outs, e->st.swap_ins,
                     e->st.swap_secs, e->swap_used / 1e9, e->st.reuse_tokens, e->st.reuse_moves, e->st.reuse_secs, e->st.spec_accepted,
-                    e->st.spec_drafted, e->st.spec_steps);
+                    e->st.spec_drafted, e->st.spec_steps, e->st.prefill_rows+e->st.decode_rows, e->st.checkpoints,
+                    e->st.skipped_checkpoints, e->st.state_moves, e->st.fullslot_match_misses, e->st.slot_preemptions);
             t_log = t;
             gen_log = sv->gen_tokens;
         }

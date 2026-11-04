@@ -593,10 +593,12 @@ static int metal_forward(backend *be, const model *m, kv_cache *kv, const seq_pa
         uint8_t *skip = calloc(n, 1); // rows not in the matrix kernel's groups
         int n_nax = 0, n_vec = 0;
         int G = c->n_head / c->n_kv;
-        bool nax_attn = mt->nax && attn_nax_on() && (hd == 64 || hd == 128), naxs_attn = nax_attn && attn_naxs_on() && G <= 16;
-        bool vec_attn = !naxs_attn && attn_vec_on();
+        bool nax256 = hd == 256 && env_int("FLEET_Q35_NAX_ATTN", 0);
+        bool nax_attn = mt->nax && attn_nax_on() && (hd == 64 || hd == 128 || nax256);
+        bool naxs_attn = nax_attn && attn_naxs_on() && G <= 16 && hd != 256;
+        bool vec_attn = hd == 256 || (!naxs_attn && attn_vec_on());
         for (int i = 0; i < n; i++) {
-            if (vec_attn && (!rows[i].input || hd == 256)) {
+            if (vec_attn && (!rows[i].input || (hd == 256 && !nax_attn))) {
                 vrows[n_vec++] = (uint32_t)i;
                 skip[i] = 1;
                 const RowInfo *rs[2] = { &ri_full[i], &ri_swa[i] };

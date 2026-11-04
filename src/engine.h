@@ -19,13 +19,14 @@
 typedef struct {
     bool live, cached, generating, done;
     int checkpoint_at;
+    bool is_prompt_checkpoint; // hidden phase snapshot, distinct from a retired generation endpoint
     bool checkpoint_saved; // opt-in exact prompt-boundary state
     int prefix_cached; // actual prefix tokens reused, excluding an unresolved leader wait
     seq_pages pages;
     int32_t *tokens; int n_tokens, cap_tokens;    // tokens whose KV is written
     int32_t *pending; int n_pending, cap_pending; // queued input
     int32_t *gen; int n_gen, cap_gen;             // generated output
-    int wait_for, wait_len; // waiting for seqs[wait_for] to write wait_len shared tokens (wait_len 0: not waiting)
+    int wait_for, wait_len, wait_gen;             // waiting for seqs[wait_for] to write wait_len shared tokens (wait_len 0: not waiting)
     seq_pages dpages;        // drafter KV (speculative decoding): context of the first dpages.len tokens
     int32_t drafts[32]; int n_drafts; // proposals to verify in the next step
     ng_seq ng; int ng_gen;            // repeated-text draft index (see ngram.h); ng_gen: this slot's generation
@@ -46,7 +47,9 @@ typedef struct {
 } seq_t;
 
 typedef struct {
-    long checkpoints;
+    long checkpoints, skipped_checkpoints;
+    long state_moves, fullslot_match_misses, slot_preemptions;
+    long endpoint_evictions, checkpoint_evictions; // state-slot policy only; excludes moves and page eviction
     long steps, decode_rows, prefill_rows, shared_tokens, gen_tokens, deduped_tokens;
     long spec_steps, spec_drafted, spec_accepted; // verify steps, drafts checked, drafts accepted
     long ng_steps, ng_drafted, ng_accepted;       // the subset drafted from repeated text
@@ -65,6 +68,9 @@ typedef struct {
     seq_t *seqs; int n_seqs;
     int *cached; int n_cached; // retired sequences kept for prefix reuse, oldest first
     int row_budget;            // max rows per forward step (prefill chunking)
+    bool recurrent_cache_priority; // retain useful prompt checkpoints before retired generation endpoints
+    bool recurrent_state_move;     // transfer a superseded cached endpoint without another slot
+    bool recurrent_prefix_dedup;   // stop prefill at waiting children's exact recurrent endpoints
     bool prompt_checkpoints;   // save exact hybrid state before the assistant generation header
     int min_share;             // minimum common prefix worth forking
     engine_stats st;
@@ -95,6 +101,9 @@ typedef struct {
 } engine;
 
 engine *engine_new(model *m, backend *be, const tokenizer *tok, size_t kv_budget_bytes);
+// Exact memory tuning: reserve this fraction of the SAME KV budget for recurrent
+// endpoint slots. Remaining bytes back attention pages; default engine_new uses .25.
+engine *engine_new_with_recurrent_fraction(model *m, backend *be, const tokenizer *tok, size_t kv_budget_bytes, double fraction);
 void engine_free(engine *e);
 // Enable speculative decoding with a DFlash drafter (greedy sequences only);
 // its KV cache gets kv_budget_bytes. Returns false if the backend cannot draft.

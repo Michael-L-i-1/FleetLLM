@@ -54,8 +54,13 @@ void kv_init(kv_cache *kv, int full_layers, int swa_layers, int kv_heads, int he
 // Make the slot for position pos (== len, or a COW of the current tail page) writable.
 bool kv_reserve(kv_cache *kv, seq_pages *s, int pos);
 // Share the pages covering [0, len) of s into a new page table.
+// Endpoint/page availability is separate from the free slot needed for a copy.
+bool kv_has_fork_at(const kv_cache *kv, const seq_pages *s, int len);
 bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len);
 seq_pages kv_fork_at(kv_cache *kv, const seq_pages *s, int len);
+// Share attention pages and transfer recurrent allocation/handle ownership.
+// Caller must stop using and release the source; recurrent_used is unchanged.
+seq_pages kv_fork_at_move(kv_cache *kv, seq_pages *s, int len);
 void kv_free_seq(kv_cache *kv, seq_pages *s);
 // Swap support: pages another sequence also holds stay resident; exclusive ones
 // can be released to holes (KV_NONE) and refilled later. flags[i] bit 0: page i

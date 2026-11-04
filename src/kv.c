@@ -97,9 +97,8 @@ bool kv_reserve(kv_cache *kv, seq_pages *s, int pos) {
     return true;
 }
 
-bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len) {
+bool kv_has_fork_at(const kv_cache *kv, const seq_pages *s, int len) {
     if (len < 0 || len > s->len) return false;
-    if (kv->recurrent_bytes && len && kv->recurrent_used >= kv->recurrent_limit) return false;
     if (kv->recurrent_bytes && len && (!s->recurrent || len != s->recurrent_len)) return false;
     if (!kv->window || len == 0) return true;
     int first = (len + 1 > kv->window ? len + 1 - kv->window : 0) / KV_PAGE;
@@ -108,19 +107,12 @@ bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len) {
     return true;
 }
 
-seq_pages kv_fork_at(kv_cache *kv, const seq_pages *s, int len) {
+bool kv_can_fork_at(const kv_cache *kv, const seq_pages *s, int len) {
+    return kv_has_fork_at(kv, s, len) && (!kv->recurrent_bytes || !len || kv->recurrent_used < kv->recurrent_limit);
+}
+
+static seq_pages fork_attention_at(kv_cache *kv, const seq_pages *s, int len) {
     seq_pages c = {0};
-    if (!kv_can_fork_at(kv, s, len)) {
-        fprintf(stderr, "KV: unavailable fork snapshot\n");
-        abort();
-    }
-    if (len && s->recurrent) {
-        c.recurrent_bytes = s->recurrent_bytes;
-        if (posix_memalign((void **)&c.recurrent, 16384, c.recurrent_bytes)) abort();
-        memcpy(c.recurrent, s->recurrent, c.recurrent_bytes);
-        c.recurrent_len = len;
-        kv->recurrent_used++;
-    }
     int np = (len + KV_PAGE - 1) / KV_PAGE;
     c.cap = np > 16 ? np : 16;
     c.full = malloc(sizeof(uint32_t) * c.cap);
@@ -133,6 +125,41 @@ seq_pages kv_fork_at(kv_cache *kv, const seq_pages *s, int len) {
         kv->full.refcnt[c.full[i]]++;
         if (c.swa[i] != KV_NONE) kv->swa.refcnt[c.swa[i]]++;
     }
+    return c;
+}
+
+seq_pages kv_fork_at(kv_cache *kv, const seq_pages *s, int len) {
+    if (!kv_can_fork_at(kv, s, len)) {
+        fprintf(stderr, "KV: unavailable fork snapshot\n");
+        abort();
+    }
+    seq_pages c = fork_attention_at(kv, s, len);
+    if (len && s->recurrent) {
+        c.recurrent_bytes = s->recurrent_bytes;
+        if (posix_memalign((void **)&c.recurrent, 16384, c.recurrent_bytes)) abort();
+        memcpy(c.recurrent, s->recurrent, c.recurrent_bytes);
+        c.recurrent_len = len;
+        kv->recurrent_used++;
+    }
+    return c;
+}
+
+seq_pages kv_fork_at_move(kv_cache *kv, seq_pages *s, int len) {
+    if (!len || !s->recurrent || !kv->recurrent_bytes || !kv_has_fork_at(kv, s, len)) {
+        fprintf(stderr, "KV: unavailable recurrent move snapshot\n");
+        abort();
+    }
+    seq_pages c = fork_attention_at(kv, s, len);
+    c.recurrent = s->recurrent;
+    c.recurrent_bytes = s->recurrent_bytes;
+    c.recurrent_len = s->recurrent_len;
+    c.recurrent_handle = s->recurrent_handle;
+    c.release_recurrent_handle = s->release_recurrent_handle;
+    s->recurrent = NULL;
+    s->recurrent_bytes = 0;
+    s->recurrent_len = 0;
+    s->recurrent_handle = NULL;
+    s->release_recurrent_handle = NULL;
     return c;
 }
 

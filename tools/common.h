@@ -7,6 +7,7 @@
 #include "threadpool.h"
 #include "tokenizer.h"
 #include <glob.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -107,7 +108,20 @@ static runtime load_runtime(int argc, char **argv) {
     if (arg_flag(argc, argv, "--kv-int8")) { // 8-bit KV (per-token-per-head scales): ~2x the tokens per GB
         rt.be->kv_elem = 1;
     }
-    rt.e = engine_new(rt.m, rt.be, rt.tok, kv);
+    const char *rf = arg_str(argc, argv, "--recurrent-fraction", NULL);
+    double recurrent_fraction = .25;
+    if (rf) {
+        char *end;
+        recurrent_fraction = strtod(rf, &end);
+        if (end == rf || *end || !isfinite(recurrent_fraction) || recurrent_fraction < .05 || recurrent_fraction > .90) {
+            fprintf(stderr, "--recurrent-fraction must be between .05 and .90\n");
+            exit(1);
+        }
+    }
+    rt.e = engine_new_with_recurrent_fraction(rt.m, rt.be, rt.tok, kv, recurrent_fraction);
+    rt.e->recurrent_cache_priority = arg_flag(argc, argv, "--recurrent-cache-priority");
+    rt.e->recurrent_state_move = arg_flag(argc, argv, "--recurrent-state-move");
+    rt.e->recurrent_prefix_dedup = arg_flag(argc, argv, "--recurrent-prefix-dedup");
     rt.e->prompt_checkpoints = arg_flag(argc, argv, "--prompt-checkpoints");
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
     int spec_k = (int)arg_num(argc, argv, "--spec-k", 0);

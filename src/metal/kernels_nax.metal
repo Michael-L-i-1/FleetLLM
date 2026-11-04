@@ -281,7 +281,9 @@ template <int HD, bool Q8>
     device const uint* slot [[buffer(9)]], constant uint2& nsp [[buffer(10)]], uint3 tg [[threadgroup_position_in_grid]],
     ushort sg [[simdgroup_index_in_threadgroup]], ushort lane [[thread_index_in_simdgroup]], uint tid [[thread_index_in_threadgroup]]) {
     constexpr int TD = HD / 16, TK = 32, KS = HD + 8;
-    threadgroup half kvt[2 * TK * KS]; // the tile (int8: dequantized) once for all 4 simdgroups
+    // HD256 would exceed 32 KiB with simultaneous K and V tiles. Reuse
+    // one tile after QK is complete; all four SIMD groups synchronize first.
+    threadgroup half kvt[(HD == 256 ? 1 : 2) * TK * KS]; // the tile (int8: dequantized) once for all 4 simdgroups
     const uint2 grp = groups[tg.x]; // {first row, rows <= 64}
     const uint h = tg.y, kvh = h / (a.nh / a.nkv);
     const short qid = lane >> 2, fm = (qid & 4) | ((lane >> 1) & 3), fn = ((qid & 2) | (lane & 1)) * 4;
@@ -325,17 +327,23 @@ template <int HD, bool Q8>
             threadgroup_barrier(mem_flags::mem_threadgroup); // the previous tile's readers are done
             const uint tk = tid / 4, d0 = (tid % 4) * (HD / 4), p = t0 + tk;
             threadgroup half4* kr = (threadgroup half4*)(kvt + tk * KS + d0);
-            threadgroup half4* vr = (threadgroup half4*)(kvt + (TK + tk) * KS + d0);
+            threadgroup half4* vr = (threadgroup half4*)(kvt + ((HD == 256 ? 0 : TK) + tk) * KS + d0);
             if (p <= end && p >= first.start) { // (earlier ones may sit on released sliding-window pages)
                 const ulong page = tab[last.tab + p / a.page];
                 const ulong base = page * a.page_elems + head_off + (ulong)(p % a.page) * HD + d0;
                 device const char* pb = (device const char*)pool + page * a.page_elems + sc_off + (p % a.page) * 2;
                 const half sk = Q8 ? *(device const half*)pb : 1.0h, sv = Q8 ? *(device const half*)(pb + sc_v) : 1.0h;
                 STEEL_PRAGMA_UNROLL
-                for (int c = 0; c < CH; c++) { kr[c] = nax_kv4<Q8>(pool, base + c * 4, sk); vr[c] = nax_kv4<Q8>(pool, base + vofs + c * 4, sv); }
+                for (int c = 0; c < CH; c++) {
+                    kr[c] = nax_kv4<Q8>(pool, base + c * 4, sk);
+                    if constexpr (HD != 256) vr[c] = nax_kv4<Q8>(pool, base + vofs + c * 4, sv);
+                }
             } else {
                 STEEL_PRAGMA_UNROLL
-                for (int c = 0; c < CH; c++) kr[c] = vr[c] = half4(0.0h);
+                for (int c = 0; c < CH; c++) {
+                    kr[c] = half4(0.0h);
+                    if constexpr (HD != 256) vr[c] = half4(0.0h);
+                }
             }
             threadgroup_barrier(mem_flags::mem_threadgroup);
         }
@@ -389,6 +397,24 @@ template <int HD, bool Q8>
             STEEL_PRAGMA_UNROLL
             for (short e = 0; e < 8; e++) O[d][e] *= fac[e / 4];
         simdgroup_barrier(mem_flags::mem_none);
+        if constexpr (HD == 256) {
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+            constexpr int CH = HD / 16;
+            const uint tk = tid / 4, d0 = (tid % 4) * (HD / 4), p = t0 + tk;
+            threadgroup half4* vr = (threadgroup half4*)(kvt + tk * KS + d0);
+            if (p <= end && p >= first.start) {
+                const ulong page = tab[last.tab + p / a.page];
+                const ulong base = page * a.page_elems + head_off + (ulong)(p % a.page) * HD + d0 + vofs;
+                device const char* pb = (device const char*)pool + page * a.page_elems + sc_off + (p % a.page) * 2;
+                const half sv = Q8 ? *(device const half*)(pb + sc_v) : 1.0h;
+                STEEL_PRAGMA_UNROLL
+                for (int c = 0; c < CH; c++) vr[c] = nax_kv4<Q8>(pool, base + c * 4, sv);
+            } else {
+                STEEL_PRAGMA_UNROLL
+                for (int c = 0; c < CH; c++) vr[c] = half4(0.0h);
+            }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+        }
         // O += P V: V fragment rows are tokens (quarters 2f, 2f+1), columns 16 dims
         STEEL_PRAGMA_UNROLL
         for (short d = 0; d < TD; d += 2) {
@@ -399,7 +425,7 @@ template <int HD, bool Q8>
                 STEEL_PRAGMA_UNROLL
                 for (short i = 0; i < 2; i++) {
                     const short qq = 2 * f + i;
-                    threadgroup const half* vt = kvt + (TK + qq * 8 + fm) * KS + fn;
+                    threadgroup const half* vt = kvt + ((HD == 256 ? 0 : TK) + qq * 8 + fm) * KS + fn;
                     const half4 v0 = *(threadgroup const half4*)(vt + d * 16), v1 = *(threadgroup const half4*)(vt + (d + 1) * 16);
                     STEEL_PRAGMA_UNROLL
                     for (short j = 0; j < 4; j++) { V0[i * 4 + j] = v0[j]; V1[i * 4 + j] = v1[j]; }
@@ -601,3 +627,7 @@ template [[host_name("attn_nax_64")]] [[kernel]] decltype(attn_nax<64, false>) a
 template [[host_name("attn_nax_128")]] [[kernel]] decltype(attn_nax<128, false>) attn_nax<128, false>;
 template [[host_name("attn_nax8_64")]] [[kernel]] decltype(attn_nax<64, true>) attn_nax<64, true>;
 template [[host_name("attn_nax8_128")]] [[kernel]] decltype(attn_nax<128, true>) attn_nax<128, true>;
+
+// Opt-in Qwen3.5 prefill path; decode retains the vector kernel.
+template [[host_name("attn_nax_256")]] [[kernel]] decltype(attn_nax<256, false>) attn_nax<256, false>;
+template [[host_name("attn_nax8_256")]] [[kernel]] decltype(attn_nax<256, true>) attn_nax<256, true>;

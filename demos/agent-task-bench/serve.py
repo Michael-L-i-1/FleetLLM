@@ -24,7 +24,7 @@ def main():
     p.add_argument('--agents',type=int,choices=[1,8],default=8)
     p.add_argument('--pilot',action='store_true')
     p.add_argument('--capture',action='store_true')
-    p.add_argument('--wall-limit',type=float,default=2700)
+    p.add_argument('--wall-limit',type=float)
     a=p.parse_args();cfg=json.loads(a.config.read_text());a.output.mkdir(parents=True,exist_ok=False)
     base=cfg.get('base','http://127.0.0.1:8090/v1');health=base.removesuffix('/v1')+'/health'
     try:urllib.request.urlopen(health,timeout=1)
@@ -34,7 +34,20 @@ def main():
           'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
           'model_binary_sha256':hashlib.sha256(Path(cfg['command'][0]).resolve().read_bytes()).hexdigest(),
           'complete':False,'pilot':a.pilot,'agents':a.agents,'task':str(a.task) if a.task else None}
-    server=None;samplers=[]
+    server=None;harness=None;samplers=[]
+    cancelled=False
+    def cancel(number, frame):
+        nonlocal cancelled
+        cancelled=True
+        if harness and harness.poll() is None:harness.send_signal(signal.SIGTERM)
+        if server and server.poll() is None:
+            try:os.killpg(server.pid,signal.SIGTERM)
+            except ProcessLookupError:pass
+    for sig in (signal.SIGINT,signal.SIGTERM):signal.signal(sig,cancel)
+    server_env=dict(os.environ)
+    for key in cfg.get('unset_env',[]):server_env.pop(key,None)
+    server_env.update(cfg.get('env',{}))
+    meta['unset_env']=cfg.get('unset_env',[])
     def request(messages,max_tokens):
         body={'model':cfg.get('model','glimmer-mlx4'),'messages':messages,'temperature':0,'max_tokens':max_tokens,
               'reasoning_effort':'low','chat_template_kwargs':{'reasoning_strength':'low'}}
@@ -44,13 +57,14 @@ def main():
         return {'seconds':time.monotonic()-t,'request':body,'response':d}
     try:
         with (a.output/'server.log').open('w') as log:
-            server=subprocess.Popen(cfg['command'],cwd=ROOT,env=dict(os.environ,**cfg.get('env',{})),
+            server=subprocess.Popen(cfg['command'],cwd=ROOT,env=server_env,
                                     stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
             meta['server_pid']=server.pid
             for pid,name in [(server.pid,'model-resources.csv'),(os.getpid(),'run-resources.csv')]:
                 samplers.append(subprocess.Popen([sys.executable,str(HERE/'sample_memory.py'),str(pid),str(a.output/name)]))
             t=time.monotonic()
             while True:
+                if cancelled:raise RuntimeError('Cancelled during startup')
                 if server.poll() is not None:raise RuntimeError(f'Server exited {server.returncode}')
                 try:urllib.request.urlopen(health,timeout=1);break
                 except OSError:
@@ -73,15 +87,28 @@ def main():
                 (a.output/'pilot.json').write_text(json.dumps(pilot,indent=2)+'\n');meta['pilot_summary']={k:v for k,v in pilot.items() if k!='responses'}
             else:
                 if a.task is None:raise ValueError('--task required')
+                budgets=dict(cfg.get('harness',{}))
+                if a.wall_limit is not None:budgets['wall_limit']=a.wall_limit
+                budgets.setdefault('wall_limit',2700)
+                allowed={'max_calls','worker_calls','integration_calls','round_calls','round_wall_limit','token_budget','max_tokens','max_prompt_chars','request_timeout','wall_limit'}
+                if set(budgets)-allowed:raise ValueError('Unknown harness budgets: '+str(sorted(set(budgets)-allowed)))
                 command=[sys.executable,str(HERE/'run.py'),'--task',str(a.task.resolve()),'--output',str(a.output/'task'),
-                         '--base',base,'--model',cfg.get('model','glimmer-mlx4'),'--agents',str(a.agents),'--wall-limit',str(a.wall_limit)]
+                         '--base',base,'--model',cfg.get('model','glimmer-mlx4'),'--agents',str(a.agents)]
+                for key,value in budgets.items():command += ['--'+key.replace('_','-'),str(value)]
                 if a.capture:command+=['--capture']
                 meta['harness_command']=command
                 meta['task_start_unix']=time.time()
                 with (a.output/'harness.log').open('w') as log:
-                    result=subprocess.run(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,timeout=a.wall_limit+180)
+                    harness=subprocess.Popen(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+                    try:harness.wait(timeout=float(budgets['wall_limit'])+180)
+                    except subprocess.TimeoutExpired:
+                        harness.send_signal(signal.SIGTERM)
+                        try:harness.wait(timeout=45)
+                        except subprocess.TimeoutExpired:os.killpg(harness.pid,signal.SIGKILL);harness.wait()
+                        raise TimeoutError('Harness exceeded run wall limit and cleanup grace')
                 meta['task_end_unix']=time.time()
-                meta['harness_returncode']=result.returncode
+                meta['harness_returncode']=harness.returncode
+                if cancelled:raise RuntimeError('Cancelled; partial task artifacts preserved')
                 if (a.output/'task/summary.json').exists():
                     summary=json.loads((a.output/'task/summary.json').read_text());meta['task_passed']=summary['passed']
                     if summary.get('infrastructure_error'):
@@ -91,6 +118,10 @@ def main():
             meta['complete']=True
     except Exception as error:meta['error']=str(error)
     finally:
+        if harness and harness.poll() is None:
+            harness.send_signal(signal.SIGTERM)
+            try:harness.wait(timeout=45)
+            except subprocess.TimeoutExpired:os.killpg(harness.pid,signal.SIGKILL);harness.wait()
         if server:
             try:os.killpg(server.pid,signal.SIGTERM)
             except ProcessLookupError:pass

@@ -6,6 +6,8 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import signal
+import socket
 import statistics
 import subprocess
 import threading
@@ -53,6 +55,28 @@ class Benchmark:
         self.a = args
         self.task_dir = args.task.resolve()
         self.spec = json.loads((self.task_dir/'task.json').read_text())
+        defaults = {'max_calls':108, 'worker_calls':3, 'integration_calls':12, 'round_calls':36,
+                    'round_wall_limit':800, 'token_budget':96000, 'wall_limit':2700} if self.spec.get('rounds') else {
+                    'max_calls':56, 'worker_calls':6, 'integration_calls':56, 'round_calls':56,
+                    'round_wall_limit':2700, 'token_budget':96000, 'wall_limit':2700}
+        for key,value in defaults.items():
+            if getattr(args,key,None) is None:setattr(args,key,self.spec.get('harness',{}).get(key,value))
+        self.rounds = self.spec.get('rounds') or [{'id':1,'title':'Task','instructions':''}]
+        if [r['id'] for r in self.rounds] != list(range(1,len(self.rounds)+1)):
+            raise ValueError('Round ids must be consecutive integers starting at 1')
+        workers=self.spec.get('workers',self.spec.get('worker_assignments',[]))
+        if len({w['name'] for w in workers}) != len(workers) or len({w.get('file',w.get('path')) for w in workers}) != len(workers):
+            raise ValueError('Worker names and editable ownership must be disjoint')
+        self.current_round = 0
+        self.round_title = ''
+        self.phase = 'setup'
+        self.round_started = None
+        self.round_call_start = 0
+        self.histories = {}
+        self.round_results = []
+        self.round_first_pass = {}
+        self.cancelled = threading.Event()
+        self.active_responses = set()
         self.out = args.output.resolve()
         self.out.mkdir(parents=True, exist_ok=False)
         self.workspace = self.out/'workspace'
@@ -78,7 +102,7 @@ class Benchmark:
 
     def event(self, kind, **fields):
         with self.lock:
-            record = {'event': kind, 'elapsed': time.monotonic()-self.started, 'unix_seconds': time.time(), **fields}
+            record = {'event': kind, 'elapsed': time.monotonic()-self.started, 'unix_seconds': time.time(), 'round':self.current_round, 'round_title':self.round_title, 'phase':self.phase, **fields}
             with (self.out/'events.jsonl').open('a') as out:
                 out.write(json.dumps(record, ensure_ascii=False)+'\n')
                 out.flush()
@@ -108,19 +132,49 @@ class Benchmark:
             return messages
         recent = list(messages[2:])
         dropped = 0
-        while len(recent) > 2 and sum(len(x['content']) for x in messages[:2]+recent) > self.a.max_prompt_chars-500:
-            recent = recent[2:]
-            dropped += 2
-        notice='\nEarlier tool exchanges were omitted to bound context. Keep the task contract above. '
+        # Keep stakeholder instructions from every round; omit oldest tool exchanges only.
+        while sum(len(x['content']) for x in messages[:2]+recent) > self.a.max_prompt_chars-500:
+            index=next((i for i,m in enumerate(recent[:-2]) if m['role']=='assistant'),None)
+            if index is None:break
+            count=1
+            if index+1<len(recent) and recent[index+1]['role']=='user' and not recent[index+1]['content'].startswith('CURRENT ROUND'):
+                count=2
+            del recent[index:index+count]
+            dropped+=count
+        notice='\nEarlier tool exchanges were omitted to bound context. Keep all round requirements above. '
         notice+='Read the current workspace before changing an older file.'
         value = messages[:1]+[{**messages[1],'content':messages[1]['content']+notice}]+recent
         self.event('context_compaction', agent=agent, dropped_messages=dropped,
                    original_chars=sum(len(x['content']) for x in messages), sent_chars=sum(len(x['content']) for x in value))
         return value
 
+    def cancel(self, reason='Cancellation requested'):
+        self.cancel_reason = reason
+        self.cancelled.set()
+        with self.lock:responses = list(self.active_responses)
+        self.interrupt_responses(responses)
+        self.event('cancel',reason=reason)
+
+    def interrupt_responses(self, responses):
+        for response in responses:
+            try:response.fp.raw._sock.shutdown(socket.SHUT_RDWR)
+            except (AttributeError,OSError):pass
+
+    def deadline_watch(self, done):
+        while not done.wait(.1):
+            if self.remaining_seconds() <= 0 or self.cancelled.is_set():
+                with self.lock:responses=list(self.active_responses)
+                self.interrupt_responses(responses)
+
+    def remaining_seconds(self):
+        remaining = self.a.wall_limit-(time.monotonic()-self.started)
+        if self.round_started is not None:
+            remaining=min(remaining,self.a.round_wall_limit-(time.monotonic()-self.round_started))
+        return remaining
+
     def request(self, agent, messages):
         with self.lock:
-            if self.call_count >= self.a.max_calls or self.tokens >= self.a.token_budget or time.monotonic()-self.started >= self.a.wall_limit:
+            if self.cancelled.is_set() or self.call_count >= self.a.max_calls or self.tokens >= self.a.token_budget or self.remaining_seconds() <= 0 or self.call_count-self.round_call_start >= self.a.round_calls:
                 raise RuntimeError('Run budget exhausted')
             self.call_count += 1
             identifier = f'{self.call_count:04d}-{agent}'
@@ -138,10 +192,11 @@ class Benchmark:
         try:
             req = urllib.request.Request(self.a.base.rstrip('/')+'/chat/completions', json.dumps(body).encode(),
                                          {'Content-Type':'application/json'})
-            with urllib.request.urlopen(req, timeout=min(self.a.request_timeout, max(1,self.a.wall_limit-(start-self.started)))) as response:
+            with urllib.request.urlopen(req, timeout=min(self.a.request_timeout, max(.1,self.remaining_seconds()))) as response:
+                with self.lock:self.active_responses.add(response)
                 for line in response:
-                    if time.monotonic()-self.started > self.a.wall_limit:
-                        raise TimeoutError('Run wall limit reached')
+                    if self.cancelled.is_set() or self.remaining_seconds() <= 0:
+                        raise TimeoutError('Cancelled or round/run wall limit reached')
                     if not line.startswith(b'data:'):
                         continue
                     raw = line[5:].strip()
@@ -165,7 +220,10 @@ class Benchmark:
                     raise ValueError('Incomplete stream or missing token usage')
         except Exception as exc:
             error = str(exc)
-        record = {'id':identifier,'agent':agent,'seconds':time.monotonic()-start,'ttft_seconds':first,
+        finally:
+            with self.lock:
+                if 'response' in locals():self.active_responses.discard(response)
+        record = {'id':identifier,'agent':agent,'round':self.current_round,'phase':self.phase,'seconds':time.monotonic()-start,'ttft_seconds':first,
                   'content':content,'reasoning':reasoning,'usage':usage,'finish_reason':finish,'error':error}
         with self.lock:
             self.calls.append(record)
@@ -183,10 +241,12 @@ class Benchmark:
             self.check_count += 1
             target = self.out/'checks'/f'{self.check_count:03d}'
             target.mkdir(parents=True)
-        command = [x.format(task_dir=self.task_dir,workspace=self.workspace,output=target) for x in self.spec['validation_command']]
+        command = [x.format(task_dir=self.task_dir,workspace=self.workspace,output=target,round=self.current_round or 1) for x in self.spec['validation_command']]
         start = time.monotonic()
+        remaining=self.remaining_seconds()
         try:
-            p = subprocess.run(command, cwd=self.workspace, capture_output=True, text=True, timeout=120)
+            if self.cancelled.is_set() or remaining<=0:raise TimeoutError('Round/run budget exhausted before checker')
+            p = subprocess.run(command, cwd=self.workspace, capture_output=True, text=True, timeout=min(120,remaining))
             try:
                 detail = json.loads(p.stdout)
             except ValueError:
@@ -203,18 +263,33 @@ class Benchmark:
                 passed = False
                 detail['protected_files_changed'] = changed
             result = {'passed':passed,'returncode':p.returncode,'details':detail,'seconds':time.monotonic()-start}
+        except (subprocess.TimeoutExpired,TimeoutError) as error:
+            exhausted=self.cancelled.is_set() or self.remaining_seconds()<=0
+            result={'passed':False,'infrastructure_error':not exhausted,'budget_exhausted':exhausted,
+                    'error':str(error),'seconds':time.monotonic()-start}
         except Exception as error:
             result = {'passed':False,'infrastructure_error':True,'error':str(error),'seconds':time.monotonic()-start}
         write_json(target/'result.json', result)
-        if result['passed'] and self.first_pass_seconds is None:
-            self.first_pass_seconds = time.monotonic()-self.started
+        if result['passed']:
+            self.round_first_pass.setdefault(self.current_round,time.monotonic()-self.started)
+            if self.current_round == self.rounds[-1]['id'] and self.first_pass_seconds is None:
+                self.first_pass_seconds = time.monotonic()-self.started
         self.event('check', result=result)
         return result
 
     def agent(self, name, owned, brief, limit, can_check=False):
-        messages = [{'role':'system','content':PROTOCOL}, {'role':'user','content':self.shared+
+        if name not in self.histories:
+            self.histories[name] = [{'role':'system','content':PROTOCOL}, {'role':'user','content':self.shared+
                     f'\n\nYOUR ROLE: {name}\nEDITABLE FILES: {json.dumps(sorted(owned))}\n{brief}'}]
+        messages = self.histories[name]
+        current = next(r for r in self.rounds if r['id']==self.current_round)
+        delta = '\n'.join(current.get('worker_instructions',{}).get(path,'') for path in sorted(owned))
+        messages.append({'role':'user','content':f"CURRENT ROUND {self.current_round}: {self.round_title}\n"+
+                         current.get('instructions','')+'\n'+delta+'\n'+brief+
+                         '\nKeep previous requirements. Current workspace is authoritative; read files before revising stale content.'})
         status = 'call_limit'
+        invalid_streak = 0
+        turn = -1
         for turn in range(limit):
             try:
                 content = self.request(name, messages)
@@ -224,6 +299,7 @@ class Benchmark:
                 break
             messages.append({'role':'assistant','content':content})
             try:
+                if next(c for c in reversed(self.calls) if c['agent']==name)['finish_reason']=='length':raise ValueError('Response hit token cap; incomplete action is not executed')
                 action = parse_action(content)
                 kind = action.get('action')
                 if kind == 'done':
@@ -265,13 +341,19 @@ class Benchmark:
                         break
                 else:
                     raise ValueError('Unknown/unavailable action. Use read, write, done; integration may check.')
+                invalid_streak = 0
             except InfrastructureError:
                 raise
             except Exception as error:
+                invalid_streak += 1
                 with self.lock:self.tool_errors += 1
                 feedback = {'error':str(error),'instruction':'Return a complete valid JSON tool action; preserve task behavior.'}
                 self.event('tool_error',agent=name,error=str(error))
             messages.append({'role':'user','content':json.dumps({'tool_result':feedback},ensure_ascii=False)})
+            if invalid_streak >= 3:
+                status='three_invalid_actions'
+                self.event('agent_stopped',agent=name,reason=status)
+                break
         result = {'agent':name,'status':status,'turns':turn+1 if limit else 0}
         self.event('agent_finished',**result)
         return result
@@ -279,47 +361,79 @@ class Benchmark:
     def run(self):
         error = None
         infrastructure_issue = False
+        watcher_done=threading.Event()
+        watcher=threading.Thread(target=self.deadline_watch,args=(watcher_done,),daemon=True)
+        watcher.start()
         try:
             if self.a.capture:
+                capture_args=[]
+                if self.spec.get('renderer'):capture_args += ['--renderer',str(self.task_dir/self.spec['renderer'])]
+                capture_spec=self.spec.get('capture',{})
+                if capture_spec.get('pages'):capture_args += ['--pages',','.join(capture_spec['pages'])]
+                if capture_spec.get('entry'):capture_args += ['--entry',capture_spec['entry']]
                 self.capture = subprocess.Popen(['node',str(HERE/'visual/record.mjs'),'--workspace',str(self.workspace),
                     '--output',str(self.out/'capture'),'--events',str(self.out/'events.jsonl'),
-                    '--stop-file',str(self.out/'capture.stop'),'--start-time-unix',str(self.start_epoch)],
+                    '--stop-file',str(self.out/'capture.stop'),'--start-time-unix',str(self.start_epoch)]+capture_args,
                     stdout=(self.out/'capture.log').open('w'),stderr=subprocess.STDOUT)
                 until=time.monotonic()+45
                 ready=self.out/'capture/capture-ready.json'
                 while True:
                     try:initialized=ready.exists() and json.loads(ready.read_text()).get('frames',0)>0
                     except (OSError,ValueError):initialized=False
+                    if self.cancelled.is_set():raise RuntimeError('Cancelled during recorder startup')
                     if initialized:break
                     if self.capture.poll() is not None or time.monotonic()>until:
                         raise InfrastructureError('Recorder failed initial-frame handshake')
                     time.sleep(.1)
-            if self.a.agents == 1:
-                self.worker_results.append(self.agent('single',self.editable,
-                    'Complete the ENTIRE project task, all editable files. Implement, check, and repair until the suite passes.\n'+
-                    json.dumps(self.spec.get('workers',self.spec.get('worker_assignments',[]))),self.a.max_calls,True))
-            else:
-                workers=self.spec.get('workers',self.spec.get('worker_assignments'))
-                if len(workers)!=8 or self.a.agents!=8:
-                    raise ValueError('Task must define exactly8disjoint workers for this protocol')
-                with ThreadPoolExecutor(max_workers=8) as pool:
-                    futures=[pool.submit(self.agent,w['name'],{w.get('file',w.get('path'))},w['brief'],self.a.worker_calls,False) for w in workers]
-                    self.worker_results=[f.result() for f in as_completed(futures)]
-                initial=self.check()
-                if initial.get('infrastructure_error'):raise InfrastructureError('Protected checker failed to execute/return JSON')
-                if not initial['passed']:
-                    remaining=max(0,self.a.max_calls-self.call_count)
-                    self.worker_results.append(self.agent('integrator',self.editable,
-                        'All workers have finished. Inspect and repair their actual current files until all acceptance checks pass. '
-                        'The initial snapshot above is stale; read current files before changing them.\n'+
-                        json.dumps({'workers':self.worker_results,'failing_check':initial},ensure_ascii=False),remaining,True))
-            final=self.check()
+            final={'passed':False}
+            for current in self.rounds:
+                if self.cancelled.is_set() or time.monotonic()-self.started >= self.a.wall_limit:break
+                self.current_round=current['id'];self.round_title=current.get('title',str(self.current_round))
+                self.round_started=time.monotonic();self.round_call_start=self.call_count
+                token_start=self.tokens
+                self.event('round_start',title=self.round_title,started_unix=time.time(),
+                           instructions_sha256=hashlib.sha256(json.dumps(current,sort_keys=True).encode()).hexdigest())
+                results=[]
+                if self.a.agents == 1:
+                    self.phase='single';self.event('phase')
+                    results.append(self.agent('single',self.editable,
+                        'Complete the ENTIRE project, all editable files; check and repair.\n'+
+                        json.dumps(self.spec.get('workers',self.spec.get('worker_assignments',[]))),
+                        min(self.a.round_calls,self.a.max_calls-self.call_count),True))
+                else:
+                    workers=self.spec.get('workers',self.spec.get('worker_assignments'))
+                    if len(workers)!=8:raise ValueError('Task must define exactly 8 disjoint workers')
+                    self.phase='workers';self.event('phase')
+                    with ThreadPoolExecutor(max_workers=8) as pool:
+                        futures=[pool.submit(self.agent,w['name'],{w.get('file',w.get('path'))},w['brief'],self.a.worker_calls,False) for w in workers]
+                        results=sorted((f.result() for f in as_completed(futures)),key=lambda item:item['agent'])
+                    initial=self.check()
+                    if initial.get('infrastructure_error'):raise InfrastructureError('Protected checker failed to execute/return JSON')
+                    if not initial['passed'] and not self.cancelled.is_set() and self.remaining_seconds()>0:
+                        self.phase='integration';self.event('phase')
+                        remaining=min(self.a.integration_calls,self.a.max_calls-self.call_count,
+                                      self.a.round_calls-(self.call_count-self.round_call_start))
+                        results.append(self.agent('integrator',self.editable,
+                            'Inspect and repair actual current files; initial snapshot is stale, read before changing.\n'+
+                            json.dumps({'workers':results,'failing_check':initial},ensure_ascii=False),max(0,remaining),True))
+                final=self.check()
+                if final.get('infrastructure_error'):raise InfrastructureError('Protected checker failed to execute/return JSON')
+                self.worker_results.extend(dict(r,round=self.current_round) for r in results)
+                row={'round':self.current_round,'title':self.round_title,'passed':final['passed'],
+                     'wall_seconds':time.monotonic()-self.round_started,'calls':self.call_count-self.round_call_start,
+                     'completion_tokens':self.tokens-token_start,'check':final,
+                     'time_to_first_passing_check_seconds':self.round_first_pass.get(self.current_round),'workers':results}
+                self.round_results.append(row);self.event('round_complete',**row)
+                write_json(self.out/'rounds.json',self.round_results)
+                write_json(self.out/'histories.json',self.histories)
         except Exception as exc:
             error=str(exc)
             infrastructure_issue=isinstance(exc,InfrastructureError)
             self.event('run_error',error=error)
-            final=self.check()
+            final={'passed':False,'error':error,'infrastructure_error':infrastructure_issue}
         finally:
+            watcher_done.set();watcher.join(timeout=1)
+            write_json(self.out/'histories.json',self.histories)
             (self.out/'capture.stop').write_text('stop\n')
             if self.capture:
                 try:self.capture.wait(timeout=30)
@@ -330,15 +444,16 @@ class Benchmark:
         ttfts=[c['ttft_seconds'] for c in good if c['ttft_seconds'] is not None]
         summary={'task':self.spec.get('name',self.task_dir.name),'agents':self.a.agents,'model':self.a.model,
                  'started_unix':self.start_epoch,'finished_unix':time.time(),
-                 'passed':final['passed'],'error':error,'wall_seconds':elapsed,'time_to_first_passing_check_seconds':self.first_pass_seconds,
+                 'passed':final['passed'] and len(self.round_results)==len(self.rounds) and not self.cancelled.is_set(),'error':error,'wall_seconds':elapsed,'time_to_first_passing_check_seconds':self.first_pass_seconds,
                  'infrastructure_error':infrastructure_issue or bool(final.get('infrastructure_error')),
-                 'completion_tokens':sum(c['usage'].get('completion_tokens',0) for c in good),
+                 'completion_tokens':sum(c['usage'].get('completion_tokens',0) for c in self.calls),
                  'prompt_tokens':sum(c['usage'].get('prompt_tokens',0) for c in good),'calls':self.call_count,
                  'failed_calls':sum(bool(c['error']) for c in self.calls),'tool_errors':self.tool_errors,
                  'length_capped_calls':sum(c['finish_reason']=='length' for c in self.calls),
                  'ttft_median_seconds':statistics.median(ttfts) if ttfts else None,'workers':self.worker_results,
-                 'checks':self.check_count,'final_check':final,'capture_exitcode':self.capture.returncode if self.capture else None,
-                 'note':'Actual generated actions execute; correctness gates success. Failed runs have no time-to-success.'}
+                 'rounds':self.round_results,'all_rounds_passed':len(self.round_results)==len(self.rounds) and all(r['passed'] for r in self.round_results),
+                 'cancelled':self.cancelled.is_set(),'checks':self.check_count,'final_check':final,'capture_exitcode':self.capture.returncode if self.capture else None,
+                 'note':'Actual generated actions execute; final cumulative correctness gates success. TPS includes reported completion tokens including reasoning; not useful-code throughput. Token admission uses completed usage and may overshoot with in-flight calls.'}
         summary['completion_tokens_per_wall_second']=summary['completion_tokens']/elapsed
         write_json(self.out/'summary.json',summary)
         self.event('finish',**summary)
@@ -354,15 +469,20 @@ def main():
     p.add_argument('--model',default='glimmer-mlx4')
     p.add_argument('--agents',type=int,choices=[1,8],required=True)
     p.add_argument('--max-tokens',type=int,default=4096)
-    p.add_argument('--max-calls',type=int,default=56)
-    p.add_argument('--worker-calls',type=int,default=6)
-    p.add_argument('--token-budget',type=int,default=96000)
+    p.add_argument('--max-calls',type=int)
+    p.add_argument('--worker-calls',type=int)
+    p.add_argument('--integration-calls',type=int)
+    p.add_argument('--round-calls',type=int)
+    p.add_argument('--round-wall-limit',type=float)
+    p.add_argument('--token-budget',type=int)
     p.add_argument('--max-prompt-chars',type=int,default=50000)
     p.add_argument('--request-timeout',type=float,default=600)
-    p.add_argument('--wall-limit',type=float,default=2700)
+    p.add_argument('--wall-limit',type=float)
     p.add_argument('--capture',action='store_true')
     a=p.parse_args()
-    result=Benchmark(a).run()
+    bench=Benchmark(a)
+    for sig in (signal.SIGINT,signal.SIGTERM):signal.signal(sig,lambda number,frame:bench.cancel(f'Signal {number}'))
+    result=bench.run()
     return 0 if result['passed'] else 1
 
 

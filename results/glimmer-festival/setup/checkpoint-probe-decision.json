@@ -1,0 +1,7 @@
+{
+  "decision": "exclude_from_demo",
+  "reason": "First request generated token IDs/channel text differ when prompt boundary splits prefill; strict all-response equivalence check failed. Followups equal and reuse increased; do not claim exact full-run parity or throughput benefit.",
+  "sanitizer_fixture": "passed ASAN+UBSAN with detect_leaks=0; leak sanitizer unsupported on Darwin",
+  "source_worktree": "/tmp/fleet-glimmer-checkpoints",
+  "production_native_code_modified": false
+}

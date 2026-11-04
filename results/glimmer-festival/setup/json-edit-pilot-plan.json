@@ -1,0 +1,33 @@
+{
+  "purpose": "Matched samebinary/weights/input/k15/budgets. Onlysharedprefixcoalescingflag differs. AllJSONtooloutputsgradedpreservedHTML; notfestivalcompletionclaim.",
+  "jobs": [
+    {
+      "label": "control",
+      "command": [
+        "python3",
+        "demos/agent-task-bench/serve.py",
+        "--config",
+        "results/glimmer-festival/configs/fleet-lookup15-control.json",
+        "--output",
+        "results/glimmer-festival/setup/json-edit-pilot-control",
+        "--pilot",
+        "--pilot-input",
+        "results/glimmer-festival/setup/json-edit-pilot-input.json"
+      ]
+    },
+    {
+      "label": "coalesce",
+      "command": [
+        "python3",
+        "demos/agent-task-bench/serve.py",
+        "--config",
+        "results/glimmer-festival/configs/fleet-coalesce.json",
+        "--output",
+        "results/glimmer-festival/setup/json-edit-pilot-coalesce",
+        "--pilot",
+        "--pilot-input",
+        "results/glimmer-festival/setup/json-edit-pilot-input.json"
+      ]
+    }
+  ]
+}

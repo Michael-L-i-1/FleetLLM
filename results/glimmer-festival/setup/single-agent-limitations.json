@@ -1,0 +1,8 @@
+{
+  "status": "scored_failed_under_registered_common_harness",
+  "final_checks": "219/251",
+  "history_cap_characters": 50000,
+  "observed": "46contextcompactioneventsbeforeaudit; modelrepeatedpreviouslywrittenfilesinround2 andspentround3readingwithoutfinishingpolish. Boundedclientmemorypolicyinteractedbadlywithwholeprojectsinglehistory.",
+  "interpretation": "Do notclaimtime-to-successspeedupoverthisfailedsingle-agentattempt or attribute inability to vLLM. Stockserverruntime and this customagent harness are different layers. A full-contextsingle-agentfollowupwouldbeaseparateexperiment.",
+  "eight_agent_controls": "BothFleetandvLLMeight-agenttrialshadzerocontextcompactionevents andpassedall251finalchecks."
+}

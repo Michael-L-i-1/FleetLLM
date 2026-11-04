@@ -1,0 +1,18 @@
+{
+  "model": "glimmer",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an agent reviewing a small website. Think through the code carefully. Tool results arrive as user messages; answer using JSON actions. Never assume a tool succeeded."
+    },
+    {
+      "role": "user",
+      "content": "We need an accessible, responsive website. Before returning an action, perform an exhaustive review in your reasoning: enumerate 200 distinct concrete accessibility, layout, typography, keyboard, responsive, and contrast checks, one numbered check at a time, and explain each check. Do not abbreviate or summarize. Then return a JSON read_file action for index.html."
+    }
+  ],
+  "temperature": 0,
+  "seed": 7,
+  "max_tokens": 2112,
+  "reasoning_effort": "high",
+  "stream": false
+}

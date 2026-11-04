@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' file: data:; script-src 'sha256-XcKXImeTHZDCEgLQrnEAlh9VNuYAnc4rrXGLc6cc3LU='; base-uri 'none'; form-action 'none'"><title>Tickets — Lantern Commons</title><style>
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;color:#182e30;background:#fff;font-family:Arial,sans-serif}img,svg{max-width:100%;height:auto}a{color:inherit}button,input,select{font:inherit}[hidden]{display:none!important}.site-header{padding:16px;border-bottom:1px solid #ddd}.site-brand{font-weight:700}.site-nav{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px}.site-nav a{padding:8px 0;font-size:14px}.site-nav [aria-current=page]{font-weight:700}main>article{padding:16px}.site-footer{padding:16px;border-top:1px solid #ddd;font-size:12px}
+</style></head><body><header id="top" class="site-header"><a class="site-brand" href="index.html">Lantern Commons</a><nav class="site-nav" aria-label="Main navigation"><a href="index.html">Home</a><a href="lineup.html">Lineup</a><a href="schedule.html">Schedule</a><a href="venues.html">Venues</a><a href="tickets.html" aria-current="page">Tickets</a><a href="accessibility.html">Accessibility</a><a href="volunteer.html">Volunteer</a><a href="faq.html">FAQ</a></nav></header><main><article id="page-tickets"><style>
+#page-tickets{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#182e30;background:#f5ebd9}
+#page-tickets h1{font-size:32px;line-height:1.2;margin:0 0 16px;font-family:Georgia,serif}
+@media(min-width:1024px){#page-tickets h1{font-size:40px}}
+#page-tickets .intro{max-width:60ch;margin:0 0 24px}
+#page-tickets .passes{display:grid;gap:16px;margin:24px 0}
+@media(min-width:768px){#page-tickets .passes{grid-template-columns:repeat(2,1fr)}}
+#page-tickets [data-pass]{background:#fff;border:1px solid #e6dfc9;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(24,46,48,.06)}
+#page-tickets [data-pass] h2{margin:0 0 8px;font-size:22px}
+#page-tickets [data-pass] .price{font-weight:700;font-size:24px;color:#087f7a}
+#page-tickets form{background:#fff;border:1px solid #e6dfc9;border-radius:12px;padding:20px;margin-top:24px}
+#page-tickets label{display:block;font-weight:600;margin:0 0 6px}
+#page-tickets input[type="email"]{width:100%;box-sizing:border-box;padding:12px 12px;border:1px solid #c9c2a8;border-radius:8px;font-size:16px}
+#page-tickets [data-primary-cta]{display:inline-block;background:#087f7a;color:#fff;text-decoration:none;border:none;border-radius:8px;padding:12px 20px;font-size:18px;min-height:40px;cursor:pointer;margin-top:12px}
+#page-tickets [data-primary-cta]:focus{outline:3px solid #000;outline-offset:2px}
+#page-tickets #ticket-status{margin-top:12px;font-weight:600}
+#page-tickets [data-family-notice],#page-tickets [data-family-highlight]{background:#fff8e1;border:1px solid #e6dfc9;border-radius:10px;padding:12px 16px;margin:16px 0}
+#page-tickets [data-help-strip]{background:#fff;border:1px solid #e6dfc9;border-radius:10px;padding:12px 16px;margin-top:24px}
+#page-tickets [data-help-strip] a{color:#182e30;text-decoration:underline}
+</style>
+<h1>Tickets &amp; Passes</h1>
+<div data-family-notice data-family-highlight>Family-friendly: Under-12s free with an adult. No booking fees. Family hours 10:00–16:00. Under-12s admission is free when accompanied by an adult.</div>
+<p class="intro">Lantern Commons Arts Weekend runs 12–13 June 2027 at Alder Park, Brookfield. This is interest registration only — no payment is taken now. Join the list to be notified when passes open.</p>
+<div class="passes">
+<div data-pass>
+<h2>Day Pass</h2>
+<div class="price">$18</div>
+<p>Access one full day of music, workshops and family activities. Choose Saturday or Sunday.</p>
+</div>
+<div data-pass>
+<h2>Weekend Pass</h2>
+<div class="price">$30</div>
+<p>Both days at Alder Park with full programme access. Best value for the whole weekend.</p>
+</div>
+</div>
+<form id="ticket-form">
+<label for="ticket-email">Email address</label>
+<input id="ticket-email" type="email" required placeholder="you@example.com">
+<button data-primary-cta type="submit">Request tickets</button>
+<p id="ticket-status" role="status" aria-live="polite"></p>
+</form>
+<div data-help-strip>Need a hand? <a href="accessibility.html">Accessibility guide</a> · <a href="mailto:access@lanterncommons.example">access@lanterncommons.example</a></div>
+</article></main><footer class="site-footer">Lantern Commons Arts Weekend · Fictional benchmark demo. No payments or real signups.</footer><script>// Protected functional behavior; editable pages supply accessible markup.
+document.addEventListener('change', event => {
+  if (event.target.id !== 'schedule-filter') return;
+  const category=event.target.value;
+  let count=0;
+  for (const card of document.querySelectorAll('[data-event]')) {
+    card.hidden=category!=='all' && card.dataset.category!==category;
+    if (!card.hidden) count++;
+  }
+  const empty=document.getElementById('schedule-empty');if (empty) empty.hidden=count!==0;
+});
+document.addEventListener('submit', event => {
+  const kind=event.target.id==='ticket-form'?'ticket':event.target.id==='volunteer-form'?'volunteer':null;
+  if (!kind) return;
+  event.preventDefault();
+  const email=document.getElementById(kind+'-email'), status=document.getElementById(kind+'-status');
+  if (!email || !email.checkValidity() || !status) return;
+  status.textContent=kind==='ticket'?"You're on the list — we'll email ticket information.":"Thanks — we'll send volunteer information.";
+  event.target.dataset.submitted='true';
+});
+</script></body></html>

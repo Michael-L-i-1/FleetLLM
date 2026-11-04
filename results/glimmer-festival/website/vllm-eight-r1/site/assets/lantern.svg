@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720">
+<title>Abstract festival lanterns</title><rect width="960" height="720" rx="44" fill="#f5ebd9"/>
+<circle cx="745" cy="160" r="118" fill="#f2b84b"/>
+<path d="M-80 560 Q240 250 540 560 T1120 460 V800 H-80Z" fill="#7048c6"/>
+<path d="M-80 630 Q280 350 570 630 T1120 550 V800 H-80Z" fill="#143c3c"/>
+<path d="M170 0V190M430 0V95M690 0V285" stroke="#143c3c" stroke-width="6"/>
+<ellipse cx="170" cy="255" rx="75" ry="105" fill="#ef785b"/><ellipse cx="430" cy="165" rx="94" ry="112" fill="#e6a83f"/>
+<ellipse cx="690" cy="355" rx="72" ry="99" fill="#f5ae89"/>
+<path d="M170 165V350M430 62V266M690 268V442" stroke="#f5ebd9" opacity=".55" stroke-width="4"/>
+<path d="M170 360V405M430 278V327M690 454V497" stroke="#143c3c" stroke-width="9"/>
+</svg>

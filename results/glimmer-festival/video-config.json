@@ -1,0 +1,29 @@
+{
+  "title": "Muse Glimmer 30B four-bit \u00b7 eight pages \u00b7 three rounds",
+  "speed": 40,
+  "sample_seconds": 10,
+  "fps": 12,
+  "lanes": [
+    {
+      "label": "Fleet \u00b7 eight agents",
+      "capture_dir": "results/glimmer-festival/runs/fleet-eight-r1/task/capture",
+      "duration_seconds": 426.78114487510175,
+      "status": "passed 251/251",
+      "metrics": "Final pass 418.0s \u00b7 63.4 output tok/s \u00b7 Polish 60.2s"
+    },
+    {
+      "label": "Default vLLM \u00b7 eight agents",
+      "capture_dir": "results/glimmer-festival/runs/vllm-eight-r1/task/capture",
+      "duration_seconds": 771.198893917026,
+      "status": "passed 251/251",
+      "metrics": "Final pass 762.8s \u00b7 37.2 output tok/s \u00b7 Polish 232.0s"
+    },
+    {
+      "label": "Default vLLM \u00b7 one agent",
+      "capture_dir": "results/glimmer-festival/runs/vllm-single-r1/task/capture",
+      "duration_seconds": 1389.8908627920318,
+      "status": "incomplete 219/251",
+      "metrics": "Runner history limit; no speedup claim"
+    }
+  ]
+}

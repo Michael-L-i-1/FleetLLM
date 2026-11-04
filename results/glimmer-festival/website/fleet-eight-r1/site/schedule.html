@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' file: data:; script-src 'sha256-XcKXImeTHZDCEgLQrnEAlh9VNuYAnc4rrXGLc6cc3LU='; base-uri 'none'; form-action 'none'"><title>Schedule — Lantern Commons</title><style>
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;color:#182e30;background:#fff;font-family:Arial,sans-serif}img,svg{max-width:100%;height:auto}a{color:inherit}button,input,select{font:inherit}[hidden]{display:none!important}.site-header{padding:16px;border-bottom:1px solid #ddd}.site-brand{font-weight:700}.site-nav{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px}.site-nav a{padding:8px 0;font-size:14px}.site-nav [aria-current=page]{font-weight:700}main>article{padding:16px}.site-footer{padding:16px;border-top:1px solid #ddd;font-size:12px}
+</style></head><body><header id="top" class="site-header"><a class="site-brand" href="index.html">Lantern Commons</a><nav class="site-nav" aria-label="Main navigation"><a href="index.html">Home</a><a href="lineup.html">Lineup</a><a href="schedule.html" aria-current="page">Schedule</a><a href="venues.html">Venues</a><a href="tickets.html">Tickets</a><a href="accessibility.html">Accessibility</a><a href="volunteer.html">Volunteer</a><a href="faq.html">FAQ</a></nav></header><main><article id="page-schedule"><style>
+#page-schedule{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#182e30;background:#f5ebd9}
+#page-schedule h1{font-size:34px;line-height:1.2;margin:0 0 16px;font-family:Georgia,serif}
+@media (max-width:600px){#page-schedule h1{font-size:28px}}
+#page-schedule .wrap{max-width:960px;margin:0 auto;padding:24px}
+#page-schedule label{font-weight:600;margin-right:8px}
+#page-schedule select{padding:8px 10px;border:1px solid #182e30;border-radius:6px;background:#fff}
+#page-schedule .family-notice{border:1px solid #d9cbb8;background:#fff8e8;padding:12px;border-radius:8px;margin:16px 0;font-size:14px}
+#page-schedule .grid{display:grid;gap:16px;margin-top:20px}
+@media (min-width:800px){#page-schedule .grid{grid-template-columns:repeat(2,1fr)}}
+#page-schedule .card{background:#fff;border:1px solid #e3d9c2;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+#page-schedule .card h3{margin:0 0 6px;font-size:20px}
+#page-schedule .meta{font-size:14px;color:#3a4a4c}
+#page-schedule .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#f0e6d2;margin-top:8px;margin-right:6px}
+#page-schedule .family-badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#087f7a;color:#fff;margin-top:8px}
+#page-schedule a[data-primary-cta]{display:inline-block;background:#087f7a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;margin-top:24px;min-height:40px;line-height:16px}
+#page-schedule a[data-primary-cta]:hover{background:#066a65}
+#page-schedule a[data-primary-cta]:focus{outline:3px solid #182e30;outline-offset:2px}
+#page-schedule #schedule-empty{margin-top:16px;font-style:italic}
+#page-schedule .help-strip{border-top:1px solid #d9cbb8;margin-top:32px;padding-top:16px;font-size:14px}
+#page-schedule .help-strip a{color:#182e30;text-decoration:underline}
+</style>
+<div class="wrap">
+<h1>Festival schedule</h1>
+<div data-family-notice class="family-notice">Under-12s free with an adult. No booking fees. Family hours 10:00–16:00.</div>
+<div>
+<label for="schedule-filter">Filter by category:</label>
+<select id="schedule-filter">
+<option value="all">All events</option>
+<option value="music">Music</option>
+<option value="workshops">Workshops</option>
+<option value="family">Family</option>
+</select>
+</div>
+<div class="grid">
+<div class="card" data-event data-category="family" data-family-highlight>
+<h3>Family Story Circle</h3>
+<div class="meta"><time datetime="2027-06-12T10:00">12 June 2027, 10:00</time> • Story Grove</div>
+<span class="tag">family</span>
+<span class="family-badge">Family pick</span>
+</div>
+<div class="card" data-event data-category="workshops">
+<h3>Paper Lantern Lab</h3>
+<div class="meta"><time datetime="2027-06-12T11:00">12 June 2027, 11:00</time> • Workshop Yard</div>
+<span class="tag">workshops</span>
+</div>
+<div class="card" data-event data-category="music">
+<h3>Riverlight Quartet</h3>
+<div class="meta"><time datetime="2027-06-12T13:00">12 June 2027, 13:00</time> • River Stage</div>
+<span class="tag">music</span>
+</div>
+<div class="card" data-event data-category="music">
+<h3>Night Orchard</h3>
+<div class="meta"><time datetime="2027-06-12T19:00">12 June 2027, 19:00</time> • River Stage</div>
+<span class="tag">music</span>
+</div>
+<div class="card" data-event data-category="family" data-family-highlight>
+<h3>Clay Play</h3>
+<div class="meta"><time datetime="2027-06-13T11:00">13 June 2027, 11:00</time> • Workshop Yard</div>
+<span class="tag">family</span>
+<span class="family-badge">Family pick</span>
+</div>
+<div class="card" data-event data-category="workshops">
+<h3>Community Print Studio</h3>
+<div class="meta"><time datetime="2027-06-13T14:00">13 June 2027, 14:00</time> • Workshop Yard</div>
+<span class="tag">workshops</span>
+</div>
+</div>
+<p id="schedule-empty" hidden>No events found.</p>
+<a data-primary-cta href="tickets.html">Tickets</a>
+<div data-help-strip class="help-strip">Need a hand? <a href="accessibility.html">Accessibility guide</a> • <a href="mailto:access@lanterncommons.example">access@lanterncommons.example</a></div>
+</div>
+</article></main><footer class="site-footer">Lantern Commons Arts Weekend · Fictional benchmark demo. No payments or real signups.</footer><script>// Protected functional behavior; editable pages supply accessible markup.
+document.addEventListener('change', event => {
+  if (event.target.id !== 'schedule-filter') return;
+  const category=event.target.value;
+  let count=0;
+  for (const card of document.querySelectorAll('[data-event]')) {
+    card.hidden=category!=='all' && card.dataset.category!==category;
+    if (!card.hidden) count++;
+  }
+  const empty=document.getElementById('schedule-empty');if (empty) empty.hidden=count!==0;
+});
+document.addEventListener('submit', event => {
+  const kind=event.target.id==='ticket-form'?'ticket':event.target.id==='volunteer-form'?'volunteer':null;
+  if (!kind) return;
+  event.preventDefault();
+  const email=document.getElementById(kind+'-email'), status=document.getElementById(kind+'-status');
+  if (!email || !email.checkValidity() || !status) return;
+  status.textContent=kind==='ticket'?"You're on the list — we'll email ticket information.":"Thanks — we'll send volunteer information.";
+  event.target.dataset.submitted='true';
+});
+</script></body></html>

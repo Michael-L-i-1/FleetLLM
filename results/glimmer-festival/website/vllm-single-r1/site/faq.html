@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' file: data:; script-src 'sha256-XcKXImeTHZDCEgLQrnEAlh9VNuYAnc4rrXGLc6cc3LU='; base-uri 'none'; form-action 'none'"><title>FAQ — Lantern Commons</title><style>
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;color:#182e30;background:#fff;font-family:Arial,sans-serif}img,svg{max-width:100%;height:auto}a{color:inherit}button,input,select{font:inherit}[hidden]{display:none!important}.site-header{padding:16px;border-bottom:1px solid #ddd}.site-brand{font-weight:700}.site-nav{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px}.site-nav a{padding:8px 0;font-size:14px}.site-nav [aria-current=page]{font-weight:700}main>article{padding:16px}.site-footer{padding:16px;border-top:1px solid #ddd;font-size:12px}
+</style></head><body><header id="top" class="site-header"><a class="site-brand" href="index.html">Lantern Commons</a><nav class="site-nav" aria-label="Main navigation"><a href="index.html">Home</a><a href="lineup.html">Lineup</a><a href="schedule.html">Schedule</a><a href="venues.html">Venues</a><a href="tickets.html">Tickets</a><a href="accessibility.html">Accessibility</a><a href="volunteer.html">Volunteer</a><a href="faq.html" aria-current="page">FAQ</a></nav></header><main><article id="page-faq"><style>
+#page-faq{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#182e30;background:#f5ebd9;line-height:1.6;max-width:960px;margin:0 auto;padding:24px}
+#page-faq h1{font-family:Georgia,serif;font-size:32px;margin:0 0 12px}
+@media(min-width:1024px){#page-faq h1{font-size:40px}}
+#page-faq details{background:#fff;border:1px solid #e8dcc4;border-radius:12px;padding:16px;margin:12px 0}
+#page-faq summary{font-weight:600;cursor:pointer}
+#page-faq a[data-primary-cta]{display:inline-block;background:#087f7a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;min-height:40px;line-height:40px}
+#page-faq [data-family-notice]{background:#fff;border:1px solid #e8dcc4;border-radius:12px;padding:12px;margin:16px 0;font-size:14px}
+#page-faq [data-family-highlight]{background:#e8f6f5;border:1px solid #b7e3e0;border-radius:12px;padding:12px;margin:16px 0}
+</style>
+<h1>Festival questions</h1>
+<div data-family-notice>Under-12s free with an adult. No booking fees. Family hours 10:00–16:00.</div>
+<details data-family-highlight>
+<summary>Are families welcome?</summary>
+<p>All ages are welcome. Under-12s free with an adult. Family Story Circle and Clay Play offer activities for children and caregivers.</p>
+</details>
+<details>
+<summary>What happens in the rain?</summary>
+<p>Events continue in covered areas. Updates are posted if severe weather requires changes.</p>
+</details>
+<details>
+<summary>Can we bring food?</summary>
+<p>Picnics are welcome. Please avoid glass containers.</p>
+</details>
+<details>
+<summary>How do I arrive?</summary>
+<p>Enter via the Riverpath entrance. Bicycle parking is available near Workshop Yard.</p>
+</details>
+<a data-primary-cta href="tickets.html">Choose a pass</a>
+</article>
+</main><footer class="site-footer">Lantern Commons Arts Weekend · Fictional benchmark demo. No payments or real signups.</footer><script>// Protected functional behavior; editable pages supply accessible markup.
+document.addEventListener('change', event => {
+  if (event.target.id !== 'schedule-filter') return;
+  const category=event.target.value;
+  let count=0;
+  for (const card of document.querySelectorAll('[data-event]')) {
+    card.hidden=category!=='all' && card.dataset.category!==category;
+    if (!card.hidden) count++;
+  }
+  const empty=document.getElementById('schedule-empty');if (empty) empty.hidden=count!==0;
+});
+document.addEventListener('submit', event => {
+  const kind=event.target.id==='ticket-form'?'ticket':event.target.id==='volunteer-form'?'volunteer':null;
+  if (!kind) return;
+  event.preventDefault();
+  const email=document.getElementById(kind+'-email'), status=document.getElementById(kind+'-status');
+  if (!email || !email.checkValidity() || !status) return;
+  status.textContent=kind==='ticket'?"You're on the list — we'll email ticket information.":"Thanks — we'll send volunteer information.";
+  event.target.dataset.submitted='true';
+});
+</script></body></html>

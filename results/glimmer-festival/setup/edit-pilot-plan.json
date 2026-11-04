@@ -1,0 +1,47 @@
+{
+  "purpose": "Pre-demo copied-HTML edit setup; choose Fleetpreset only on valid outputs and timing. Native vLLM launch feasibility at defaults. Doesnot establish festival task speedup.",
+  "jobs": [
+    {
+      "label": "vllm-default",
+      "command": [
+        "python3",
+        "demos/agent-task-bench/serve.py",
+        "--config",
+        "results/glimmer-festival/configs/vllm-default.json",
+        "--output",
+        "results/glimmer-festival/setup/edit-pilot-vllm-default",
+        "--pilot",
+        "--pilot-input",
+        "results/glimmer-festival/setup/edit-pilot-input.json"
+      ]
+    },
+    {
+      "label": "fleet-dflash",
+      "command": [
+        "python3",
+        "demos/agent-task-bench/serve.py",
+        "--config",
+        "results/glimmer-festival/configs/fleet-dflash.json",
+        "--output",
+        "results/glimmer-festival/setup/edit-pilot-fleet-dflash",
+        "--pilot",
+        "--pilot-input",
+        "results/glimmer-festival/setup/edit-pilot-input.json"
+      ]
+    },
+    {
+      "label": "fleet-lookup15",
+      "command": [
+        "python3",
+        "demos/agent-task-bench/serve.py",
+        "--config",
+        "results/glimmer-festival/configs/fleet-lookup15.json",
+        "--output",
+        "results/glimmer-festival/setup/edit-pilot-fleet-lookup15",
+        "--pilot",
+        "--pilot-input",
+        "results/glimmer-festival/setup/edit-pilot-input.json"
+      ]
+    }
+  ]
+}

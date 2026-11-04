@@ -1,0 +1,78 @@
+{
+  "config": {
+    "engine": "vllm-metal-default",
+    "model": "glimmer-mlx4",
+    "base": "http://127.0.0.1:8090/v1",
+    "command": [
+      "/opt/homebrew/bin/vllm",
+      "serve",
+      "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710",
+      "--served-model-name",
+      "glimmer-mlx4",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "8090",
+      "--reasoning-parser",
+      "muse_glimmer",
+      "--language-model-only"
+    ],
+    "env": {
+      "PYTHONPATH": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-glimmer-festival/build/task-vllm-overlay"
+    },
+    "unset_env": [
+      "VLLM_METAL_COMPILED_MLP",
+      "VLLM_ENABLE_V1_MULTIPROCESSING",
+      "VLLM_METAL_MULTIMODAL_MODE",
+      "VLLM_USE_V2_MODEL_RUNNER",
+      "VLLM_METAL_USE_NAX"
+    ],
+    "harness": {
+      "max_calls": 108,
+      "token_budget": 96000,
+      "wall_limit": 2700
+    },
+    "baseline_contract": "Installed vLLM-Metal0.32.0 runtime defaults, same forone/eight clients; no performance tuning flags. Isolated required Glimmer correctness overlay, text-onlymode/reasoningparser, localbinding/modelalias only. Native defaultprefixcache remains enabled; compiledMLP envunset."
+  },
+  "config_sha256": "c1a091a37b4899649959726c2f3674ec150f5fb456aa803e9fe68248559a4960",
+  "source_commit": "5c4d52ec9419262a830119b590bf82000686ae0b",
+  "model_binary_sha256": "88e9a9555d5879273df8271a496032e333fb571f74181e9f6d962984b287340a",
+  "complete": true,
+  "pilot": false,
+  "agents": 8,
+  "task": "demos/agent-task-bench/tasks/festival-site",
+  "unset_env": [
+    "VLLM_METAL_COMPILED_MLP",
+    "VLLM_ENABLE_V1_MULTIPROCESSING",
+    "VLLM_METAL_MULTIMODAL_MODE",
+    "VLLM_USE_V2_MODEL_RUNNER",
+    "VLLM_METAL_USE_NAX"
+  ],
+  "server_pid": 3205,
+  "startup_seconds": 21.108263333095238,
+  "harness_command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-glimmer-festival/demos/agent-task-bench/run.py",
+    "--task",
+    "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-glimmer-festival/demos/agent-task-bench/tasks/festival-site",
+    "--output",
+    "results/glimmer-festival/runs/vllm-eight-r1/task",
+    "--base",
+    "http://127.0.0.1:8090/v1",
+    "--model",
+    "glimmer-mlx4",
+    "--agents",
+    "8",
+    "--max-calls",
+    "108",
+    "--token-budget",
+    "96000",
+    "--wall-limit",
+    "2700",
+    "--capture"
+  ],
+  "task_start_unix": 1793782452.503737,
+  "task_end_unix": 1793783223.850205,
+  "harness_returncode": 0,
+  "task_passed": true
+}

@@ -1,0 +1,25 @@
+[metal] repacked 14.91 GB of 4-bit weights into NAX tiles in 6.0s
+[load] 6.2s muse-glimmer -30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710, 52 layers, weights 14.91 GB (pinned 0.00), KV 4.00 GB (6300 full + 4160 swa pages), backend metal
+[serve] listening on http://127.0.0.1:8090/v1 (model "glimmer-mlx4")
+[fleet_stats] served=1 rows=155 shared=0 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-1: 71 prompt + 50 generated tokens, first token 2.42s, total 4.45s, stop
+[serve] 8 active | 4.9 tok/s generated | 1 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 18/49 accepted in 8 verifies | forward_rows 2971 checkpoints 0 skipped 0 state_moves 0 fullslot_misses 0 slot_preemptions 0
+[serve] 8 active | 31.1 tok/s generated | 1 served | 0 preemptions | 46445 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 215/327 accepted in 50 verifies | forward_rows 7723 checkpoints 0 skipped 0 state_moves 0 fullslot_misses 0 slot_preemptions 0
+[serve] 8 active | 230.7 tok/s generated | 1 served | 0 preemptions | 46445 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 1667/2315 accepted in 367 verifies | forward_rows 10575 checkpoints 0 skipped 0 state_moves 0 fullslot_misses 0 slot_preemptions 0
+[fleet_stats] served=2 rows=12754 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-7: 6703 prompt + 852 generated tokens, first token 13.77s, total 31.06s, stop
+[serve] 7 active | 300.0 tok/s generated | 2 served | 0 preemptions | 46445 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 4246/5770 accepted in 747 verifies | forward_rows 14465 checkpoints 0 skipped 0 state_moves 0 fullslot_misses 0 slot_preemptions 0
+[fleet_stats] served=3 rows=15064 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-8: 6703 prompt + 838 generated tokens, first token 14.10s, total 37.08s, stop
+[fleet_stats] served=4 rows=15423 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-4: 6705 prompt + 1110 generated tokens, first token 13.44s, total 38.06s, stop
+[fleet_stats] served=5 rows=15686 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-2: 6705 prompt + 819 generated tokens, first token 13.11s, total 38.81s, stop
+[fleet_stats] served=6 rows=16504 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-5: 6703 prompt + 1220 generated tokens, first token 13.44s, total 41.30s, stop
+[fleet_stats] served=7 rows=16844 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-3: 6703 prompt + 940 generated tokens, first token 13.44s, total 42.41s, stop
+[fleet_stats] served=8 rows=17071 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-6: 6703 prompt + 1276 generated tokens, first token 13.77s, total 43.11s, stop
+[fleet_stats] served=9 rows=17283 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0
+[serve] chatcmpl-9: 6703 prompt + 760 generated tokens, first token 14.10s, total 44.94s, stop

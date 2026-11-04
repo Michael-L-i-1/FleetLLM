@@ -1,0 +1,35 @@
+{
+  "engine": "vllm-metal-default",
+  "model": "glimmer-mlx4",
+  "base": "http://127.0.0.1:8090/v1",
+  "command": [
+    "/opt/homebrew/bin/vllm",
+    "serve",
+    "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710",
+    "--served-model-name",
+    "glimmer-mlx4",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "8090",
+    "--reasoning-parser",
+    "muse_glimmer",
+    "--language-model-only"
+  ],
+  "env": {
+    "PYTHONPATH": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-glimmer-festival/build/task-vllm-overlay"
+  },
+  "unset_env": [
+    "VLLM_METAL_COMPILED_MLP",
+    "VLLM_ENABLE_V1_MULTIPROCESSING",
+    "VLLM_METAL_MULTIMODAL_MODE",
+    "VLLM_USE_V2_MODEL_RUNNER",
+    "VLLM_METAL_USE_NAX"
+  ],
+  "harness": {
+    "max_calls": 108,
+    "token_budget": 96000,
+    "wall_limit": 2700
+  },
+  "baseline_contract": "Installed vLLM-Metal0.32.0 runtime defaults, same forone/eight clients; no performance tuning flags. Isolated required Glimmer correctness overlay, text-onlymode/reasoningparser, localbinding/modelalias only. Native defaultprefixcache remains enabled; compiledMLP envunset."
+}

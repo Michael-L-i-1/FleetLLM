@@ -1,0 +1,68 @@
+{
+  "config": {
+    "engine": "fleet",
+    "model": "glimmer-mlx4",
+    "base": "http://127.0.0.1:8090/v1",
+    "command": [
+      "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/build/fleet-serve",
+      "--model",
+      "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710",
+      "--device",
+      "metal",
+      "--name",
+      "glimmer-mlx4",
+      "--budget-gb",
+      "28",
+      "--kv-gb",
+      "4",
+      "--max-active",
+      "8",
+      "--admit",
+      "--row-budget",
+      "128",
+      "--ngram",
+      "--reasoning",
+      "low",
+      "--max-tokens",
+      "4096",
+      "--port",
+      "8090",
+      "--draft",
+      "/Users/michaelli/.cache/huggingface/hub/models--meta-models--Muse-Glimmer-30B-assistant/snapshots/c676cce91658f9568aaf264a416211e2782735b7",
+      "--draft-kv-gb",
+      "0.5",
+      "--spec-k",
+      "3",
+      "--spec-rows",
+      "64"
+    ],
+    "env": {
+      "FLEET_TRACE_STATS": "1"
+    },
+    "harness": {
+      "max_calls": 108,
+      "token_budget": 96000,
+      "wall_limit": 2700
+    }
+  },
+  "config_sha256": "2acc4444802a0b7bd46c68ba333731a5acc42195e72cac584951edbe89721334",
+  "source_commit": "71032db901013543fc3a1a9c166a2636a9ba9e2c",
+  "model_binary_sha256": "71f920eec446622a4516e9afaf3e4595216c9217855997a4ebf2ff49e28820f8",
+  "complete": true,
+  "pilot": true,
+  "agents": 8,
+  "task": null,
+  "pilot_input": {
+    "path": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-glimmer-festival/results/glimmer-festival/setup/edit-pilot-input.json",
+    "sha256": "a233c5eefc65d287b64fea0376f10415d5edceeb550683770391d6ba9892b7f2",
+    "archived": "pilot-input.json"
+  },
+  "unset_env": [],
+  "server_pid": 65207,
+  "startup_seconds": 12.719573292182758,
+  "pilot_summary": {
+    "wall_seconds": 144.46270745899528,
+    "completion_tokens": 6610,
+    "tokens_per_second": 45.7557532754687
+  }
+}

@@ -1,0 +1,147 @@
+[
+  {
+    "mode": "control",
+    "wall_seconds": 136.517584416084,
+    "completion_tokens": 7815,
+    "tokens_per_second": 57.24537269998213,
+    "valid_actions": 8,
+    "preserved_html_edits": 8,
+    "items": [
+      {
+        "file": "01-header.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "02-hero.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "03-mission.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "04-menu.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "05-impact.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "06-events.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "07-visit.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "08-footer.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      }
+    ],
+    "last_stats": "[fleet_stats] served=9 rows=64051 shared=0 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0"
+  },
+  {
+    "mode": "coalesce",
+    "wall_seconds": 44.95023616706021,
+    "completion_tokens": 7815,
+    "tokens_per_second": 173.85893081751763,
+    "valid_actions": 8,
+    "preserved_html_edits": 8,
+    "items": [
+      {
+        "file": "01-header.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "02-hero.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "03-mission.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "04-menu.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "05-impact.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "06-events.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "07-visit.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      },
+      {
+        "file": "08-footer.html",
+        "valid_action": true,
+        "preserved_html_edit": true,
+        "finish_reason": "stop",
+        "error": null
+      }
+    ],
+    "last_stats": "[fleet_stats] served=9 rows=17283 shared=46445 preemptions=0 checkpoints=0 skipped=0 state_moves=0 fullslot_misses=0 slot_preemptions=0 endpoint_evictions=0 checkpoint_evictions=0 states=0/0",
+    "identical_full_messages_to_control": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "speedup_over_control": 3.0370826953769123
+  }
+]

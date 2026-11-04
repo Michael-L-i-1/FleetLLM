@@ -1,0 +1,66 @@
+{
+  "config": {
+    "engine": "fleet",
+    "model": "glimmer-mlx4",
+    "base": "http://127.0.0.1:8090/v1",
+    "command": [
+      "/tmp/fleet-glimmer-coalesce/build-glimmer-coalesce/fleet-serve",
+      "--model",
+      "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710",
+      "--device",
+      "metal",
+      "--name",
+      "glimmer-mlx4",
+      "--budget-gb",
+      "28",
+      "--kv-gb",
+      "4",
+      "--max-active",
+      "8",
+      "--admit",
+      "--row-budget",
+      "128",
+      "--ngram",
+      "--reasoning",
+      "low",
+      "--max-tokens",
+      "4096",
+      "--port",
+      "8090",
+      "--spec-k",
+      "15",
+      "--spec-rows",
+      "128",
+      "--shared-prefix-coalescing"
+    ],
+    "env": {
+      "FLEET_TRACE_STATS": "1"
+    },
+    "harness": {
+      "max_calls": 108,
+      "token_budget": 96000,
+      "wall_limit": 2700
+    },
+    "preset": "Targetverified lookup15 + shared-prefix coalescing; no learned drafter, no approximate SPAN, no generation-phase checkpoint prototype."
+  },
+  "config_sha256": "06e0c9505313fbd4025bc739633665ddee65304a183ac4b1c675c5e8120229d4",
+  "source_commit": "430bcef39e1caa6d13de465891782a3867876f52",
+  "model_binary_sha256": "9521ce10c1ebb10c796ce6aa0eeb1360a9aea123c54166ca0259106f07131636",
+  "complete": true,
+  "pilot": true,
+  "agents": 8,
+  "task": null,
+  "pilot_input": {
+    "path": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-glimmer-festival/results/glimmer-festival/setup/json-edit-pilot-input.json",
+    "sha256": "4ebd01cc5e415af9ea0a9fc6cbc3e28fcaf79edd8c651e318e6572ed1ac6613b",
+    "archived": "pilot-input.json"
+  },
+  "unset_env": [],
+  "server_pid": 86859,
+  "startup_seconds": 6.582418750040233,
+  "pilot_summary": {
+    "wall_seconds": 44.95023616706021,
+    "completion_tokens": 7815,
+    "tokens_per_second": 173.85893081751763
+  }
+}

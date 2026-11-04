@@ -1,0 +1,43 @@
+{
+  "status": "complete_first_cohort",
+  "active_label": null,
+  "completed": [
+    {
+      "label": "fleet-eight-r1",
+      "passed": true,
+      "wall_seconds": 426.78114487510175,
+      "time_to_first_passing_check_seconds": 418.01165458303876,
+      "completion_tokens": 27079,
+      "completion_tokens_per_wall_second": 63.44938225404667,
+      "calls": 59,
+      "tool_errors": 0,
+      "all_rounds_passed": true
+    },
+    {
+      "label": "vllm-eight-r1",
+      "passed": true,
+      "wall_seconds": 771.198893917026,
+      "time_to_first_passing_check_seconds": 762.8205059168395,
+      "completion_tokens": 28688,
+      "completion_tokens_per_wall_second": 37.19922347695505,
+      "calls": 65,
+      "tool_errors": 0,
+      "all_rounds_passed": true
+    },
+    {
+      "label": "vllm-single-r1",
+      "passed": false,
+      "wall_seconds": 1389.8908627920318,
+      "time_to_first_passing_check_seconds": null,
+      "completion_tokens": 15799,
+      "completion_tokens_per_wall_second": 11.367079547715532,
+      "calls": 77,
+      "tool_errors": 0,
+      "all_rounds_passed": false
+    }
+  ],
+  "total": 3,
+  "original_planned_total": 9,
+  "deferred_trials": 6,
+  "note": "Scheduler stopped after active driver/model fully exited. Extra repetitions not started."
+}

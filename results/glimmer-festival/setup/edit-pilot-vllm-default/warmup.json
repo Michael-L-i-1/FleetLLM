@@ -1,0 +1,60 @@
+{
+  "seconds": 3.400197874987498,
+  "request": {
+    "model": "glimmer-mlx4",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Return exactly one JSON object: {\"action\":\"done\",\"summary\":\"ready\"}"
+      }
+    ],
+    "temperature": 0,
+    "max_tokens": 128,
+    "reasoning_effort": "low",
+    "chat_template_kwargs": {
+      "reasoning_strength": "low"
+    }
+  },
+  "response": {
+    "id": "chatcmpl-8ad6a3b308411d48",
+    "object": "chat.completion",
+    "created": 1793780753,
+    "model": "glimmer-mlx4",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"action\":\"done\",\"summary\":\"ready\"}",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": "Return exactly one JSON object: {\"action\":\"done\",\"summary\":\"ready\"}\n\nWe must return exactly one JSON object. Probably output that JSON.\n\nFollow instruction."
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": 200008,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.32.0-92c74caa",
+    "usage": {
+      "prompt_tokens": 71,
+      "total_tokens": 121,
+      "completion_tokens": 50,
+      "prompt_tokens_details": null,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  }
+}

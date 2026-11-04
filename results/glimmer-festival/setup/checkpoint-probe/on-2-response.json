@@ -1,0 +1,26 @@
+{
+  "id": "chatcmpl-3",
+  "object": "chat.completion",
+  "created": 1793780414,
+  "model": "/Users/michaelli/.cache/huggingface/hub/models--mlx-community--Muse-Glimmer-30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "We need an accessible, responsive website. Before returning an action, perform an exhaustive review in your reasoning: enumerate 200 distinct concrete accessibility, layout, typography, keyboard, responsive, and contrast checks, one numbered check at"
+      },
+      "finish_reason": "length"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 181,
+    "completion_tokens": 48,
+    "total_tokens": 229,
+    "prompt_tokens_details": {
+      "cached_tokens": 180
+    }
+  },
+  "probe_wall_seconds": 2.719890666892752
+}

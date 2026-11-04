@@ -1,0 +1,46 @@
+{
+  "cohort": "repeat1initial8workers",
+  "identical_request_bodies_and_prompt_token_counts": true,
+  "workers": [
+    {
+      "worker": "Accessibility page designer",
+      "request_body_sha256": "5ba4820ae8f2bde78bc74f5562805d654573f9ef03b2befc48f19bb63bac85ea",
+      "prompt_tokens": 3367
+    },
+    {
+      "worker": "Faq page designer",
+      "request_body_sha256": "eceab36b727b471a2d81a0b754c2dfa15ed9422f4c106aa85194900bb1b0e2a7",
+      "prompt_tokens": 3356
+    },
+    {
+      "worker": "Home page designer",
+      "request_body_sha256": "0b955da2a2a027e5f1bc6eaa7f0a0871cb3ae7bfdfcc8214e0c7d4beeb4ac422",
+      "prompt_tokens": 3384
+    },
+    {
+      "worker": "Lineup page designer",
+      "request_body_sha256": "fe7afc231a9c1261d82aa4d6de9a3181cead604419732c0afdf1e394919a9cd5",
+      "prompt_tokens": 3372
+    },
+    {
+      "worker": "Schedule page designer",
+      "request_body_sha256": "9d1b6dea1afbc6052234308900958c72ba52134d13e48a0e4e1dbdadfafba53e",
+      "prompt_tokens": 3373
+    },
+    {
+      "worker": "Tickets page designer",
+      "request_body_sha256": "14fd9c6e71e9db7e4bae4a6278ff4cd142ac9d7fe3f51200369c8b9cf2d572d0",
+      "prompt_tokens": 3367
+    },
+    {
+      "worker": "Venues page designer",
+      "request_body_sha256": "1b90bc4acf342ecaf255d6975e1bb718d5f407e69f18fe73ae0b765219ab1c6d",
+      "prompt_tokens": 3353
+    },
+    {
+      "worker": "Volunteer page designer",
+      "request_body_sha256": "0f986ff6545b74cd4d46282eb0ef343e21c6190ad0ab19f311c2628c3b52c0f1",
+      "prompt_tokens": 3349
+    }
+  ]
+}

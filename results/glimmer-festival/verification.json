@@ -1,0 +1,25 @@
+{
+  "frozen_task_config_harness_hashes_match": true,
+  "delivered_trials": 3,
+  "successful_trials": 2,
+  "unfinished_trials": 1,
+  "extra_repetitions_not_started": 6,
+  "actual_peak_client_concurrency": [
+    8,
+    8,
+    1
+  ],
+  "capture_exit_codes": [
+    0,
+    0,
+    0
+  ],
+  "video": "H2641920x80037.75s; common40xclock+3shold; posterreviewed",
+  "whole_task_first_pass_speedup_vs_vllm_eight": 1.8248785591342975,
+  "round3_wall_speedup_vs_vllm_eight": 3.854048321686014,
+  "single_agent_speedup_claimed": false,
+  "raw_archives_readback_verified": true,
+  "native_fixture": "ASAN/UBSANpassed; explicitfull/SWApagereclamation",
+  "tool_harness_tests": "11model-freetestspassedbeforefreeze",
+  "servers_stopped": true
+}

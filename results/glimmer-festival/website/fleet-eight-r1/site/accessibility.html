@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' file: data:; script-src 'sha256-XcKXImeTHZDCEgLQrnEAlh9VNuYAnc4rrXGLc6cc3LU='; base-uri 'none'; form-action 'none'"><title>Accessibility — Lantern Commons</title><style>
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;color:#182e30;background:#fff;font-family:Arial,sans-serif}img,svg{max-width:100%;height:auto}a{color:inherit}button,input,select{font:inherit}[hidden]{display:none!important}.site-header{padding:16px;border-bottom:1px solid #ddd}.site-brand{font-weight:700}.site-nav{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px}.site-nav a{padding:8px 0;font-size:14px}.site-nav [aria-current=page]{font-weight:700}main>article{padding:16px}.site-footer{padding:16px;border-top:1px solid #ddd;font-size:12px}
+</style></head><body><header id="top" class="site-header"><a class="site-brand" href="index.html">Lantern Commons</a><nav class="site-nav" aria-label="Main navigation"><a href="index.html">Home</a><a href="lineup.html">Lineup</a><a href="schedule.html">Schedule</a><a href="venues.html">Venues</a><a href="tickets.html">Tickets</a><a href="accessibility.html" aria-current="page">Accessibility</a><a href="volunteer.html">Volunteer</a><a href="faq.html">FAQ</a></nav></header><main><article id="page-accessibility"><style>
+#page-accessibility{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#182e30;background:#f5ebd9}
+#page-accessibility h1{font-family:Georgia,serif;font-size:34px;line-height:1.2;margin:0 0 16px}
+@media (max-width:600px){#page-accessibility h1{font-size:28px}}
+#page-accessibility .wrap{max-width:900px;margin:0 auto;padding:24px}
+#page-accessibility .card{background:#fff;border:1px solid #e6dfcf;border-radius:12px;padding:18px;margin:16px 0;box-shadow:0 2px 6px rgba(24,46,48,.06)}
+#page-accessibility h2{font-size:20px;margin:0 0 8px}
+#page-accessibility p{margin:8px 0;line-height:1.6}
+#page-accessibility a[data-primary-cta]{display:inline-block;background:#087f7a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;min-height:40px;line-height:40px}
+#page-accessibility a[data-primary-cta]:focus{outline:3px solid #7048c6;outline-offset:2px}
+#page-accessibility .muted{color:#3a4a4c;font-size:14px}
+#page-accessibility .email{font-weight:600}
+#page-accessibility [data-family-notice]{background:#fff8e1;border:1px solid #e6dfcf;border-radius:10px;padding:12px;margin:16px 0;font-size:14px}
+#page-accessibility [data-family-highlight]{background:#eef7f6;border:1px solid #cfeae7;border-radius:10px;padding:14px;margin:16px 0}
+#page-accessibility [data-help-strip]{background:#fff;border:1px solid #e6dfcf;border-radius:10px;padding:14px;margin:24px 0;font-size:14px}
+#page-accessibility [data-help-strip] a{color:#182e30;text-decoration:underline}
+</style>
+<div class="wrap">
+<h1>Accessible Welcome Guide</h1>
+<div data-family-notice>Under-12s free with an adult. No booking fees. Family hours 10:00–16:00.</div>
+<p class="muted">Lantern Commons Arts Weekend is committed to welcoming everyone. Please get in touch to plan your visit.</p>
+<div class="card">
+<h2>Step-free routes</h2>
+<p>All main entrances and key areas are step-free. The Riverpath entrance provides level access to River Stage and Workshop Yard. Temporary ramps are available at Story Grove where the path slopes gently.</p>
+</div>
+<div class="card">
+<h2>Quiet space</h2>
+<p>A designated quiet space is available beside Story Grove for visitors who need a calmer environment. The area is low-volume, with seating and clear signage. Staff can direct you to the space at any time.</p>
+</div>
+<div data-family-highlight>
+<h2>Family-friendly quiet support</h2>
+<p>The quiet space is especially helpful during Family hours starting at 10:00. Families can use the low-volume area beside Story Grove for a calm break, with seating and clear signage. Staff are available to guide you.</p>
+</div>
+<div class="card">
+<h2>Accessible toilets</h2>
+<p>Accessible toilets are located near Workshop Yard and by the River Stage entrance. Changing facilities are available on request. Please contact the access team in advance for specific needs.</p>
+</div>
+<p>Access enquiries: <a class="email" href="mailto:access@lanterncommons.example">access@lanterncommons.example</a></p>
+<a data-primary-cta href="venues.html">View venues</a>
+<div data-help-strip>Need a hand? <a href="accessibility.html">Access guide</a> • <a href="mailto:access@lanterncommons.example">access@lanterncommons.example</a></div>
+</div>
+</article></main><footer class="site-footer">Lantern Commons Arts Weekend · Fictional benchmark demo. No payments or real signups.</footer><script>// Protected functional behavior; editable pages supply accessible markup.
+document.addEventListener('change', event => {
+  if (event.target.id !== 'schedule-filter') return;
+  const category=event.target.value;
+  let count=0;
+  for (const card of document.querySelectorAll('[data-event]')) {
+    card.hidden=category!=='all' && card.dataset.category!==category;
+    if (!card.hidden) count++;
+  }
+  const empty=document.getElementById('schedule-empty');if (empty) empty.hidden=count!==0;
+});
+document.addEventListener('submit', event => {
+  const kind=event.target.id==='ticket-form'?'ticket':event.target.id==='volunteer-form'?'volunteer':null;
+  if (!kind) return;
+  event.preventDefault();
+  const email=document.getElementById(kind+'-email'), status=document.getElementById(kind+'-status');
+  if (!email || !email.checkValidity() || !status) return;
+  status.textContent=kind==='ticket'?"You're on the list — we'll email ticket information.":"Thanks — we'll send volunteer information.";
+  event.target.dataset.submitted='true';
+});
+</script></body></html>

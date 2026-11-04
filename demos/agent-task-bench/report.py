@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import math
+import statistics
 from pathlib import Path
 
 
@@ -57,13 +58,15 @@ def main():
     p.add_argument('results',type=Path)
     p.add_argument('--plan',type=Path)
     p.add_argument('--prefix',default='primary')
+    p.add_argument('--aggregate',action='store_true',help='Also summarize repetitions by engine mode')
     a=p.parse_args();plan=load(a.plan or a.results/'corrected-matrix/plan.json');rows=[]
     for job in plan['jobs']:
         cmd=job['command'];root=Path(cmd[cmd.index('--output')+1]);task=root/'task'
         cfg,s=load(root/'config.json'),load(task/'summary.json')
         complete=cfg.get('complete') is True and bool(s) and not s.get('infrastructure_error')
         passed=complete and s.get('passed') is True
-        status=('passed' if passed else 'failed' if complete else
+        status=('cancelled' if s.get('cancelled') or (root/'cancelled.json').exists() else
+                'passed' if passed else 'failed' if complete else
                 'infrastructure_error' if s.get('infrastructure_error') or cfg.get('complete') is False else
                 'running' if root.exists() else 'pending')
         calls=jsonlines(task/'calls.jsonl');events=jsonlines(task/'events.jsonl')
@@ -89,7 +92,12 @@ def main():
         best=max((n for n,t in check_scores if n is not None and t==total),default=correct)
         begin=s.get('started_unix',0);end=s.get('finished_unix',float('inf'))
         mr,rr=resource(root/'model-resources.csv',begin,end),resource(root/'run-resources.csv',begin,end)
+        rounds=[{'round':r['round'],'title':r.get('title'),'passed':r['passed'],
+                 'wall_seconds':r['wall_seconds'],'output_tokens':r['completion_tokens'],
+                 'calls':r['calls'],'first_pass_elapsed_seconds':r.get('time_to_first_passing_check_seconds')}
+                for r in s.get('rounds',[])]
         row={'label':job['label'],'task':job.get('task'),'mode':job.get('engine_mode'),
+             'repeat':job.get('repeat'),
              'agents':job.get('agents',s.get('agents')),'status':status,
              'checks_passed':correct,'checks_total':total,'time_to_pass_seconds':s.get('time_to_first_passing_check_seconds') if passed else None,
              'best_checks_passed':best,'run_error':s.get('error'),
@@ -105,12 +113,30 @@ def main():
              'ttft_seconds_p95':quantile([c.get('ttft_seconds') for c in good],.95),
              'peak_model_physical_footprint_gib':mr.get('physical_footprint_sum_gib'),
              'peak_run_physical_footprint_gib':rr.get('physical_footprint_sum_gib'),
-             'peak_model_rss_gib':mr.get('rss_sum_gib'),'capture_exitcode':s.get('capture_exitcode')}
+             'peak_model_rss_gib':mr.get('rss_sum_gib'),'capture_exitcode':s.get('capture_exitcode'),
+             'completed_rounds':len(rounds),'all_rounds_passed':s.get('all_rounds_passed'),'rounds':rounds}
         rows.append(row)
     (a.results/(a.prefix+'-summary.json')).write_text(json.dumps(rows,indent=2)+'\n')
     if rows:
         with (a.results/(a.prefix+'-summary.csv')).open('w',newline='') as out:
-            writer=csv.DictWriter(out,fieldnames=list(rows[0]),lineterminator='\n');writer.writeheader();writer.writerows(rows)
+            writer=csv.DictWriter(out,fieldnames=list(rows[0]),lineterminator='\n');writer.writeheader()
+            writer.writerows({k:json.dumps(v) if isinstance(v,(list,dict)) else v for k,v in row.items()} for row in rows)
+    if a.aggregate:
+        aggregates=[]
+        for mode in dict.fromkeys(r['mode'] for r in rows):
+            trials=[r for r in rows if r['mode']==mode]
+            complete=[r for r in trials if r['status'] in ('passed','failed')]
+            successful=[r for r in complete if r['status']=='passed']
+            times=[r['time_to_pass_seconds'] for r in successful]
+            peaks=[r['peak_model_physical_footprint_gib'] for r in complete if r['peak_model_physical_footprint_gib'] is not None]
+            wall=sum(r['task_wall_seconds'] for r in complete)
+            aggregates.append({'mode':mode,'planned_trials':len(trials),'completed_trials':len(complete),'successful_trials':len(successful),
+                               'successful_time_to_pass_median_seconds':statistics.median(times) if times else None,
+                               'successful_time_to_pass_min_seconds':min(times) if times else None,
+                               'successful_time_to_pass_max_seconds':max(times) if times else None,
+                               'pooled_reported_output_tokens_per_task_second':sum(r['output_tokens'] for r in complete)/wall if wall else None,
+                               'max_sampled_model_physical_footprint_gib':max(peaks) if peaks else None})
+        (a.results/(a.prefix+'-aggregate.json')).write_text(json.dumps(aggregates,indent=2)+'\n')
     print(json.dumps(rows,indent=2))
 
 

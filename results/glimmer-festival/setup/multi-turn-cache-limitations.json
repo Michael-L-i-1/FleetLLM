@@ -1,0 +1,6 @@
+{
+  "audit": "Read-only afterfirstFleettrial; frozenbinaryunchanged",
+  "observed": "R1shared20685across7calls; R2reuse30427across6of20calls; R3reuse131907acrossall20calls. Sharedprefixfixworksbutnotalllaterturnmisseseliminated.",
+  "code_candidate": "engine_create pureattentioncan_waitdoesnotrequirefuture_endpoint; staleunforkablecachedleaderscanbeselectedthenabandonedwithouttryinganotherleader. TraceslackleaderIDstoconfirmcauseofeachmiss.",
+  "future_work": "Requiregenuinefutureendpointforwaitingcandidates,whilekeepingbestforkablesourcelookup. Notimplemented/testedintheseprimarytrials."
+}

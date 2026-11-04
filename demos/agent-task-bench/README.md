@@ -103,3 +103,33 @@ for the hero heading and calls to action at both viewport widths. The corrected
 website comparison reruns every mode from the same plain starter and criteria.
 Do not mix v1 automatic pass times with v2 completion claims. Beauty, contrast
 certification and broad coding ability remain separate from these bounded tests.
+
+## Multi-round festival demo
+
+`tasks/festival-site` supplies eight editable page fragments and three cumulative
+rounds: initial design, a stakeholder revision, and browser/accessibility polish.
+Worker, integration and single-agent histories persist between rounds. A shared
+brief appears once; later stakeholder instructions arrive at their round boundary.
+The same protocol and budgets apply to every engine. Final success requires all
+rounds to execute and the final cumulative suite to pass; `all_rounds_passed`
+separately records whether every intermediate round passed.
+
+The default multi-round budgets are 108 calls, a 96k completed-token admission
+threshold, 2,700 seconds total and 800 seconds per round. Each worker gets three
+calls per round, followed by at most 12 integration calls if checks fail. A single
+agent can use 36 calls per round. Three consecutive malformed or capped actions
+stop that agent for the current round; later rounds may repair preserved files.
+Signals preserve partial histories and stop the owned model server.
+
+The recorder accepts task-provided renderer/page metadata, displays actual page
+screenshots and thumbnails, and distinguishes changed HTML from acceptance.
+Per-round events, histories and checks remain under each run's `task/` directory.
+Use `report.py --plan ... --aggregate` for repeated-trial summaries. See
+[festival results and frozen configurations](../../results/glimmer-festival/README.md).
+
+The Glimmer agent preset combines target-verified prompt lookup with
+`--shared-prefix-coalescing`. The latter preserves exact sliding-window fork
+boundaries; it is default off and currently excludes learned drafting on SWA.
+See [implementation and validation](../../docs/swa-coalescing.md). No festival
+names, page structure, test answers or task-specific branches appear in the
+inference engine.

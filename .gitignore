@@ -4,3 +4,4 @@ __pycache__/
 build-*/
 evals/.venv/
 evals/third_party/
+/demos/site-refactor/node_modules

@@ -1,0 +1,3186 @@
+[
+  {
+    "round": 1,
+    "title": "Initial festival redesign",
+    "passed": true,
+    "wall_seconds": 422.11912400019355,
+    "calls": 17,
+    "completion_tokens": 6372,
+    "check": {
+      "passed": true,
+      "returncode": 0,
+      "details": {
+        "passed": true,
+        "round": 1,
+        "checks": [
+          {
+            "name": "home: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "home: local markup only",
+            "passed": true
+          },
+          {
+            "name": "lineup: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "lineup: local markup only",
+            "passed": true
+          },
+          {
+            "name": "schedule: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "schedule: local markup only",
+            "passed": true
+          },
+          {
+            "name": "venues: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "venues: local markup only",
+            "passed": true
+          },
+          {
+            "name": "tickets: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "tickets: local markup only",
+            "passed": true
+          },
+          {
+            "name": "accessibility: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "accessibility: local markup only",
+            "passed": true
+          },
+          {
+            "name": "volunteer: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "volunteer: local markup only",
+            "passed": true
+          },
+          {
+            "name": "faq: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "faq: local markup only",
+            "passed": true
+          },
+          {
+            "name": "home/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "home/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "home/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "home/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "home/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "home/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "home/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "home/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "home/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "home/390px: festival identity",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: actual artists",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: actual program",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: accessible working filter",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: actual venues and address",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: pass prices and no payment",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: accessible signup",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: real local signup behavior",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: access guidance",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: genuine shifts",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: accessible signup",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: real local signup behavior",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: useful native FAQ",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: festival identity",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: actual artists",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: actual program",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: accessible working filter",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: actual venues and address",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: pass prices and no payment",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: accessible signup",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: real local signup behavior",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: access guidance",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: genuine shifts",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: accessible signup",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: real local signup behavior",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: useful native FAQ",
+            "passed": true
+          },
+          {
+            "name": "no browser errors or unexpected requests",
+            "passed": true
+          }
+        ],
+        "failures": [],
+        "errors": [],
+        "visibilityProbes": [
+          {
+            "page": "home",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-home h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 103
+            },
+            "stableChangedPixels": 6177,
+            "changedPixels": 6177,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "home",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-home [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 562,
+              "width": 179,
+              "height": 65
+            },
+            "stableChangedPixels": 11418,
+            "changedPixels": 11418,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "lineup",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-lineup h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 2494,
+            "changedPixels": 2494,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "lineup",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-lineup [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 697,
+              "width": 150,
+              "height": 65
+            },
+            "stableChangedPixels": 9562,
+            "changedPixels": 9562,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "schedule",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-schedule h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3508,
+            "changedPixels": 3508,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "schedule",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-schedule [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 850,
+              "width": 123,
+              "height": 65
+            },
+            "stableChangedPixels": 7770,
+            "changedPixels": 7770,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "venues",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-venues h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 2894,
+            "changedPixels": 2894,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "venues",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-venues [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 936,
+              "width": 141,
+              "height": 64
+            },
+            "stableChangedPixels": 8986,
+            "changedPixels": 8986,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "tickets",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-tickets h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3013,
+            "changedPixels": 3013,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "tickets",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-tickets [data-primary-cta]",
+            "clip": {
+              "x": 45,
+              "y": 781,
+              "width": 158,
+              "height": 65
+            },
+            "stableChangedPixels": 9651,
+            "changedPixels": 9651,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "accessibility",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-accessibility h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3752,
+            "changedPixels": 3752,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "accessibility",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-accessibility [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 851,
+              "width": 136,
+              "height": 65
+            },
+            "stableChangedPixels": 8602,
+            "changedPixels": 8602,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "volunteer",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-volunteer h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3276,
+            "changedPixels": 3276,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "volunteer",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-volunteer [data-primary-cta]",
+            "clip": {
+              "x": 45,
+              "y": 909,
+              "width": 142,
+              "height": 65
+            },
+            "stableChangedPixels": 8682,
+            "changedPixels": 8682,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "faq",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-faq h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3581,
+            "changedPixels": 3581,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "faq",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-faq [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 508,
+              "width": 150,
+              "height": 65
+            },
+            "stableChangedPixels": 9562,
+            "changedPixels": 9562,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "home",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-home h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 9290,
+            "changedPixels": 9290,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "home",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-home [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 398,
+              "width": 179,
+              "height": 65
+            },
+            "stableChangedPixels": 11418,
+            "changedPixels": 11418,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "lineup",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-lineup h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 3761,
+            "changedPixels": 3761,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "lineup",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-lineup [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 383,
+              "width": 150,
+              "height": 65
+            },
+            "stableChangedPixels": 9562,
+            "changedPixels": 9562,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "schedule",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-schedule h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 5202,
+            "changedPixels": 5202,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "schedule",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-schedule [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 865,
+              "width": 123,
+              "height": 65
+            },
+            "stableChangedPixels": 7770,
+            "changedPixels": 7770,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "venues",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-venues h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 4326,
+            "changedPixels": 4326,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "venues",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-venues [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 516,
+              "width": 141,
+              "height": 65
+            },
+            "stableChangedPixels": 8986,
+            "changedPixels": 8986,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "tickets",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-tickets h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 4492,
+            "changedPixels": 4492,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "tickets",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-tickets [data-primary-cta]",
+            "clip": {
+              "x": 285,
+              "y": 559,
+              "width": 158,
+              "height": 65
+            },
+            "stableChangedPixels": 9651,
+            "changedPixels": 9651,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "accessibility",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-accessibility h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 5590,
+            "changedPixels": 5590,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "accessibility",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-accessibility [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 808,
+              "width": 136,
+              "height": 65
+            },
+            "stableChangedPixels": 8602,
+            "changedPixels": 8602,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "volunteer",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-volunteer h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 4956,
+            "changedPixels": 4956,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "volunteer",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-volunteer [data-primary-cta]",
+            "clip": {
+              "x": 285,
+              "y": 780,
+              "width": 142,
+              "height": 65
+            },
+            "stableChangedPixels": 8682,
+            "changedPixels": 8682,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "faq",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-faq h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 5372,
+            "changedPixels": 5372,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "faq",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-faq [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 481,
+              "width": 150,
+              "height": 65
+            },
+            "stableChangedPixels": 9562,
+            "changedPixels": 9562,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          }
+        ],
+        "widths": [
+          390,
+          1440
+        ],
+        "pages": [
+          "index.html",
+          "lineup.html",
+          "schedule.html",
+          "venues.html",
+          "tickets.html",
+          "accessibility.html",
+          "volunteer.html",
+          "faq.html"
+        ],
+        "browser_exit_code": 0,
+        "render": {
+          "index": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-glimmer-festival/results/glimmer-festival/runs/vllm-single-r1/task/checks/002/site/index.html",
+          "sha256": "643c5e1b3ab73ebd46fb208bf49c2dbcc569ce79c7db74b080da8aaa407c34ae",
+          "pages": [
+            "index.html",
+            "lineup.html",
+            "schedule.html",
+            "venues.html",
+            "tickets.html",
+            "accessibility.html",
+            "volunteer.html",
+            "faq.html"
+          ],
+          "source_to_output": {
+            "pages/home.html": "index.html",
+            "pages/lineup.html": "lineup.html",
+            "pages/schedule.html": "schedule.html",
+            "pages/venues.html": "venues.html",
+            "pages/tickets.html": "tickets.html",
+            "pages/accessibility.html": "accessibility.html",
+            "pages/volunteer.html": "volunteer.html",
+            "pages/faq.html": "faq.html"
+          },
+          "page_sha256": {
+            "index.html": "643c5e1b3ab73ebd46fb208bf49c2dbcc569ce79c7db74b080da8aaa407c34ae",
+            "lineup.html": "1750a03886a3d66616b009c1695d59650b36c37360c12f31ece9d7cd2eebd9d6",
+            "schedule.html": "9595d5345ed446a8940e09dcef49f06e011da3f1a6fd1f3501b13ae2891772c6",
+            "venues.html": "f4f37d4920f9a8510f9795c0786646f96498558d088b7299df352585b724fd92",
+            "tickets.html": "40bd3d6b7de2f6adcecd6f9e332ea955c0b65b6230f3fed5bfa272ff72b20523",
+            "accessibility.html": "e605c9a7564431e9cbb35c534a1fdf59f5b3f3153acda33989b78dbfefceeea5",
+            "volunteer.html": "4db3ed7f7301934ccd821eba05dd51ba9ee97ee8443650f9385c6a5c8100ec10",
+            "faq.html": "6d7a1037013b9e144665561ba47562d13db7354b84f15490bc4fb6078f5f1358"
+          }
+        }
+      },
+      "seconds": 7.7567252919543535
+    },
+    "time_to_first_passing_check_seconds": 415.60816366714425,
+    "workers": [
+      {
+        "agent": "single",
+        "status": "done",
+        "turns": 17
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "title": "Family-friendly stakeholder update",
+    "passed": false,
+    "wall_seconds": 800.0162831249181,
+    "calls": 24,
+    "completion_tokens": 8669,
+    "check": {
+      "passed": false,
+      "infrastructure_error": false,
+      "budget_exhausted": true,
+      "error": "Round/run budget exhausted before checker",
+      "seconds": 3.595813177525997e-05
+    },
+    "time_to_first_passing_check_seconds": null,
+    "workers": [
+      {
+        "agent": "single",
+        "status": "request_error",
+        "turns": 24
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "title": "Browser polish and accessible wayfinding",
+    "passed": false,
+    "wall_seconds": 166.09853362478316,
+    "calls": 36,
+    "completion_tokens": 758,
+    "check": {
+      "passed": false,
+      "returncode": 1,
+      "details": {
+        "passed": false,
+        "round": 3,
+        "checks": [
+          {
+            "name": "home: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "home: local markup only",
+            "passed": true
+          },
+          {
+            "name": "lineup: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "lineup: local markup only",
+            "passed": true
+          },
+          {
+            "name": "schedule: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "schedule: local markup only",
+            "passed": true
+          },
+          {
+            "name": "venues: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "venues: local markup only",
+            "passed": true
+          },
+          {
+            "name": "tickets: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "tickets: local markup only",
+            "passed": true
+          },
+          {
+            "name": "accessibility: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "accessibility: local markup only",
+            "passed": true
+          },
+          {
+            "name": "volunteer: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "volunteer: local markup only",
+            "passed": true
+          },
+          {
+            "name": "faq: custom CSS",
+            "passed": true
+          },
+          {
+            "name": "faq: local markup only",
+            "passed": true
+          },
+          {
+            "name": "home/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "home/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "home/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "home/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "home/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "home/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "home/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "home/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "home/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "home/390px: festival identity",
+            "passed": true
+          },
+          {
+            "name": "home/390px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "home/390px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "home/390px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "home/390px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "lineup/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: actual artists",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "lineup/390px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "lineup/390px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "schedule/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: actual program",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: accessible working filter",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "schedule/390px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "schedule/390px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "venues/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: actual venues and address",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "venues/390px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "venues/390px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "tickets/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: pass prices and no payment",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: accessible signup",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: real local signup behavior",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "tickets/390px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "tickets/390px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "accessibility/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: access guidance",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "accessibility/390px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "accessibility/390px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "volunteer/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: genuine shifts",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: accessible signup",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: real local signup behavior",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "volunteer/390px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "volunteer/390px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "faq/390px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: primary action",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: useful native FAQ",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "faq/390px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "faq/390px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "home/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: festival identity",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "home/1440px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "home/1440px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "lineup/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: actual artists",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "lineup/1440px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "lineup/1440px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "schedule/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: actual program",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: accessible working filter",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "schedule/1440px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "schedule/1440px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "venues/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: actual venues and address",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "venues/1440px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "venues/1440px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "tickets/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: pass prices and no payment",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: accessible signup",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: real local signup behavior",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "tickets/1440px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "tickets/1440px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "accessibility/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: access guidance",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "accessibility/1440px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "accessibility/1440px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "volunteer/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: genuine shifts",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: accessible signup",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: real local signup behavior",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "volunteer/1440px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "volunteer/1440px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "faq/1440px: root and descriptive heading",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: headline typography",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: primary action",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: brand action color",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: visible headline",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: visible primary",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: all navigation destinations",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: valid local links",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: no horizontal overflow",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: useful native FAQ",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: family advisory",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: page-specific family update",
+            "passed": true
+          },
+          {
+            "name": "faq/1440px: visible keyboard focus",
+            "passed": false
+          },
+          {
+            "name": "faq/1440px: accessibility help strip",
+            "passed": false
+          },
+          {
+            "name": "no browser errors or unexpected requests",
+            "passed": true
+          }
+        ],
+        "failures": [
+          "home/390px: visible keyboard focus: requirement not met",
+          "home/390px: accessibility help strip: requirement not met",
+          "lineup/390px: visible keyboard focus: requirement not met",
+          "lineup/390px: accessibility help strip: requirement not met",
+          "schedule/390px: visible keyboard focus: requirement not met",
+          "schedule/390px: accessibility help strip: requirement not met",
+          "venues/390px: visible keyboard focus: requirement not met",
+          "venues/390px: accessibility help strip: requirement not met",
+          "tickets/390px: visible keyboard focus: requirement not met",
+          "tickets/390px: accessibility help strip: requirement not met",
+          "accessibility/390px: visible keyboard focus: requirement not met",
+          "accessibility/390px: accessibility help strip: requirement not met",
+          "volunteer/390px: visible keyboard focus: requirement not met",
+          "volunteer/390px: accessibility help strip: requirement not met",
+          "faq/390px: visible keyboard focus: requirement not met",
+          "faq/390px: accessibility help strip: requirement not met",
+          "home/1440px: visible keyboard focus: requirement not met",
+          "home/1440px: accessibility help strip: requirement not met",
+          "lineup/1440px: visible keyboard focus: requirement not met",
+          "lineup/1440px: accessibility help strip: requirement not met",
+          "schedule/1440px: visible keyboard focus: requirement not met",
+          "schedule/1440px: accessibility help strip: requirement not met",
+          "venues/1440px: visible keyboard focus: requirement not met",
+          "venues/1440px: accessibility help strip: requirement not met",
+          "tickets/1440px: visible keyboard focus: requirement not met",
+          "tickets/1440px: accessibility help strip: requirement not met",
+          "accessibility/1440px: visible keyboard focus: requirement not met",
+          "accessibility/1440px: accessibility help strip: requirement not met",
+          "volunteer/1440px: visible keyboard focus: requirement not met",
+          "volunteer/1440px: accessibility help strip: requirement not met",
+          "faq/1440px: visible keyboard focus: requirement not met",
+          "faq/1440px: accessibility help strip: requirement not met"
+        ],
+        "errors": [],
+        "visibilityProbes": [
+          {
+            "page": "home",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-home h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 103
+            },
+            "stableChangedPixels": 6177,
+            "changedPixels": 6177,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "home",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-home [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 653,
+              "width": 179,
+              "height": 65
+            },
+            "stableChangedPixels": 11421,
+            "changedPixels": 11421,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "lineup",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-lineup h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 2494,
+            "changedPixels": 2494,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "lineup",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-lineup [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 903,
+              "width": 150,
+              "height": 65
+            },
+            "stableChangedPixels": 9565,
+            "changedPixels": 9565,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "schedule",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-schedule h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3508,
+            "changedPixels": 3508,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "schedule",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-schedule [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 851,
+              "width": 123,
+              "height": 65
+            },
+            "stableChangedPixels": 7773,
+            "changedPixels": 7773,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "venues",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-venues h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 2894,
+            "changedPixels": 2894,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "venues",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-venues [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 851,
+              "width": 141,
+              "height": 65
+            },
+            "stableChangedPixels": 8989,
+            "changedPixels": 8989,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "tickets",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-tickets h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3013,
+            "changedPixels": 3013,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "tickets",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-tickets [data-primary-cta]",
+            "clip": {
+              "x": 45,
+              "y": 936,
+              "width": 158,
+              "height": 64
+            },
+            "stableChangedPixels": 9685,
+            "changedPixels": 9685,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "accessibility",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-accessibility h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3752,
+            "changedPixels": 3752,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "accessibility",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-accessibility [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 850,
+              "width": 136,
+              "height": 65
+            },
+            "stableChangedPixels": 8605,
+            "changedPixels": 8605,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "volunteer",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-volunteer h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3276,
+            "changedPixels": 3276,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "volunteer",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-volunteer [data-primary-cta]",
+            "clip": {
+              "x": 45,
+              "y": 790,
+              "width": 142,
+              "height": 65
+            },
+            "stableChangedPixels": 8698,
+            "changedPixels": 8698,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "faq",
+            "width": 390,
+            "target": "headline",
+            "selector": "#page-faq h1",
+            "clip": {
+              "x": 24,
+              "y": 159,
+              "width": 342,
+              "height": 52
+            },
+            "stableChangedPixels": 3581,
+            "changedPixels": 3581,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "faq",
+            "width": 390,
+            "target": "primary",
+            "selector": "#page-faq [data-primary-cta]",
+            "clip": {
+              "x": 24,
+              "y": 595,
+              "width": 150,
+              "height": 65
+            },
+            "stableChangedPixels": 9565,
+            "changedPixels": 9565,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "home",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-home h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 9290,
+            "changedPixels": 9290,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "home",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-home [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 466,
+              "width": 179,
+              "height": 65
+            },
+            "stableChangedPixels": 11421,
+            "changedPixels": 11421,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "lineup",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-lineup h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 3761,
+            "changedPixels": 3761,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "lineup",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-lineup [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 515,
+              "width": 150,
+              "height": 65
+            },
+            "stableChangedPixels": 9565,
+            "changedPixels": 9565,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "schedule",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-schedule h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 5202,
+            "changedPixels": 5202,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "schedule",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-schedule [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 864,
+              "width": 123,
+              "height": 65
+            },
+            "stableChangedPixels": 7773,
+            "changedPixels": 7773,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "venues",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-venues h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 4326,
+            "changedPixels": 4326,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "venues",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-venues [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 673,
+              "width": 141,
+              "height": 65
+            },
+            "stableChangedPixels": 8989,
+            "changedPixels": 8989,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "tickets",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-tickets h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 4492,
+            "changedPixels": 4492,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "tickets",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-tickets [data-primary-cta]",
+            "clip": {
+              "x": 285,
+              "y": 691,
+              "width": 158,
+              "height": 65
+            },
+            "stableChangedPixels": 9685,
+            "changedPixels": 9685,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "accessibility",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-accessibility h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 5590,
+            "changedPixels": 5590,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "accessibility",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-accessibility [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 935,
+              "width": 136,
+              "height": 65
+            },
+            "stableChangedPixels": 8605,
+            "changedPixels": 8605,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "volunteer",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-volunteer h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 4956,
+            "changedPixels": 4956,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "volunteer",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-volunteer [data-primary-cta]",
+            "clip": {
+              "x": 285,
+              "y": 935,
+              "width": 142,
+              "height": 65
+            },
+            "stableChangedPixels": 8698,
+            "changedPixels": 8698,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "faq",
+            "width": 1440,
+            "target": "headline",
+            "selector": "#page-faq h1",
+            "clip": {
+              "x": 264,
+              "y": 119,
+              "width": 912,
+              "height": 64
+            },
+            "stableChangedPixels": 5372,
+            "changedPixels": 5372,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          },
+          {
+            "page": "faq",
+            "width": 1440,
+            "target": "primary",
+            "selector": "#page-faq [data-primary-cta]",
+            "clip": {
+              "x": 264,
+              "y": 545,
+              "width": 150,
+              "height": 65
+            },
+            "stableChangedPixels": 9565,
+            "changedPixels": 9565,
+            "unstablePixels": 0,
+            "minimumChangedPixels": 24,
+            "channelThreshold": 8,
+            "passed": true,
+            "styleRestored": true
+          }
+        ],
+        "widths": [
+          390,
+          1440
+        ],
+        "pages": [
+          "index.html",
+          "lineup.html",
+          "schedule.html",
+          "venues.html",
+          "tickets.html",
+          "accessibility.html",
+          "volunteer.html",
+          "faq.html"
+        ],
+        "browser_exit_code": 1,
+        "render": {
+          "index": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-glimmer-festival/results/glimmer-festival/runs/vllm-single-r1/task/checks/004/site/index.html",
+          "sha256": "819721542d0f465558eda1e90a08c148c980fe391e063a5a7e56bbc800b61a4f",
+          "pages": [
+            "index.html",
+            "lineup.html",
+            "schedule.html",
+            "venues.html",
+            "tickets.html",
+            "accessibility.html",
+            "volunteer.html",
+            "faq.html"
+          ],
+          "source_to_output": {
+            "pages/home.html": "index.html",
+            "pages/lineup.html": "lineup.html",
+            "pages/schedule.html": "schedule.html",
+            "pages/venues.html": "venues.html",
+            "pages/tickets.html": "tickets.html",
+            "pages/accessibility.html": "accessibility.html",
+            "pages/volunteer.html": "volunteer.html",
+            "pages/faq.html": "faq.html"
+          },
+          "page_sha256": {
+            "index.html": "819721542d0f465558eda1e90a08c148c980fe391e063a5a7e56bbc800b61a4f",
+            "lineup.html": "c61dbaede48f72615cb8a7eb80aac312297668dee48f64ff84e1e9befdaca6ac",
+            "schedule.html": "c4245bb669ed0cfa6c4c7fd19de4d8fceb1a7817e97b9865f3f1681d700fa56f",
+            "venues.html": "a066201d60b5610478f8bf4b28a0b7a5a77c473a4de08a271c21784800da8d8d",
+            "tickets.html": "a51a35d2728350effe256607cf89660b4be41fde64b19a505e864f6c873bd381",
+            "accessibility.html": "df11551cc3aa000bf83bffac12732d3e33df6b94928f8952ce5f4961b808c6c1",
+            "volunteer.html": "b7f92e8b909c91b0f3cc870d15439e736cd2f8a657958452471357e4d8383da7",
+            "faq.html": "62728814222a891fb04f7fbfeea45403f5707c2a1e34f1a50c210bc6198bdf56"
+          }
+        }
+      },
+      "seconds": 7.997036959044635
+    },
+    "time_to_first_passing_check_seconds": null,
+    "workers": [
+      {
+        "agent": "single",
+        "status": "call_limit",
+        "turns": 36
+      }
+    ]
+  }
+]

@@ -1,0 +1,154 @@
+diff --git a/src/chat.c b/src/chat.c
+index c73039a..6e6f630 100644
+--- a/src/chat.c
++++ b/src/chat.c
+@@ -34,7 +34,8 @@ chat_family chat_detect(const tokenizer *t) {
+     return CHAT_PLAIN;
+ }
+ 
+-char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const chat_opts *o) {
++char *chat_format_opts_boundary(const tokenizer *t, const chat_msg *msgs, int n, const chat_opts *o, size_t *generation_at) {
++    if (generation_at) *generation_at = 0;
+     sbuf b = { malloc(256), 0, 256 };
+     b.s[0] = 0;
+     switch (chat_detect(t)) {
+@@ -65,6 +66,7 @@ char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const ch
+             else put(&b, "%s", m->content);
+             put(&b, "<|eot_id|>");
+         }
++        if (generation_at) *generation_at = b.n;
+         put(&b, "<|start_header_id|>assistant<|end_header_id|>\n\n");
+         break;
+     }
+@@ -96,6 +98,7 @@ char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const ch
+                     m->calls[k].arguments && *m->calls[k].arguments ? m->calls[k].arguments : "{}");
+             put(&b, "<|im_end|>\n");
+         }
++        if (generation_at) *generation_at = b.n;
+         put(&b, "<|im_start|>assistant\n");
+         if (o->direct && tok_lookup(t, "<think>") >= 0) put(&b, "<think>\n\n</think>\n\n");
+         else if (tok_qwen35(t))
+@@ -117,6 +120,7 @@ char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const ch
+             if (!strcmp(msgs[i].role, "assistant")) put(&b, "<|start|>assistant to=user<|message|>%s<|eot|>", msgs[i].content);
+             else put(&b, "<|start|>%s<|message|>%s<|eot|>", msgs[i].role, msgs[i].content);
+         }
++        if (generation_at) *generation_at = b.n;
+         put(&b, o->direct ? "<|start|>assistant to=user<|message|>" : "<|start|>assistant");
+         break;
+     }
+@@ -128,6 +132,10 @@ char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const ch
+     return b.s;
+ }
+ 
++char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const chat_opts *o) {
++    return chat_format_opts_boundary(t, msgs, n, o, NULL);
++}
++
+ char *chat_format(const tokenizer *t, const chat_msg *msgs, int n, bool direct) {
+     chat_opts o = { .direct = direct, .reasoning = "low" };
+     return chat_format_opts(t, msgs, n, &o);
+diff --git a/src/chat.h b/src/chat.h
+index 7648161..803b863 100644
+--- a/src/chat.h
++++ b/src/chat.h
+@@ -22,6 +22,10 @@ chat_family chat_detect(const tokenizer *t);
+ 
+ // Format messages plus the assistant generation prompt. Returns a malloc'd string.
+ char *chat_format_opts(const tokenizer *t, const chat_msg *msgs, int n, const chat_opts *o);
++// Also return the byte offset before the assistant generation header (0 for
++// unstructured plain text). Metadata is emitted by the formatter, never inferred
++// from message contents. The caller must verify a token-prefix boundary.
++char *chat_format_opts_boundary(const tokenizer *t, const chat_msg *msgs, int n, const chat_opts *o, size_t *generation_at);
+ // Tool calls in a generated reply, in the family's format (Llama 3: a JSON
+ // {"name", "parameters"} object, optionally after <|python_tag|>; ChatML:
+ // <tool_call> blocks). Fills up to max calls (malloc'd strings) and returns the
+diff --git a/src/engine.h b/src/engine.h
+index c40581c..c05bce5 100644
+--- a/src/engine.h
++++ b/src/engine.h
+@@ -71,7 +71,7 @@ typedef struct {
+     bool recurrent_cache_priority; // retain useful prompt checkpoints before retired generation endpoints
+     bool recurrent_state_move;     // transfer a superseded cached endpoint without another slot
+     bool recurrent_prefix_dedup;   // stop prefill at waiting children's exact recurrent endpoints
+-    bool prompt_checkpoints;   // save exact hybrid state before the assistant generation header
++    bool prompt_checkpoints;   // save exact prompt endpoint before the assistant generation header
+     int min_share;             // minimum common prefix worth forking
+     engine_stats st;
+     // speculative decoding (DFlash): drafter, its KV, drafts per verify step,
+diff --git a/src/server.c b/src/server.c
+index c73d9b4..927cdf8 100644
+--- a/src/server.c
++++ b/src/server.c
+@@ -219,6 +219,15 @@ static void *engine_loop(void *arg) {
+                 r->t_done = wall();
+                 engine_retire(e, r->seq); // keep the KV for prefix reuse (multi-turn agents) until memory is needed
+                 sv->served++;
++                if (getenv("FLEET_TRACE_CHECKPOINTS")) {
++                    fprintf(stderr, "[checkpoint_probe] served=%ld window=%d generated=%d cached=%d full_pages=%u swa_pages=%u full_bytes=%zu swa_bytes=%zu ids=",
++                            sv->served, e->kv.window, s->n_gen, r->n_cached,
++                            e->kv.full.n_pages - e->kv.full.n_free, e->kv.swa.n_pages - e->kv.swa.n_free,
++                            (size_t)(e->kv.full.n_pages - e->kv.full.n_free) * e->kv.full.page_stride * e->kv.full.elem,
++                            (size_t)(e->kv.swa.n_pages - e->kv.swa.n_free) * e->kv.swa.page_stride * e->kv.swa.elem);
++                    for (int i = 0; i < s->n_gen; i++) fprintf(stderr, "%s%d", i ? "," : "", s->gen[i]);
++                    fputc('\n', stderr);
++                }
+                 if (getenv("FLEET_TRACE_STATS"))
+                     fprintf(stderr,"[fleet_stats] served=%ld rows=%ld shared=%ld preemptions=%ld checkpoints=%ld skipped=%ld state_moves=%ld fullslot_misses=%ld slot_preemptions=%ld endpoint_evictions=%ld checkpoint_evictions=%ld states=%d/%d\n",
+                             sv->served,e->st.prefill_rows+e->st.decode_rows,e->st.shared_tokens,e->st.preemptions,e->st.checkpoints,
+@@ -357,6 +366,7 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat)
+     pthread_cond_init(&r->cv, NULL);
+     // prompt
+     char *text = NULL;
++    size_t generation_at = 0;
+     if (chat) {
+         const jnode *msgs = json_get(j, root, "messages");
+         if (!msgs || msgs->type != J_ARR || !msgs->n) { respond_error(c->fd, 400, "messages must be a non-empty array"); json_free(j); free_req(r); return; }
+@@ -410,7 +420,7 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat)
+         const char *reasoning = effort ? effort : sv->o->reasoning;
+         bool direct = reasoning && !strcmp(reasoning, "none");
+         chat_opts o = { direct, reasoning, date, (const char **)tools, n_tools };
+-        text = chat_format_opts(sv->tok, cm, k, &o);
++        text = chat_format_opts_boundary(sv->tok, cm, k, &o, &generation_at);
+         if (tok_qwen35(sv->tok) && !direct) r->channel = CH_REASONING;
+         for (int i = 0; i < k; i++) free(bodies[i].s);
+         for (int i = 0; i < n_tools; i++) free(tools[i]);
+@@ -431,18 +441,14 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat)
+         text = strdup(p);
+     }
+     r->n_prompt = tok_encode(sv->tok, text, strlen(text), &r->prompt);
+-    if (chat && sv->e->prompt_checkpoints && tok_qwen35(sv->tok)) {
+-        const char *header = NULL, *next = text;
+-        while ((next = strstr(next, "<|im_start|>assistant\n"))) {
+-            header = next;
+-            next++;
+-        }
+-        if (header) {
+-            int32_t *ids;
+-            int n = tok_encode(sv->tok, text, header - text, &ids);
+-            if (n > 0 && n < r->n_prompt && !memcmp(ids, r->prompt, 4 * (size_t)n)) r->checkpoint_at = n;
+-            free(ids);
+-        }
++    // Pure attention snapshots retain the prompt's SWA window after generation
++    // trims the live branch. DFlash snapshots are intentionally disabled: pending
++    // teacher hidden rows are not yet materialized into the fork's drafter KV.
++    if (chat && sv->e->prompt_checkpoints && !sv->e->draft && generation_at) {
++        int32_t *ids;
++        int n = tok_encode(sv->tok, text, generation_at, &ids);
++        if (n > 0 && n < r->n_prompt && !memcmp(ids, r->prompt, sizeof(*ids) * (size_t)n)) r->checkpoint_at = n;
++        free(ids);
+     }
+     free(text);
+     // sampling
+diff --git a/tools/common.h b/tools/common.h
+index 2fed57f..ba7d417 100644
+--- a/tools/common.h
++++ b/tools/common.h
+@@ -136,6 +136,8 @@ static runtime load_runtime(int argc, char **argv) {
+         rt.e->swap_dir = arg_str(argc, argv, "--swap-dir", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
+         rt.e->swap_limit = (size_t)(swap_gb * 1e9);
+     }
++    if (rt.draft && rt.e->prompt_checkpoints)
++        fprintf(stderr, "[checkpoints] server prompt snapshots disabled with DFlash: draft-context snapshot lifecycle not implemented\n");
+     if (rt.draft && !engine_set_drafter(rt.e, rt.draft, dkv, (int)arg_num(argc, argv, "--spec-k", 0))) exit(1);
+     fprintf(stderr, "[load] %.1fs %s %s, %d layers, weights %.2f GB (pinned %.2f), KV %.2f GB (%u full + %u swa pages), backend %s\n",
+             now_secs() - t, arch_name(rt.m->c.arch), path + (strlen(path) > 60 ? strlen(path) - 60 : 0), rt.m->c.n_layer, streamed / 1e9,

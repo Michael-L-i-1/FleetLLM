@@ -1,0 +1,35 @@
+[
+  {
+    "mode": "fleet-eight",
+    "planned_trials": 1,
+    "completed_trials": 1,
+    "successful_trials": 1,
+    "successful_time_to_pass_median_seconds": 418.01165458303876,
+    "successful_time_to_pass_min_seconds": 418.01165458303876,
+    "successful_time_to_pass_max_seconds": 418.01165458303876,
+    "pooled_reported_output_tokens_per_task_second": 63.44938225404667,
+    "max_sampled_model_physical_footprint_gib": 18.18892515450716
+  },
+  {
+    "mode": "vllm-eight",
+    "planned_trials": 1,
+    "completed_trials": 1,
+    "successful_trials": 1,
+    "successful_time_to_pass_median_seconds": 762.8205059168395,
+    "successful_time_to_pass_min_seconds": 762.8205059168395,
+    "successful_time_to_pass_max_seconds": 762.8205059168395,
+    "pooled_reported_output_tokens_per_task_second": 37.19922347695505,
+    "max_sampled_model_physical_footprint_gib": 18.166686549782753
+  },
+  {
+    "mode": "vllm-single",
+    "planned_trials": 1,
+    "completed_trials": 1,
+    "successful_trials": 0,
+    "successful_time_to_pass_median_seconds": null,
+    "successful_time_to_pass_min_seconds": null,
+    "successful_time_to_pass_max_seconds": null,
+    "pooled_reported_output_tokens_per_task_second": 11.367079547715532,
+    "max_sampled_model_physical_footprint_gib": 18.042647808790207
+  }
+]

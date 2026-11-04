@@ -1,0 +1,29 @@
+[
+  {
+    "mode": "vllm-default",
+    "wall_seconds": 150.04971687495708,
+    "tokens": 6614,
+    "tokens_per_second": 44.0787236240621,
+    "html_edits_preserved_source": 8,
+    "json_tool_actions": 0,
+    "note": "CopiedHTMLmechanismprobe, notexecutedagenttask. ModeloutputsrawHTMLunderambiguouspilotreturncompletefileinstruction; actualharnessrecencyinstructionfixedbeforetaskruns."
+  },
+  {
+    "mode": "fleet-dflash",
+    "wall_seconds": 144.46270745899528,
+    "tokens": 6610,
+    "tokens_per_second": 45.7557532754687,
+    "html_edits_preserved_source": 7,
+    "json_tool_actions": 0,
+    "note": "CopiedHTMLmechanismprobe, notexecutedagenttask. ModeloutputsrawHTMLunderambiguouspilotreturncompletefileinstruction; actualharnessrecencyinstructionfixedbeforetaskruns."
+  },
+  {
+    "mode": "fleet-lookup15",
+    "wall_seconds": 155.68045804207213,
+    "tokens": 6609,
+    "tokens_per_second": 42.452341694767746,
+    "html_edits_preserved_source": 7,
+    "json_tool_actions": 0,
+    "note": "CopiedHTMLmechanismprobe, notexecutedagenttask. ModeloutputsrawHTMLunderambiguouspilotreturncompletefileinstruction; actualharnessrecencyinstructionfixedbeforetaskruns."
+  }
+]

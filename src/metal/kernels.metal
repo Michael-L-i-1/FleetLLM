@@ -1087,8 +1087,8 @@ kernel void q35_linear_qk(device float *x [[buffer(0)]], constant DeltaArgs &a [
 kernel void q35_delta(device const float *x [[buffer(0)]], device const float *av [[buffer(1)]], device const float *bv [[buffer(2)]],
                       device const float *alog [[buffer(3)]], device const float *dt [[buffer(4)]], device float *mem [[buffer(5)]],
                       device float *out [[buffer(6)]], constant DeltaArgs &a [[buffer(7)]], uint2 tg [[threadgroup_position_in_grid]],
-                      ushort lane [[thread_index_in_simdgroup]]) {
-    uint h = tg.y, v = tg.x, kh = h / (a.vh / a.kh), vd = a.vh * a.vd;
+                      ushort lane [[thread_index_in_simdgroup]], ushort sg [[simdgroup_index_in_threadgroup]]) {
+    uint h = tg.y, v = tg.x * 4 + sg, kh = h / (a.vh / a.kh), vd = a.vh * a.vd;
     device float *s = mem + a.hist + (h * a.vd + v) * a.kd;
     float st[4];
     for (uint j = 0; j < 4; j++)

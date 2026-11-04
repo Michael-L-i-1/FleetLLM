@@ -69,6 +69,7 @@ typedef struct req {
     buf text[2];      // content, reasoning (complete UTF-8 only)
     buf raw[2];       // bytes not yet known to be complete UTF-8
     int n_gen;        // generated tokens
+    int checkpoint_at;
     int n_cached;     // prompt tokens whose KV was reused (prefix sharing)
     bool done, cancelled, started;
     bool tools;       // tools were offered: the reply is parsed for tool calls (and not streamed piecemeal)
@@ -182,6 +183,7 @@ static void *engine_loop(void *arg) {
             if (sv->n_active == sv->cap_active) { sv->cap_active = sv->cap_active ? sv->cap_active * 2 : 64; sv->active = realloc(sv->active, sizeof(req *) * sv->cap_active); }
             r->seq = engine_create(e, r->prompt, r->n_prompt);
             r->n_cached = e->seqs[r->seq].prefix_cached;
+            if (e->prompt_checkpoints) e->seqs[r->seq].checkpoint_at = r->checkpoint_at;
             engine_start(e, r->seq, r->p);
             r->started = true;
             sv->active[sv->n_active++] = r;
@@ -422,6 +424,19 @@ static void handle_completion(conn *c, const char *body, size_t len, bool chat) 
         text = strdup(p);
     }
     r->n_prompt = tok_encode(sv->tok, text, strlen(text), &r->prompt);
+    if (chat && sv->e->prompt_checkpoints && tok_qwen35(sv->tok)) {
+        const char *header = NULL, *next = text;
+        while ((next = strstr(next, "<|im_start|>assistant\n"))) {
+            header = next;
+            next++;
+        }
+        if (header) {
+            int32_t *ids;
+            int n = tok_encode(sv->tok, text, header - text, &ids);
+            if (n > 0 && n < r->n_prompt && !memcmp(ids, r->prompt, 4 * (size_t)n)) r->checkpoint_at = n;
+            free(ids);
+        }
+    }
     free(text);
     // sampling
     r->p = sample_defaults();

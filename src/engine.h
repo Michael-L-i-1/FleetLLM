@@ -18,6 +18,8 @@
 
 typedef struct {
     bool live, cached, generating, done;
+    int checkpoint_at;
+    bool checkpoint_saved; // opt-in exact prompt-boundary state
     int prefix_cached; // actual prefix tokens reused, excluding an unresolved leader wait
     seq_pages pages;
     int32_t *tokens; int n_tokens, cap_tokens;    // tokens whose KV is written
@@ -44,6 +46,7 @@ typedef struct {
 } seq_t;
 
 typedef struct {
+    long checkpoints;
     long steps, decode_rows, prefill_rows, shared_tokens, gen_tokens, deduped_tokens;
     long spec_steps, spec_drafted, spec_accepted; // verify steps, drafts checked, drafts accepted
     long ng_steps, ng_drafted, ng_accepted;       // the subset drafted from repeated text
@@ -62,6 +65,7 @@ typedef struct {
     seq_t *seqs; int n_seqs;
     int *cached; int n_cached; // retired sequences kept for prefix reuse, oldest first
     int row_budget;            // max rows per forward step (prefill chunking)
+    bool prompt_checkpoints;   // save exact hybrid state before the assistant generation header
     int min_share;             // minimum common prefix worth forking
     engine_stats st;
     // speculative decoding (DFlash): drafter, its KV, drafts per verify step,

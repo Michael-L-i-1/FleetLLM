@@ -141,6 +141,7 @@ void kv_free_seq(kv_cache *kv, seq_pages *s) {
         prelease(&kv->full, s->full[i]);
         if (kv->window) prelease(&kv->swa, s->swa[i]);
     }
+    if (s->recurrent_handle) s->release_recurrent_handle(s->recurrent_handle);
     if (s->recurrent) kv->recurrent_used--;
     free(s->recurrent);
     free(s->full);

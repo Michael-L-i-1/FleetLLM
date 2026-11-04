@@ -20,6 +20,23 @@ int main(int argc, char **argv) {
     p.ignore_eos = true;
     int32_t *prompt;
     int n = encode_chat(rt.tok, "Write a Python function that adds two integers.", true, &prompt);
+    if (e->prompt_checkpoints) {
+        int seed = engine_create_fresh(e, prompt, n);
+        e->seqs[seed].checkpoint_at = n - 5;
+        prefill(&rt, seed);
+        assert(e->st.checkpoints == 1 && e->n_cached == 1);
+        int resume = engine_create(e, prompt, n), control = engine_create_fresh(e, prompt, n);
+        assert(e->seqs[resume].n_tokens == n - 5);
+        engine_start(e, resume, p);
+        engine_start(e, control, p);
+        int pair[] = {resume, control};
+        engine_generate(e, pair, 2);
+        check_same(&e->seqs[resume], &e->seqs[control]);
+        for (int i = 0; i < e->n_seqs; i++)
+            if (e->seqs[i].live) engine_release(e, i);
+        assert(e->kv.recurrent_used == 0);
+        puts("PASS: exact prompt checkpoint resumes with identical generated tokens");
+    }
     int parent = engine_create_fresh(e, prompt, n);
     prefill(&rt, parent);
     assert(e->seqs[parent].pages.recurrent_len == n);

@@ -13,6 +13,7 @@ double now_secs(void) {
 }
 
 static void append(int32_t **v, int *n, int *cap, const int32_t *x, int k) {
+    if (k <= 0) return;
     if (*n + k > *cap) {
         *cap = (*n + k) * 2 + 16;
         *v = realloc(*v, sizeof(int32_t) * *cap);
@@ -619,6 +620,7 @@ static void reuse_phase(engine *e, const int *ids, int n) {
 
 // Prefill rows a sequence may take now: a planned move's start is a chunk boundary.
 static int input_cap(const seq_t *s, int want) {
+    if (!s->checkpoint_saved && s->checkpoint_at > s->n_tokens && s->checkpoint_at - s->n_tokens < want) want = s->checkpoint_at - s->n_tokens;
     if (s->sp_planned && s->sp_at > s->n_tokens && s->sp_at - s->n_tokens < want) return s->sp_at - s->n_tokens;
     return want;
 }
@@ -868,6 +870,23 @@ bool engine_step(engine *e, const int *ids, int n) {
         }
         kv_trim_window(&e->kv, &s->pages);
     }
+    // Save only a computed endpoint. The clone owns its recurrent state and
+    // shares attention pages through the existing COW mechanism.
+    if (e->prompt_checkpoints)
+        for (int i = 0; i < np; i++) {
+            int id = plan[i].seq, at = e->seqs[id].checkpoint_at;
+            if (at > 0 && !e->seqs[id].checkpoint_saved && e->seqs[id].pages.len == at) {
+                e->seqs[id].checkpoint_saved = true;
+                if (kv_can_fork_at(&e->kv, &e->seqs[id].pages, at)) {
+                    int32_t empty = 0;
+                    int saved = engine_fork_at(e, id, at, &empty, 0);
+                    e->st.shared_tokens -= at; // preserving a checkpoint is not a served cache hit
+                    e->seqs[saved].prefix_cached = 0;
+                    engine_retire(e, saved);
+                    e->st.checkpoints++;
+                }
+            }
+        }
     free(pages);
     free(plan);
     return true;

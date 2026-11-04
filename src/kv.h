@@ -27,6 +27,8 @@ typedef struct {
 } kv_pool;
 
 typedef struct {
+    void *recurrent_handle;
+    void (*release_recurrent_handle)(void *);
     float *recurrent; // aligned f32 endpoint snapshot; owned by this sequence
     size_t recurrent_bytes;
     int recurrent_len;

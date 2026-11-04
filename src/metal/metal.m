@@ -444,6 +444,24 @@ typedef struct {
     uint32_t first, count, kh, vh, kd, vd, cd, hist;
 } DeltaArgs;
 
+static void metal_release_recurrent(void *handle) { CFRelease(handle); }
+
+// Keep the GPU wrapper for the lifetime of its sequence, rather than creating
+// one for every layer and every token. The KV owner releases it before host memory.
+static id<MTLBuffer> recurrent_buffer(CIMetal *mt, const seq_pages *pages) {
+    seq_pages *p = (seq_pages *)pages;
+    if (!p->recurrent_handle) {
+        id<MTLBuffer> b = [mt->dev newBufferWithBytesNoCopy:p->recurrent length:p->recurrent_bytes options:MTLResourceStorageModeShared deallocator:nil];
+        if (!b) {
+            fprintf(stderr, "Metal recurrent state wrapping failed\n");
+            exit(1);
+        }
+        p->recurrent_handle = (__bridge_retained void *)b;
+        p->release_recurrent_handle = metal_release_recurrent;
+    }
+    return (__bridge id<MTLBuffer>)p->recurrent_handle;
+}
+
 static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const model *m, const layer *l, const seq_pages *const *pages, const row_t *rows, int n,
                          id<MTLBuffer> h, id<MTLBuffer> ob) {
     const model_cfg *c = &m->c;
@@ -465,7 +483,7 @@ static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const mode
         a.first = first;
         a.count = end - first;
         const seq_pages *pg = pages[rows[first].seq];
-        id<MTLBuffer> state = [mt->dev newBufferWithBytesNoCopy:pg->recurrent length:pg->recurrent_bytes options:MTLResourceStorageModeShared deallocator:nil];
+        id<MTLBuffer> state = recurrent_buffer(mt, pg);
         NSUInteger off = 4 * stride * l->recurrent_layer;
         [e setComputePipelineState:P(mt, @"q35_conv")];
         [e setBuffer:x offset:0 atIndex:0];
@@ -487,7 +505,7 @@ static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const mode
         a.first = first;
         a.count = end - first;
         const seq_pages *pg = pages[rows[first].seq];
-        id<MTLBuffer> state = [mt->dev newBufferWithBytesNoCopy:pg->recurrent length:pg->recurrent_bytes options:MTLResourceStorageModeShared deallocator:nil];
+        id<MTLBuffer> state = recurrent_buffer(mt, pg);
         [e setComputePipelineState:P(mt, @"q35_delta")];
         [e setBuffer:cv offset:0 atIndex:0];
         [e setBuffer:av offset:0 atIndex:1];
@@ -497,7 +515,7 @@ static void metal_linear(CIMetal *mt, id<MTLComputeCommandEncoder> e, const mode
         [e setBuffer:state offset:4 * stride * l->recurrent_layer atIndex:5];
         [e setBuffer:y offset:0 atIndex:6];
         set_bytes(e, &a, sizeof a, 7);
-        [e dispatchThreadgroups:MTLSizeMake(a.vd, a.vh, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+        [e dispatchThreadgroups:MTLSizeMake(a.vd / 4, a.vh, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
         first = end;
     }
     [e setComputePipelineState:P(mt, @"q35_gate_norm")];

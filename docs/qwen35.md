@@ -84,3 +84,20 @@ Reference implementations consulted: Apple's `mlx_lm.models.qwen3_5`,
 `qwen3_next` and `gated_delta`, installed MLX-LM 0.32.0. The standalone Metal
 kernels implement the mathematical recurrence using Fleet's existing buffers,
 matmul dispatch and scheduler interfaces.
+
+## Optional prompt checkpoints
+
+`--prompt-checkpoints` preserves an exact recurrent snapshot immediately before
+an assistant generation header. Later agent turns can reuse that common prefix
+even when the client omits the preceding turn's reasoning text. Snapshots consume
+the same bounded state-slot budget and share attention pages through COW. A
+checkpoint is skipped when there is no slot; preserving it is not counted as a
+served prefix-cache hit. The feature is opt-in and currently wired to Qwen3.5's
+text chat format. It does not provide arbitrary intermediate rollback or SPAN.
+
+The Metal implementation keeps one GPU wrapper per resident recurrent state and
+releases it with that state. Recurrence dispatch groups four independent value
+channels into each threadgroup. These are exact execution changes, not layer
+skipping or activation sparsity. A controlled 128-token generation preserved the
+output byte-for-byte and improved decode from 31.20 to 90.26 tok/s on this M5 Pro;
+this compares two versions of Fleet's new implementation, not competing engines.

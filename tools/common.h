@@ -108,6 +108,7 @@ static runtime load_runtime(int argc, char **argv) {
         rt.be->kv_elem = 1;
     }
     rt.e = engine_new(rt.m, rt.be, rt.tok, kv);
+    rt.e->prompt_checkpoints = arg_flag(argc, argv, "--prompt-checkpoints");
     rt.e->row_budget = (int)arg_num(argc, argv, "--row-budget", 128);
     int spec_k = (int)arg_num(argc, argv, "--spec-k", 0);
     if (spec_k < 0 || spec_k > 31) { fprintf(stderr, "--spec-k must be 0..31\n"); exit(1); }

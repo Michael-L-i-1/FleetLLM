@@ -1,0 +1,90 @@
+<style>
+#menu { background: #fff; color: #1e3d2f; padding: 64px 24px; }
+#menu .menu-inner { max-width: 1040px; margin: 0 auto; }
+#menu h2 { font-family: Georgia, serif; font-size: 36px; line-height: 1.2; margin: 0 0 8px; }
+#menu .menu-intro { font-size: 18px; color: #3a4a3a; margin: 0 0 24px; }
+#menu .menu-search { display: flex; flex-direction: column; gap: 6px; max-width: 360px; margin: 0 0 32px; }
+#menu .menu-search label { font-weight: 600; font-size: 15px; }
+#menu #menu-search { font: inherit; font-size: 16px; padding: 12px 14px; border: 2px solid #1e3d2f; border-radius: 10px; background: #fff8f0; color: #1e3d2f; }
+#menu #menu-search:focus { outline: 3px solid #e3b98b; outline-offset: 2px; }
+#menu .menu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+#menu .menu-card { margin: 0; background: #fff8f0; border: 1px solid #e6d9c8; border-radius: 18px; overflow: hidden; box-shadow: 0 2px 10px rgba(30, 61, 47, .07); display: flex; flex-direction: column; }
+#menu .menu-card[hidden] { display: none; }
+#menu .menu-art { background: #f1e6d8; display: flex; align-items: flex-end; justify-content: center; height: 190px; }
+#menu .menu-art svg { width: 170px; height: 170px; display: block; }
+#menu .menu-body { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 6px; }
+#menu .menu-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+#menu .menu-name { font-family: Georgia, serif; font-size: 22px; font-weight: 700; }
+#menu .menu-price { font-size: 20px; font-weight: 700; color: #8a5a3a; }
+#menu .menu-desc { margin: 0; font-size: 15px; line-height: 1.55; color: #3a4a3a; }
+#menu #menu-empty { margin: 24px 0 0; padding: 16px 20px; border-radius: 12px; background: #f1e6d8; font-size: 16px; }
+@media (max-width: 760px) {
+  #menu .menu-grid { grid-template-columns: 1fr; }
+  #menu h2 { font-size: 28px; }
+  #menu .menu-art { height: 160px; }
+  #menu .menu-art svg { width: 140px; height: 140px; }
+}
+</style>
+<section id="menu">
+  <div class="menu-inner">
+    <h2>Our menu</h2>
+    <p class="menu-intro">Simple drinks, made well. Every cup helps fund paid barista apprenticeships.</p>
+    <div class="menu-search">
+      <label for="menu-search">Search drinks</label>
+      <input id="menu-search" type="search" placeholder="Try “oat” or “cold”" autocomplete="off">
+    </div>
+    <div class="menu-grid">
+      <article class="menu-card" data-menu-item data-name="Espresso">
+        <div class="menu-art">
+          <svg viewBox="0 0 170 170" role="img" aria-label="An espresso cup with crema on a saucer">
+            <ellipse cx="85" cy="150" rx="66" ry="11" fill="#d9c4a8"/>
+            <ellipse cx="85" cy="146" rx="52" ry="7" fill="#c7ab89"/>
+            <path d="M47 92 h76 l-7 44 a10 10 0 0 1 -10 8 h-42 a10 10 0 0 1 -10 -8 z" fill="#ffffff" stroke="#1e3d2f" stroke-width="3"/>
+            <path d="M123 102 c18 0 18 26 0 26" fill="none" stroke="#1e3d2f" stroke-width="5" stroke-linecap="round"/>
+            <ellipse cx="85" cy="93" rx="37" ry="7" fill="#4a2a17" stroke="#1e3d2f" stroke-width="3"/>
+            <ellipse cx="85" cy="93" rx="26" ry="4" fill="#c58a4f"/>
+            <path d="M74 80 c-6 -10 6 -14 0 -24 M92 80 c-6 -10 6 -14 0 -24" fill="none" stroke="#a88c73" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+          </svg>
+        </div>
+        <div class="menu-body">
+          <div class="menu-row"><span class="menu-name">Espresso</span><span class="menu-price">$3</span></div>
+          <p class="menu-desc">A rich double shot with a golden crema.</p>
+        </div>
+      </article>
+      <article class="menu-card" data-menu-item data-name="Oat Latte">
+        <div class="menu-art">
+          <svg viewBox="0 0 170 170" role="img" aria-label="An oat latte in a wide cup with heart latte art">
+            <ellipse cx="85" cy="152" rx="68" ry="10" fill="#d9c4a8"/>
+            <path d="M33 74 h104 l-10 60 a14 14 0 0 1 -14 12 h-56 a14 14 0 0 1 -14 -12 z" fill="#ffffff" stroke="#1e3d2f" stroke-width="3"/>
+            <path d="M137 86 c22 0 22 34 0 34" fill="none" stroke="#1e3d2f" stroke-width="5" stroke-linecap="round"/>
+            <ellipse cx="85" cy="75" rx="51" ry="10" fill="#b77a45" stroke="#1e3d2f" stroke-width="3"/>
+            <path d="M85 84 c-14 -8 -16 -18 -7 -20 c4 -1 6 2 7 4 c1 -2 3 -5 7 -4 c9 2 7 12 -7 20 z" fill="#fff4e4"/>
+            <path d="M70 60 c-6 -10 6 -14 0 -24 M100 60 c-6 -10 6 -14 0 -24" fill="none" stroke="#a88c73" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+          </svg>
+        </div>
+        <div class="menu-body">
+          <div class="menu-row"><span class="menu-name">Oat Latte</span><span class="menu-price">$5</span></div>
+          <p class="menu-desc">Espresso with silky steamed oat milk.</p>
+        </div>
+      </article>
+      <article class="menu-card" data-menu-item data-name="Cold Brew">
+        <div class="menu-art">
+          <svg viewBox="0 0 170 170" role="img" aria-label="A tall glass of cold brew with ice">
+            <ellipse cx="85" cy="154" rx="44" ry="7" fill="#d9c4a8"/>
+            <path d="M55 40 h60 l-7 106 a8 8 0 0 1 -8 7 h-30 a8 8 0 0 1 -8 -7 z" fill="#eef6f3" stroke="#1e3d2f" stroke-width="3"/>
+            <path d="M58 66 h54 l-5 79 a6 6 0 0 1 -6 5 h-32 a6 6 0 0 1 -6 -5 z" fill="#3b2314"/>
+            <rect x="66" y="72" width="16" height="16" rx="3" fill="#cfe7ef" opacity=".85" transform="rotate(-10 74 80)"/>
+            <rect x="86" y="84" width="15" height="15" rx="3" fill="#cfe7ef" opacity=".85" transform="rotate(12 93 91)"/>
+            <rect x="72" y="100" width="14" height="14" rx="3" fill="#cfe7ef" opacity=".75" transform="rotate(6 79 107)"/>
+            <path d="M98 18 l-10 60" stroke="#8a5a3a" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="menu-body">
+          <div class="menu-row"><span class="menu-name">Cold Brew</span><span class="menu-price">$4</span></div>
+          <p class="menu-desc">Steeped slow for 18 hours, served over ice.</p>
+        </div>
+      </article>
+    </div>
+    <p id="menu-empty" hidden>No drinks match that search yet. Try “espresso”, “latte” or “cold brew”.</p>
+  </div>
+</section>

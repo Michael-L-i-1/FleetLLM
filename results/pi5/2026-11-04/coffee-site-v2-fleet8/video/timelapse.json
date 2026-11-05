@@ -1,0 +1,36 @@
+{
+  "duration": 16882.582004500087,
+  "speed": 225.1010933933345,
+  "writes": [
+    {
+      "t": 8739.858836125117,
+      "agent": "Mission designer",
+      "path": "sections/03-mission.html"
+    },
+    {
+      "t": 10882.917560250033,
+      "agent": "Impact designer",
+      "path": "sections/05-impact.html"
+    },
+    {
+      "t": 11495.93803700013,
+      "agent": "Events designer",
+      "path": "sections/06-events.html"
+    },
+    {
+      "t": 12779.912785208086,
+      "agent": "Visit designer",
+      "path": "sections/07-visit.html"
+    },
+    {
+      "t": 13917.59268900007,
+      "agent": "Newsletter designer",
+      "path": "sections/08-footer.html"
+    },
+    {
+      "t": 16214.086932874983,
+      "agent": "Hero designer",
+      "path": "sections/02-hero.html"
+    }
+  ]
+}

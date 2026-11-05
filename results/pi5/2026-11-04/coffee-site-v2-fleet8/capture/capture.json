@@ -1,0 +1,10 @@
+{
+  "workspace": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference/results/pi5/2026-11-04/coffee-site-v2-fleet8/workspace",
+  "renderer": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/demos/agent-task-bench/tasks/coffee-site/render.py",
+  "start_time_unix": 1793824352.0157719,
+  "interval_seconds": 10,
+  "min_change_seconds": 3,
+  "width": 1280,
+  "height": 800,
+  "note": "Browser snapshots of actual on-disk state. Periodic/event sampling is not continuous video; no aesthetic or completion substitutions."
+}

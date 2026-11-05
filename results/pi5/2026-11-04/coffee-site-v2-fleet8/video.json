@@ -1,0 +1,15 @@
+{
+  "title": "Muse Glimmer 30B Q2_K on a Raspberry Pi 5 \u00b7 coffee website, 8 agents (FleetLLM)",
+  "speed": 225,
+  "sample_seconds": 10,
+  "fps": 12,
+  "lanes": [
+    {
+      "label": "FleetLLM on Raspberry Pi 5 \u00b7 Glimmer 30B Q2_K \u00b7 8 agents",
+      "capture_dir": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference/results/pi5/2026-11-04/coffee-site-v2-fleet8/capture",
+      "duration_seconds": 16882.582004500087,
+      "status": "stopped early - 6 of 8 sections written, checks not passing",
+      "metrics": "4h41m \u00b7 9,944 tokens generated \u00b7 25 calls \u00b7 0.59 tok/s overall"
+    }
+  ]
+}

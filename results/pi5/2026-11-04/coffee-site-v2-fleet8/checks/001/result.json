@@ -1,0 +1,392 @@
+{
+  "passed": false,
+  "returncode": 1,
+  "details": {
+    "passed": false,
+    "checks": [
+      {
+        "name": "01-header.html: custom styling supplied",
+        "passed": false
+      },
+      {
+        "name": "01-header.html: markup only",
+        "passed": true
+      },
+      {
+        "name": "01-header.html: no remote assets",
+        "passed": true
+      },
+      {
+        "name": "02-hero.html: custom styling supplied",
+        "passed": true
+      },
+      {
+        "name": "02-hero.html: markup only",
+        "passed": true
+      },
+      {
+        "name": "02-hero.html: no remote assets",
+        "passed": true
+      },
+      {
+        "name": "03-mission.html: custom styling supplied",
+        "passed": true
+      },
+      {
+        "name": "03-mission.html: markup only",
+        "passed": true
+      },
+      {
+        "name": "03-mission.html: no remote assets",
+        "passed": true
+      },
+      {
+        "name": "04-menu.html: custom styling supplied",
+        "passed": true
+      },
+      {
+        "name": "04-menu.html: markup only",
+        "passed": true
+      },
+      {
+        "name": "04-menu.html: no remote assets",
+        "passed": true
+      },
+      {
+        "name": "05-impact.html: custom styling supplied",
+        "passed": true
+      },
+      {
+        "name": "05-impact.html: markup only",
+        "passed": true
+      },
+      {
+        "name": "05-impact.html: no remote assets",
+        "passed": true
+      },
+      {
+        "name": "06-events.html: custom styling supplied",
+        "passed": true
+      },
+      {
+        "name": "06-events.html: markup only",
+        "passed": true
+      },
+      {
+        "name": "06-events.html: no remote assets",
+        "passed": true
+      },
+      {
+        "name": "07-visit.html: custom styling supplied",
+        "passed": true
+      },
+      {
+        "name": "07-visit.html: markup only",
+        "passed": true
+      },
+      {
+        "name": "07-visit.html: no remote assets",
+        "passed": true
+      },
+      {
+        "name": "08-footer.html: custom styling supplied",
+        "passed": true
+      },
+      {
+        "name": "08-footer.html: markup only",
+        "passed": true
+      },
+      {
+        "name": "08-footer.html: no remote assets",
+        "passed": true
+      },
+      {
+        "name": "390px: one descriptive h1",
+        "passed": true
+      },
+      {
+        "name": "390px: hero typography",
+        "passed": true
+      },
+      {
+        "name": "390px: navigation",
+        "passed": true
+      },
+      {
+        "name": "390px: section headings",
+        "passed": true
+      },
+      {
+        "name": "390px: hero calls to action",
+        "passed": true
+      },
+      {
+        "name": "390px: hero headline visible pixels",
+        "passed": true
+      },
+      {
+        "name": "390px: hero menu-cta visible pixels",
+        "passed": true
+      },
+      {
+        "name": "390px: hero mission-cta visible pixels",
+        "passed": true
+      },
+      {
+        "name": "390px: mission disclosure",
+        "passed": true
+      },
+      {
+        "name": "390px: menu cards",
+        "passed": false
+      },
+      {
+        "name": "390px: labelled search",
+        "passed": false
+      },
+      {
+        "name": "390px: search behavior",
+        "passed": false
+      },
+      {
+        "name": "390px: impact facts",
+        "passed": true
+      },
+      {
+        "name": "390px: dated events",
+        "passed": true
+      },
+      {
+        "name": "390px: visit details",
+        "passed": true
+      },
+      {
+        "name": "390px: accessible newsletter",
+        "passed": true
+      },
+      {
+        "name": "390px: newsletter behavior",
+        "passed": true
+      },
+      {
+        "name": "390px: valid internal anchors",
+        "passed": true
+      },
+      {
+        "name": "390px: no horizontal overflow",
+        "passed": false
+      },
+      {
+        "name": "1440px: one descriptive h1",
+        "passed": true
+      },
+      {
+        "name": "1440px: hero typography",
+        "passed": true
+      },
+      {
+        "name": "1440px: navigation",
+        "passed": true
+      },
+      {
+        "name": "1440px: section headings",
+        "passed": true
+      },
+      {
+        "name": "1440px: hero calls to action",
+        "passed": true
+      },
+      {
+        "name": "1440px: hero headline visible pixels",
+        "passed": true
+      },
+      {
+        "name": "1440px: hero menu-cta visible pixels",
+        "passed": true
+      },
+      {
+        "name": "1440px: hero mission-cta visible pixels",
+        "passed": true
+      },
+      {
+        "name": "1440px: mission disclosure",
+        "passed": true
+      },
+      {
+        "name": "1440px: menu cards",
+        "passed": false
+      },
+      {
+        "name": "1440px: labelled search",
+        "passed": false
+      },
+      {
+        "name": "1440px: search behavior",
+        "passed": false
+      },
+      {
+        "name": "1440px: impact facts",
+        "passed": true
+      },
+      {
+        "name": "1440px: dated events",
+        "passed": true
+      },
+      {
+        "name": "1440px: visit details",
+        "passed": true
+      },
+      {
+        "name": "1440px: accessible newsletter",
+        "passed": true
+      },
+      {
+        "name": "1440px: newsletter behavior",
+        "passed": true
+      },
+      {
+        "name": "1440px: valid internal anchors",
+        "passed": true
+      },
+      {
+        "name": "1440px: no horizontal overflow",
+        "passed": true
+      },
+      {
+        "name": "no JavaScript errors or external requests",
+        "passed": true
+      }
+    ],
+    "failures": [
+      "01-header.html: custom styling supplied: requirement not met",
+      "390px: menu cards: requirement not met",
+      "390px: labelled search: requirement not met",
+      "390px: search behavior: requirement not met",
+      "390px: no horizontal overflow: requirement not met",
+      "1440px: menu cards: requirement not met",
+      "1440px: labelled search: requirement not met",
+      "1440px: search behavior: requirement not met"
+    ],
+    "errors": [],
+    "visibilityProbes": [
+      {
+        "width": 390,
+        "target": "headline",
+        "selector": "#hero h1",
+        "clip": {
+          "x": 20,
+          "y": 148,
+          "width": 350,
+          "height": 71
+        },
+        "stableChangedPixels": 4529,
+        "changedPixels": 4529,
+        "unstablePixels": 0,
+        "minimumChangedPixels": 24,
+        "channelThreshold": 8,
+        "passed": true,
+        "styleRestored": true
+      },
+      {
+        "width": 390,
+        "target": "menu-cta",
+        "selector": "#hero a[href=\"#menu\"]",
+        "clip": {
+          "x": 20,
+          "y": 300,
+          "width": 123,
+          "height": 43
+        },
+        "stableChangedPixels": 5086,
+        "changedPixels": 5086,
+        "unstablePixels": 0,
+        "minimumChangedPixels": 24,
+        "channelThreshold": 8,
+        "passed": true,
+        "styleRestored": true
+      },
+      {
+        "width": 390,
+        "target": "mission-cta",
+        "selector": "#hero a[href=\"#mission\"]",
+        "clip": {
+          "x": 158,
+          "y": 298,
+          "width": 138,
+          "height": 47
+        },
+        "stableChangedPixels": 6216,
+        "changedPixels": 6216,
+        "unstablePixels": 0,
+        "minimumChangedPixels": 24,
+        "channelThreshold": 8,
+        "passed": true,
+        "styleRestored": true
+      },
+      {
+        "width": 1440,
+        "target": "headline",
+        "selector": "#hero h1",
+        "clip": {
+          "x": 170,
+          "y": 238,
+          "width": 636,
+          "height": 54
+        },
+        "stableChangedPixels": 9683,
+        "changedPixels": 9683,
+        "unstablePixels": 0,
+        "minimumChangedPixels": 24,
+        "channelThreshold": 8,
+        "passed": true,
+        "styleRestored": true
+      },
+      {
+        "width": 1440,
+        "target": "menu-cta",
+        "selector": "#hero a[href=\"#menu\"]",
+        "clip": {
+          "x": 170,
+          "y": 379,
+          "width": 123,
+          "height": 43
+        },
+        "stableChangedPixels": 5086,
+        "changedPixels": 5086,
+        "unstablePixels": 0,
+        "minimumChangedPixels": 24,
+        "channelThreshold": 8,
+        "passed": true,
+        "styleRestored": true
+      },
+      {
+        "width": 1440,
+        "target": "mission-cta",
+        "selector": "#hero a[href=\"#mission\"]",
+        "clip": {
+          "x": 308,
+          "y": 377,
+          "width": 138,
+          "height": 47
+        },
+        "stableChangedPixels": 6216,
+        "changedPixels": 6216,
+        "unstablePixels": 0,
+        "minimumChangedPixels": 24,
+        "channelThreshold": 8,
+        "passed": true,
+        "styleRestored": true
+      }
+    ],
+    "widths": [
+      390,
+      1440
+    ],
+    "browser_exit_code": 1,
+    "render": {
+      "index": "/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference/results/pi5/2026-11-04/coffee-site-v2-fleet8/checks/001/site/index.html",
+      "sha256": "2e0c1637ce9a1c97f59797a34a96d5a1f4f158489cc836cd98286fd220fbda4b"
+    }
+  },
+  "seconds": 1.8160486659035087
+}

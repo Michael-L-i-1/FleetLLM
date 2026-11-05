@@ -1,0 +1,11 @@
+import { chromium } from '/Users/michaelli/code.tmp/GithubDevelopment/constrained-inference-agent-workflows/demos/site-refactor/node_modules/playwright/index.mjs';
+const b = await chromium.launch({ args: ['--disable-gpu'] }); const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
+await p.goto('file://' + process.argv[2]);
+const vis = async () => p.locator('[data-menu-item]:visible').count();
+const r = { cards: await p.locator('[data-menu-item]').count(), label: await p.locator('label[for="menu-search"]').count(), type: await p.locator('#menu-search').getAttribute('type') };
+await p.fill('#menu-search', 'oat'); r.oat = await vis();
+await p.fill('#menu-search', 'no-such-beverage'); r.none = await vis(); r.emptyShown = await p.locator('#menu-empty').isVisible();
+await p.fill('#menu-search', ''); r.all = await vis();
+await p.locator('#menu').screenshot({ path: process.argv[3] });
+await p.setViewportSize({ width: 390, height: 900 }); await p.locator('#menu').screenshot({ path: process.argv[4] });
+console.log(JSON.stringify(r)); await b.close();

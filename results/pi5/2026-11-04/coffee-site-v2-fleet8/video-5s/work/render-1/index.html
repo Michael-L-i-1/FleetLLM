@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'sha256-OK6EljG2tO3G5qyspMK0XLA6tpLF6xYHwq+FNqzbggU='; base-uri 'none'; form-action 'none'"><title>Common Ground Coffee — coffee with a purpose</title>
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#202820;background:white}img,svg{max-width:100%}a{color:inherit}button,input{font:inherit}[hidden]{display:none!important}section,header,footer{padding:16px}html{scroll-behavior:auto}main{display:block}</style>
+</head><body><header id="top"><strong>Common Ground</strong><p>Menu | Mission | Events | Visit</p></header>
+<main><section id="hero"><h1>Common Ground Coffee</h1><p>Coffee and community.</p></section>
+
+<style>
+#mission {
+  background: #fff8f0;
+  color: #1e3d2f;
+  padding: 64px 24px;
+  border-top: 4px solid #8a5a3a;
+}
+#mission h2 {
+  font-family: Georgia, serif;
+  font-size: 36px;
+  line-height: 1.2;
+  margin: 0 0 16px;
+  color: #1e3d2f;
+}
+#mission .mission-lead {
+  font-size: 18px;
+  line-height: 1.7;
+  max-width: 720px;
+  margin: 0 auto 24px;
+  color: #2a4a3a;
+}
+#mission .mission-note {
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f1e6d8;
+  border-left: 4px solid #8a5a3a;
+  border-radius: 8px;
+}
+#mission .mission-note strong {
+  color: #1e3d2f;
+}
+</style>
+<section id="mission">
+  <h2>Our Mission</h2>
+  <p class="mission-lead">Common Ground Coffee is a nonprofit cafe in Palo Alto where great coffee funds real opportunity. We bring neighbors together over a good cup, and we use every surplus to build pathways out of poverty.</p>
+  <p class="mission-note">We are a nonprofit. <strong>100% of surplus funds go to job training</strong> — hands-on barista apprenticeships, resume coaching, and paid placements for people from under-resourced communities. No certifications invented, just honest work, shared tables, and a commitment to keep the doors open for everyone.</p>
+</section>
+<style>#menu .menu-grid{width:900px;display:flex;gap:30px}</style>
+<section id="menu"><h2>Our menu</h2><input id="menu-search" placeholder="Search drinks"><div class="menu-grid"><p data-menu-item data-name="Espresso">Espresso $3</p><p data-menu-item data-name="Latte">Latte $5</p></div><p id="menu-empty" hidden>No drinks found.</p></section>
+
+<section id="impact"><h2>Our impact</h2><p>Good things happen here.</p></section>
+
+<section id="events"><h2>Events</h2><p>Come to an event.</p></section>
+
+<section id="visit"><h2>Visit us</h2><p>Find us in the neighborhood.</p></section>
+</main><section id="newsletter"><h2>Stay connected</h2><form id="newsletter-form"><input id="email" type="email" required><button type="submit">Sign up</button><p id="newsletter-status" role="status" aria-live="polite"></p></form></section><footer>Common Ground Coffee</footer>
+<script>// Protected behavior: models supply semantic markup and styling only.
+document.addEventListener('input', event => {
+  if (event.target.id !== 'menu-search') return;
+  const needle = event.target.value.trim().toLowerCase();
+  const items = [...document.querySelectorAll('[data-menu-item]')];
+  let visible = 0;
+  for (const item of items) {
+    const match = (item.dataset.name || item.textContent).toLowerCase().includes(needle);
+    item.hidden = !match;
+    if (match) visible++;
+  }
+  const empty = document.getElementById('menu-empty');
+  if (empty) empty.hidden = visible !== 0;
+});
+document.addEventListener('submit', event => {
+  if (event.target.id !== 'newsletter-form') return;
+  event.preventDefault();
+  const input = document.getElementById('email');
+  const status = document.getElementById('newsletter-status');
+  if (!input || !status || !input.checkValidity()) return;
+  status.textContent = 'Thanks — you are on the Common Ground list.';
+  event.target.dataset.submitted = 'true';
+});
+</script></body></html>

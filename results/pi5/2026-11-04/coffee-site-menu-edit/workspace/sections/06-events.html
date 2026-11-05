@@ -1,0 +1,35 @@
+<section id="events">
+  <h2>Events</h2>
+  <style>
+    #events {font-family: system-ui, -apple-system, sans-serif; color:#1e2a1e; background:#fff8f0; padding:48px 24px;}
+    #events h2 {font-size:32px; margin:0 0 24px; color:#1e2a1e;}
+    #events .events-grid {display:grid; gap:24px; grid-template-columns:repeat(auto-fit, minmax(260px,1fr));}
+    #events article[data-event] {background:#fff; border:1px solid #e6d9c9; border-radius:12px; padding:20px; display:flex; flex-direction:column; gap:8px;}
+    #events article[data-event] h3 {margin:0; font-size:20px; color:#1e2a1e;}
+    #events article[data-event] time {font-weight:600; color:#8a5a2a;}
+    #events article[data-event] p {margin:0; color:#3a3a3a; line-height:1.5;}
+    #events article[data-event] a {align-self:start; margin-top:8px; background:#1e2a1e; color:#fff8f0; text-decoration:none; padding:10px 14px; border-radius:8px; font-weight:600;}
+    #events article[data-event] a:hover {background:#2e4a2e;}
+    @media (max-width:600px){#events h2{font-size:28px}#events article[data-event]{padding:16px}}
+  </style>
+  <div class="events-grid">
+    <article data-event>
+      <h3>Community Table</h3>
+      <time datetime="2027-03-20">20 March 2027</time>
+      <p>Share a meal, share a story. Neighbors cook together and learn job-training skills in a warm, welcoming space.</p>
+      <a href="#newsletter">Sign up via newsletter</a>
+    </article>
+    <article data-event>
+      <h3>Open Mic</h3>
+      <time datetime="2027-04-03">3 April 2027</time>
+      <p>Local voices, local coffee. Bring a poem, a song, or a short talk and connect with the community.</p>
+      <a href="#newsletter">Sign up via newsletter</a>
+    </article>
+    <article data-event>
+      <h3>Coffee Skills</h3>
+      <time datetime="2027-04-17">17 April 2027</time>
+      <p>Hands-on training with espresso, latte art and service skills. A practical workshop that builds confidence and careers.</p>
+      <a href="#newsletter">Sign up via newsletter</a>
+    </article>
+  </div>
+</section>

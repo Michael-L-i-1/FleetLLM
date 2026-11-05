@@ -1,0 +1,107 @@
+<style>
+#hero {
+  --cream:#FFF8F0;
+  --forest:#1E3A2F;
+  --copper:#B4532A;
+  background: var(--cream);
+  color: var(--forest);
+  padding: 72px 24px;
+  position: relative;
+  overflow: hidden;
+}
+#hero .hero-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: center;
+  gap: 40px;
+}
+#hero h1 {
+  font-family: Georgia, serif;
+  font-size: 48px;
+  line-height: 1.1;
+  margin: 0 0 16px;
+  color: var(--forest);
+}
+#hero .tagline {
+  font-size: 18px;
+  margin: 0 0 28px;
+  color: #3a4a42;
+}
+#hero .cta-group a {
+  display: inline-block;
+  margin-right: 12px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+#hero .cta-primary {
+  background: var(--forest);
+  color: #fff;
+}
+#hero .cta-secondary {
+  background: #e8dccf;
+  color: var(--forest);
+  border: 2px solid var(--copper);
+}
+#hero .visual {
+  position: relative;
+}
+#hero .visual svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+#hero .decor {
+  position: absolute;
+  inset: -40px -60px;
+  z-index: 0;
+  opacity: .08;
+}
+#hero .content {
+  position: relative;
+  z-index: 2;
+}
+@media (max-width: 800px) {
+  #hero { padding: 48px 20px; }
+  #hero .hero-wrap { grid-template-columns: 1fr; }
+  #hero h1 { font-size: 32px; }
+  #hero .tagline { font-size: 16px; }
+}
+</style>
+<section id="hero">
+  <div class="hero-wrap">
+    <div class="content">
+      <h1>Common Ground Coffee</h1>
+      <p class="tagline">Excellent coffee funding opportunity. Nonprofit cafe where every surplus trains the next barista.</p>
+      <div class="cta-group">
+        <a class="cta-primary" href="#menu">View Menu</a>
+        <a class="cta-secondary" href="#mission">Our Mission</a>
+      </div>
+    </div>
+    <div class="visual">
+      <svg viewBox="0 0 400 300" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#8B5A2A"/>
+            <stop offset="100%" stop-color="#3A2A1A"/>
+          </linearGradient>
+        </defs>
+        <rect width="400" height="300" fill="#F5E9D8"/>
+        <g transform="translate(200,180)">
+          <ellipse cx="0" cy="60" rx="90" ry="55" fill="#D9C5A6"/>
+          <path d="M -70 20 C -70 80, 70 80, 70 20 Z" fill="url(#g)"/>
+          <rect x="-35" y="-10" width="70" height="60" rx="12" fill="#FFF" stroke="#8B5A2A" stroke-width="4"/>
+          <circle cx="0" cy="30" r="18" fill="#6F4E37"/>
+        </g>
+      </svg>
+      <div class="decor">
+        <svg width="600" height="600" viewBox="0 0 600 600">
+          <circle cx="300" cy="300" r="280" fill="none" stroke="#1E3A2F" stroke-width="2" opacity="0.06"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>

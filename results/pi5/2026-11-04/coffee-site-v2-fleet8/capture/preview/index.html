@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'sha256-OK6EljG2tO3G5qyspMK0XLA6tpLF6xYHwq+FNqzbggU='; base-uri 'none'; form-action 'none'"><title>Common Ground Coffee — coffee with a purpose</title>
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#202820;background:white}img,svg{max-width:100%}a{color:inherit}button,input{font:inherit}[hidden]{display:none!important}section,header,footer{padding:16px}html{scroll-behavior:auto}main{display:block}</style>
+</head><body><header id="top"><strong>Common Ground</strong><p>Menu | Mission | Events | Visit</p></header>
+<main><style>
+#hero {
+  --cream:#FFF8F0;
+  --forest:#1E3A2F;
+  --copper:#B4532A;
+  background: var(--cream);
+  color: var(--forest);
+  padding: 72px 24px;
+  position: relative;
+  overflow: hidden;
+}
+#hero .hero-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: center;
+  gap: 40px;
+}
+#hero h1 {
+  font-family: Georgia, serif;
+  font-size: 48px;
+  line-height: 1.1;
+  margin: 0 0 16px;
+  color: var(--forest);
+}
+#hero .tagline {
+  font-size: 18px;
+  margin: 0 0 28px;
+  color: #3a4a42;
+}
+#hero .cta-group a {
+  display: inline-block;
+  margin-right: 12px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+#hero .cta-primary {
+  background: var(--forest);
+  color: #fff;
+}
+#hero .cta-secondary {
+  background: #e8dccf;
+  color: var(--forest);
+  border: 2px solid var(--copper);
+}
+#hero .visual {
+  position: relative;
+}
+#hero .visual svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+#hero .decor {
+  position: absolute;
+  inset: -40px -60px;
+  z-index: 0;
+  opacity: .08;
+}
+#hero .content {
+  position: relative;
+  z-index: 2;
+}
+@media (max-width: 800px) {
+  #hero { padding: 48px 20px; }
+  #hero .hero-wrap { grid-template-columns: 1fr; }
+  #hero h1 { font-size: 32px; }
+  #hero .tagline { font-size: 16px; }
+}
+</style>
+<section id="hero">
+  <div class="hero-wrap">
+    <div class="content">
+      <h1>Common Ground Coffee</h1>
+      <p class="tagline">Excellent coffee funding opportunity. Nonprofit cafe where every surplus trains the next barista.</p>
+      <div class="cta-group">
+        <a class="cta-primary" href="#menu">View Menu</a>
+        <a class="cta-secondary" href="#mission">Our Mission</a>
+      </div>
+    </div>
+    <div class="visual">
+      <svg viewBox="0 0 400 300" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#8B5A2A"/>
+            <stop offset="100%" stop-color="#3A2A1A"/>
+          </linearGradient>
+        </defs>
+        <rect width="400" height="300" fill="#F5E9D8"/>
+        <g transform="translate(200,180)">
+          <ellipse cx="0" cy="60" rx="90" ry="55" fill="#D9C5A6"/>
+          <path d="M -70 20 C -70 80, 70 80, 70 20 Z" fill="url(#g)"/>
+          <rect x="-35" y="-10" width="70" height="60" rx="12" fill="#FFF" stroke="#8B5A2A" stroke-width="4"/>
+          <circle cx="0" cy="30" r="18" fill="#6F4E37"/>
+        </g>
+      </svg>
+      <div class="decor">
+        <svg width="600" height="600" viewBox="0 0 600 600">
+          <circle cx="300" cy="300" r="280" fill="none" stroke="#1E3A2F" stroke-width="2" opacity="0.06"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+#mission {
+  background: #fff8f0;
+  color: #1e3d2f;
+  padding: 64px 24px;
+  border-top: 4px solid #8a5a3a;
+}
+#mission h2 {
+  font-family: Georgia, serif;
+  font-size: 36px;
+  line-height: 1.2;
+  margin: 0 0 16px;
+  color: #1e3d2f;
+}
+#mission .mission-lead {
+  font-size: 18px;
+  line-height: 1.7;
+  max-width: 720px;
+  margin: 0 auto 24px;
+  color: #2a4a3a;
+}
+#mission .mission-note {
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f1e6d8;
+  border-left: 4px solid #8a5a3a;
+  border-radius: 8px;
+}
+#mission .mission-note strong {
+  color: #1e3d2f;
+}
+</style>
+<section id="mission">
+  <h2>Our Mission</h2>
+  <p class="mission-lead">Common Ground Coffee is a nonprofit cafe in Palo Alto where great coffee funds real opportunity. We bring neighbors together over a good cup, and we use every surplus to build pathways out of poverty.</p>
+  <p class="mission-note">We are a nonprofit. <strong>100% of surplus funds go to job training</strong> — hands-on barista apprenticeships, resume coaching, and paid placements for people from under-resourced communities. No certifications invented, just honest work, shared tables, and a commitment to keep the doors open for everyone.</p>
+</section>
+<style>#menu .menu-grid{width:900px;display:flex;gap:30px}</style>
+<section id="menu"><h2>Our menu</h2><input id="menu-search" placeholder="Search drinks"><div class="menu-grid"><p data-menu-item data-name="Espresso">Espresso $3</p><p data-menu-item data-name="Latte">Latte $5</p></div><p id="menu-empty" hidden>No drinks found.</p></section>
+
+<section id="impact">
+  <h2>Our Impact</h2>
+  <p>Every cup supports community. Here’s what we’ve achieved this year.</p>
+  <div class="stats">
+    <div class="stat">
+      <span class="num">2,500</span>
+      <span class="label">community meals served</span>
+    </div>
+    <div class="stat">
+      <span class="num">120</span>
+      <span class="label">training hours delivered</span>
+    </div>
+    <div class="stat">
+      <span class="num">35</span>
+      <span class="label">graduates placed in jobs</span>
+    </div>
+  </div>
+  <style>
+    #impact {font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#1e2a1e; background:#fff8f0; padding:64px 24px;}
+    #impact h2 {font-size:36px; line-height:1.2; margin:0 0 12px; color:#1e2a1e;}
+    #impact > p {margin:0 0 32px; font-size:18px; color:#3a4a3a; max-width:720px;}
+    #impact .stats {display:flex; flex-wrap:wrap; gap:24px; justify-content:space-between;}
+    #impact .stat {flex:1 1 220px; background:#fff; border:1px solid #e6d9c8; border-radius:16px; padding:24px; text-align:center; box-shadow:0 2px 8px rgba(30,42,30,.06);}
+    #impact .num {display:block; font-size:48px; font-weight:700; color:#1e2a1e; line-height:1; margin-bottom:8px;}
+    #impact .label {display:block; font-size:16px; color:#4a5a4a; text-transform:uppercase; letter-spacing:.4px;}
+    @media (max-width:600px){
+      #impact h2 {font-size:28px;}
+      #impact .num {font-size:40px;}
+      #impact .stats {gap:16px;}
+      #impact .stat {padding:20px;}
+    }
+  </style>
+</section>
+
+<section id="events">
+  <h2>Events</h2>
+  <style>
+    #events {font-family: system-ui, -apple-system, sans-serif; color:#1e2a1e; background:#fff8f0; padding:48px 24px;}
+    #events h2 {font-size:32px; margin:0 0 24px; color:#1e2a1e;}
+    #events .events-grid {display:grid; gap:24px; grid-template-columns:repeat(auto-fit, minmax(260px,1fr));}
+    #events article[data-event] {background:#fff; border:1px solid #e6d9c9; border-radius:12px; padding:20px; display:flex; flex-direction:column; gap:8px;}
+    #events article[data-event] h3 {margin:0; font-size:20px; color:#1e2a1e;}
+    #events article[data-event] time {font-weight:600; color:#8a5a2a;}
+    #events article[data-event] p {margin:0; color:#3a3a3a; line-height:1.5;}
+    #events article[data-event] a {align-self:start; margin-top:8px; background:#1e2a1e; color:#fff8f0; text-decoration:none; padding:10px 14px; border-radius:8px; font-weight:600;}
+    #events article[data-event] a:hover {background:#2e4a2e;}
+    @media (max-width:600px){#events h2{font-size:28px}#events article[data-event]{padding:16px}}
+  </style>
+  <div class="events-grid">
+    <article data-event>
+      <h3>Community Table</h3>
+      <time datetime="2027-03-20">20 March 2027</time>
+      <p>Share a meal, share a story. Neighbors cook together and learn job-training skills in a warm, welcoming space.</p>
+      <a href="#newsletter">Sign up via newsletter</a>
+    </article>
+    <article data-event>
+      <h3>Open Mic</h3>
+      <time datetime="2027-04-03">3 April 2027</time>
+      <p>Local voices, local coffee. Bring a poem, a song, or a short talk and connect with the community.</p>
+      <a href="#newsletter">Sign up via newsletter</a>
+    </article>
+    <article data-event>
+      <h3>Coffee Skills</h3>
+      <time datetime="2027-04-17">17 April 2027</time>
+      <p>Hands-on training with espresso, latte art and service skills. A practical workshop that builds confidence and careers.</p>
+      <a href="#newsletter">Sign up via newsletter</a>
+    </article>
+  </div>
+</section>
+<style>
+#visit {font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#1e2a1e; background:#fff8f0; padding:64px 24px;}
+#visit h2 {font-size:36px; line-height:1.2; margin:0 0 16px; color:#1a3a2a;}
+#visit .visit-wrap {display:grid; grid-template-columns: 1.2fr 0.8fr; gap:32px; align-start;}
+#visit address {font-style:normal; background:#fff; border:1px solid #e6d9c8; border-radius:12px; padding:20px; margin:0; line-height:1.6;}
+#visit address strong {display:block; font-size:18px; color:#1a3a2a; margin-bottom:4px;}
+#visit .hours {background:#fff; border:1px solid #e6d9c8; border-radius:12px; padding:20px;}
+#visit .hours h3 {margin:0 0 8px; font-size:18px; color:#1a3a2a;}
+#visit .hours ul {list-style:none; margin:0; padding:0;}
+#visit .hours li {padding:6px 0;}
+#visit .contact {margin-top:12px; font-size:15px;}
+#visit .map {display:flex; align-items:center; justify-content:center;}
+#visit .map svg {width:100%; height:auto; max-width:320px;}
+#visit .map-bg {fill:#e8dcc6;}
+#visit .map-pin {fill:#b4532a;}
+@media (max-width: 720px) {
+  #visit .visit-wrap {grid-template-columns:1fr;}
+  #visit h2 {font-size:28px;}
+}
+</style>
+<section id="visit">
+  <h2>Visit us</h2>
+  <div class="visit-wrap">
+    <div>
+      <address>
+        <strong>Common Ground Coffee</strong>
+        42 Willow Street<br>
+        Palo Alto, CA
+        <span class="contact">hello@commonground.example</span>
+      </address>
+      <div class="hours">
+        <h3>Opening hours</h3>
+        <ul>
+          <li><strong>Weekdays</strong> 07:00–18:00</li>
+          <li><strong>Weekends</strong> 08:00–16:00</li>
+        </ul>
+        <p>Walk-ins welcome. Training kitchen tours by appointment.</p>
+      </div>
+    </div>
+    <div class="map">
+      <svg viewBox="0 0 200 160" aria-hidden="true">
+        <rect width="200" height="160" class="map-bg" rx="12"/>
+        <path d="M20 120 L180 120" stroke="#c9b48a" stroke-width="4" fill="none"/>
+        <circle cx="100" cy="90" r="6" class="map-pin"/>
+        <text x="100" y="115" text-anchor="middle" font-size="10" fill="#1a3a2a">42 Willow</text>
+      </svg>
+    </div>
+  </div>
+</section>
+</main><style>
+#newsletter, #newsletter * { box-sizing: border-box; }
+#newsletter { background:#fff8f0; color:#1e3a2a; padding:48px 24px; border-top:4px solid #8a5a3a; }
+#newsletter h2 { font-family: inherit; font-size:32px; margin:0 0 16px; color:#1e3a2a; }
+#newsletter form { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+#newsletter label { font-weight:600; margin-right:8px; }
+#newsletter input#email { flex:1 1 260px; padding:12px 14px; border:2px solid #1e3a2a; border-radius:8px; background:#fff; color:#1e3a2a; font-size:16px; }
+#newsletter button[type="submit"] { background:#1e3a2a; color:#fff8f0; border:none; padding:12px 18px; border-radius:8px; font-weight:600; cursor:pointer; }
+#newsletter button[type="submit"]:hover { background:#2a4a3a; }
+#newsletter .privacy { margin:12px 0 0; font-size:13px; color:#4a5a4a; }
+#newsletter #newsletter-status { margin:8px 0 0; font-weight:600; }
+footer { background:#1e3a2a; color:#fff8f0; padding:32px 24px; }
+footer p { margin:0 0 12px; font-weight:600; }
+footer nav a { color:#fff8f0; margin-right:16px; text-decoration:none; }
+footer nav a:hover { text-decoration:underline; }
+footer small { display:block; margin-top:12px; color:#c9d9c9; }
+@media (max-width:600px){ #newsletter h2 { font-size:26px; } #newsletter form { flex-direction:column; align-items:stretch; } #newsletter input#email, #newsletter button[type="submit"] { width:100%; } }
+</style>
+<section id="newsletter">
+  <h2>Stay connected</h2>
+  <form id="newsletter-form">
+    <label for="email">Email address</label>
+    <input id="email" type="email" required aria-required="true" placeholder="you@example.com">
+    <button type="submit">Sign up</button>
+    <p id="newsletter-status" role="status" aria-live="polite"></p>
+  </form>
+  <p class="privacy">We’re a nonprofit cafe. No spam, unsubscribe anytime. Your email is used only for updates about community programs.</p>
+</section>
+<footer>
+  <p>Common Ground Coffee — nonprofit cafe in Palo Alto</p>
+  <nav aria-label="Footer links">
+    <a href="#top">Top</a>
+    <a href="#menu">Menu</a>
+    <a href="#mission">Mission</a>
+    <a href="#events">Events</a>
+    <a href="#visit">Visit</a>
+  </nav>
+  <small>© Common Ground Coffee. 100% of surplus funds support job training.</small>
+</footer>
+<script>// Protected behavior: models supply semantic markup and styling only.
+document.addEventListener('input', event => {
+  if (event.target.id !== 'menu-search') return;
+  const needle = event.target.value.trim().toLowerCase();
+  const items = [...document.querySelectorAll('[data-menu-item]')];
+  let visible = 0;
+  for (const item of items) {
+    const match = (item.dataset.name || item.textContent).toLowerCase().includes(needle);
+    item.hidden = !match;
+    if (match) visible++;
+  }
+  const empty = document.getElementById('menu-empty');
+  if (empty) empty.hidden = visible !== 0;
+});
+document.addEventListener('submit', event => {
+  if (event.target.id !== 'newsletter-form') return;
+  event.preventDefault();
+  const input = document.getElementById('email');
+  const status = document.getElementById('newsletter-status');
+  if (!input || !status || !input.checkValidity()) return;
+  status.textContent = 'Thanks — you are on the Common Ground list.';
+  event.target.dataset.submitted = 'true';
+});
+</script></body></html>

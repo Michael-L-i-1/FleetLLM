@@ -1,0 +1,222 @@
+  0%|          | 0/198 [00:00<?, ?it/s][gpqa] 010-0dc2429dc42f: score=1.0
+[gpqa] 014-87c6d97a767f: score=1.0
+[gpqa] 005-164d69ce57b1: score=1.0
+[gpqa] 001-f632ee36b77f: score=1.0
+  1%|          | 1/198 [1:10:34<231:42:22, 4234.23s/it][gpqa] 009-159246eecc19: score=0.0
+[gpqa] 004-89581d62b78c: score=0.0
+[gpqa] 011-2f8724c2e980: score=1.0
+[gpqa] 015-0c9cc6a909cb: score=1.0
+[gpqa] 020-1d836749912d: score=1.0
+[gpqa] 003-b12d3424f4e5: score=1.0
+[gpqa] 017-8c04d5e5be70: score=1.0
+[gpqa] 007-afe813013192: score=1.0
+[gpqa] 006-d60f1a046df0: score=1.0
+[gpqa] 022-6e9ed60fc073: score=1.0
+[gpqa] 008-f7cff955dad2: score=0.0
+[gpqa] 021-68ff68b42b8e: score=1.0
+[gpqa] 002-9a187b98e464: score=0.0
+  1%|          | 2/198 [2:55:32<296:38:51, 5448.63s/it][gpqa] 019-7c54245c107a: score=0.0
+[gpqa] 027-006c24b343cd: score=1.0
+[gpqa] 018-426110b0cc3d: score=0.0
+[gpqa] 025-b1b208dfbd56: score=1.0
+[gpqa] 016-ca98706b900c: score=1.0
+[gpqa] 030-a04fdbad0f4a: score=0.0
+[gpqa] 013-32ab827da3c7: score=0.0
+[gpqa] 012-9158bb23977b: score=0.0
+  6%|▌         | 12/198 [3:59:42<47:42:46, 923.48s/it] [gpqa] 033-35f590845609: score=0.0
+[gpqa] 026-4cddea0f8328: score=0.0
+[gpqa] 040-80e2299639d8: score=1.0
+[gpqa] 035-3de031aaf2e3: score=1.0
+[gpqa] 036-5d858964218d: score=1.0
+[gpqa] 031-359bf5019f02: score=0.0
+[gpqa] 041-af16bce16b52: score=1.0
+[gpqa] 023-d91279946a0f: score=0.0
+ 12%|█▏        | 23/198 [4:59:24<27:54:55, 574.26s/it][gpqa] 044-7a815ec02978: score=1.0
+[gpqa] 038-8d98123f67b3: score=1.0
+[gpqa] 029-36643a15bfb2: score=1.0
+[gpqa] 024-5868e2d1c970: score=0.0
+ 12%|█▏        | 24/198 [5:14:06<28:48:21, 595.98s/it][gpqa] 039-193b686c400f: score=1.0
+[gpqa] 032-1435173dbe24: score=1.0
+[gpqa] 042-bd16a6161c7e: score=1.0
+[gpqa] 034-ab52a13d31d9: score=0.0
+[gpqa] 028-7b347da4d47f: score=0.0
+ 14%|█▍        | 28/198 [5:54:19<28:14:27, 598.04s/it][gpqa] 050-e0445269f739: score=1.0
+[gpqa] 047-69f72e5f16b1: score=1.0
+[gpqa] 058-5a81527e0d58: score=1.0
+[gpqa] 048-32986dc6505a: score=0.0
+[gpqa] 055-16b51ba3dc06: score=1.0
+[gpqa] 043-978b4dfa37fc: score=0.0
+[gpqa] 045-3e5e1dc2b52a: score=1.0
+[gpqa] 052-5e373b399b53: score=1.0
+[gpqa] 037-5eefc414569b: score=0.0
+ 19%|█▊        | 37/198 [7:00:43<23:24:37, 523.46s/it][gpqa] 053-37cfbd93ec21: score=1.0
+[gpqa] 060-520658f21652: score=1.0
+[gpqa] 059-1a7936041b6c: score=1.0
+[gpqa] 049-aa78a105b92c: score=1.0
+[gpqa] 056-1a05d552c725: score=1.0
+[gpqa] 061-bdaeda804786: score=1.0
+[gpqa] 066-4d0c93016ac8: score=1.0
+[gpqa] 046-8b47665b75c1: score=1.0
+ 23%|██▎       | 46/198 [8:07:19<20:44:13, 491.14s/it][gpqa] 068-ca3a5507c094: score=1.0
+[gpqa] 051-1e3acdb90918: score=1.0
+ 26%|██▌       | 51/198 [8:27:57<17:37:38, 431.69s/it][gpqa] 062-2101eba3a3c6: score=1.0
+[gpqa] 071-3a6f82f145a1: score=1.0
+[gpqa] 074-a4e316788ba2: score=1.0
+[gpqa] 067-ab7373ca222c: score=1.0
+[gpqa] 054-83d6153d5c10: score=0.0
+ 27%|██▋       | 54/198 [8:58:59<18:34:32, 464.39s/it][gpqa] 069-04225cb85412: score=1.0
+[gpqa] 073-5b5a964dd4f8: score=1.0
+[gpqa] 057-fa605ab11411: score=0.0
+ 29%|██▉       | 57/198 [9:32:17<19:45:15, 504.36s/it][gpqa] 076-d3b4701fa99d: score=0.0
+[gpqa] 084-65887df816f9: score=1.0
+[gpqa] 072-b99e84f7a4c5: score=0.0
+[gpqa] 065-bf0d45dc495e: score=0.0
+[gpqa] 078-e81de26aaaee: score=1.0
+[gpqa] 088-223235f30a0b: score=1.0
+[gpqa] 063-8b67d30957eb: score=0.0
+ 32%|███▏      | 63/198 [10:28:03<19:38:10, 523.63s/it][gpqa] 082-ef06b20822a4: score=0.0
+[gpqa] 075-4202b8bf6c17: score=1.0
+[gpqa] 064-2912c84621ae: score=0.0
+ 32%|███▏      | 64/198 [10:38:00<19:42:29, 529.47s/it][gpqa] 081-c0e3573e1df6: score=1.0
+[gpqa] 086-d07700b8b76c: score=0.0
+[gpqa] 087-3bc0b07a4fdf: score=1.0
+[gpqa] 093-daccf645529d: score=1.0
+[gpqa] 070-7d660cdb6541: score=0.0
+ 35%|███▌      | 70/198 [11:24:35<17:54:30, 503.68s/it][gpqa] 083-f3e7808fb7ae: score=1.0
+[gpqa] 079-222402064853: score=1.0
+[gpqa] 097-ce31cd26f461: score=1.0
+[gpqa] 077-2254e3596702: score=0.0
+ 39%|███▉      | 77/198 [11:50:27<13:06:48, 390.16s/it][gpqa] 085-e82c33e06b00: score=1.0
+[gpqa] 080-0ba55fbab1c5: score=0.0
+ 40%|████      | 80/198 [12:32:30<15:42:37, 479.30s/it][gpqa] 096-8d3e32987f92: score=1.0
+[gpqa] 094-09748831dcec: score=0.0
+[gpqa] 104-fa0759a641a1: score=1.0
+[gpqa] 107-e7dc09c8990a: score=0.0
+[gpqa] 095-d8f4f874c1af: score=0.0
+[gpqa] 098-edf02c1b9bfd: score=0.0
+[gpqa] 108-8079adf9122e: score=1.0
+[gpqa] 090-aa5bf86c0e4c: score=0.0
+[gpqa] 101-1a3316fda348: score=1.0
+[gpqa] 099-be5124fd67d0: score=0.0
+[gpqa] 089-7498921e320d: score=0.0
+ 45%|████▍     | 89/198 [13:57:53<15:45:42, 520.57s/it][gpqa] 105-82b34c2942e7: score=1.0
+[gpqa] 091-4581b0cc446c: score=0.0
+ 46%|████▌     | 91/198 [14:13:37<15:17:21, 514.41s/it][gpqa] 092-3f8582e0f259: score=0.0
+ 46%|████▋     | 92/198 [14:16:02<14:14:25, 483.63s/it][gpqa] 114-748057ac0c18: score=0.0
+[gpqa] 106-8eca7cf6a25b: score=0.0
+[gpqa] 113-2dccb0dd37b6: score=1.0
+[gpqa] 117-ebe22d98c6cd: score=1.0
+[gpqa] 120-83832900634b: score=1.0
+[gpqa] 119-2ee24579f43f: score=0.0
+[gpqa] 112-7e4cb3326046: score=1.0
+[gpqa] 100-50657788cc18: score=0.0
+ 51%|█████     | 100/198 [15:12:18<12:20:49, 453.57s/it][gpqa] 109-09a23ef132fb: score=1.0
+[gpqa] 102-d6504fc7f49b: score=0.0
+ 52%|█████▏    | 102/198 [15:32:15<12:40:09, 475.10s/it][gpqa] 103-3c6d8dd08df9: score=0.0
+ 52%|█████▏    | 103/198 [15:40:04<12:31:16, 474.49s/it][gpqa] 125-c1ab6544e01f: score=1.0
+[gpqa] 123-ca15ef2df9cc: score=1.0
+[gpqa] 130-31cd16e58f5d: score=0.0
+[gpqa] 115-14f7246f3b69: score=1.0
+[gpqa] 111-5495641348c6: score=1.0
+[gpqa] 118-6383816de0a1: score=1.0
+[gpqa] 110-6dc5f1dda51e: score=0.0
+ 56%|█████▌    | 110/198 [17:02:40<14:23:27, 588.72s/it][gpqa] 124-78cbe73bdf86: score=1.0
+[gpqa] 136-4711ce083021: score=1.0
+[gpqa] 126-29a2688a9d10: score=1.0
+[gpqa] 135-4232b059b46b: score=1.0
+[gpqa] 131-20ae91804039: score=0.0
+[gpqa] 116-2bfe458ef681: score=0.0
+ 59%|█████▊    | 116/198 [17:45:35<12:02:55, 528.97s/it][gpqa] 134-048b0fecae5c: score=1.0
+[gpqa] 138-b7b76bb8f72c: score=1.0
+[gpqa] 142-0bc884c8fef1: score=1.0
+[gpqa] 121-34123cde4139: score=0.0
+ 61%|██████    | 121/198 [18:23:28<10:49:24, 506.03s/it][gpqa] 133-f2ca52753751: score=1.0
+[gpqa] 122-14426e35c3d7: score=0.0
+ 62%|██████▏   | 122/198 [18:36:55<11:11:49, 530.39s/it][gpqa] 127-d378f76f9440: score=0.0
+ 64%|██████▍   | 127/198 [18:59:42<8:36:11, 436.22s/it] [gpqa] 128-35621b6de79f: score=0.0
+ 65%|██████▍   | 128/198 [19:03:59<8:09:05, 419.23s/it][gpqa] 129-fa180813b842: score=0.0
+ 65%|██████▌   | 129/198 [19:08:06<7:38:32, 398.73s/it]  0%|          | 0/198 [00:00<?, ?it/s][gpqa] 152-614e02001895: score=1.0
+[gpqa] 149-2d566259c8a0: score=0.0
+[gpqa] 144-30bb6ce439cf: score=1.0
+[gpqa] 147-a6deecdc9904: score=1.0
+[gpqa] 157-3bd3c24a707a: score=1.0
+[gpqa] 146-543a5f0cbbab: score=0.0
+[gpqa] 154-2a1e98fdb46b: score=1.0
+[gpqa] 151-cf8a549b1ff2: score=1.0
+[gpqa] 153-664e9fe64d3a: score=1.0
+[gpqa] 155-cc76e518c557: score=1.0
+[gpqa] 158-f2fc8f09b7c4: score=1.0
+[gpqa] 137-ad83b9f6c1d4: score=1.0
+[gpqa] 141-fcb6efecafef: score=0.0
+[gpqa] 139-90adf689e23a: score=0.0
+[gpqa] 162-fc0d1e6f3a98: score=1.0
+[gpqa] 143-c45b748cfc9f: score=0.0
+[gpqa] 160-d7a72addada4: score=1.0
+[gpqa] 159-d6229b2681ea: score=1.0
+[gpqa] 145-6774e776d453: score=0.0
+[gpqa] 140-bf5f089a7f34: score=0.0
+[gpqa] 161-11ec8b3d3142: score=0.0
+[gpqa] 150-8e9fdc821c82: score=0.0
+[gpqa] 148-8d4e42049c08: score=0.0
+[gpqa] 132-60484a173842: score=0.0
+ 67%|██████▋   | 132/198 [3:56:20<1:58:10, 107.43s/it][gpqa] 168-4a096da0fb25: score=0.0
+[gpqa] 167-80d28add6083: score=0.0
+  0%|          | 0/198 [00:00<?, ?it/s][gpqa] 166-71ca8c47f2b2: score=1.0
+[gpqa] 178-a6454e048344: score=1.0
+[gpqa] 175-0401368fb495: score=0.0
+[gpqa] 179-fe62bd5af1f2: score=0.0
+[gpqa] 173-b1a01c76189d: score=1.0
+[gpqa] 182-e0ff704a1d97: score=1.0
+[gpqa] 170-48c4e09bed92: score=1.0
+[gpqa] 164-b2597aef1932: score=1.0
+[gpqa] 156-30a9a0d8e94c: score=1.0
+ 79%|███████▉  | 156/198 [1:59:25<32:09, 45.93s/it][gpqa] 165-673199458dea: score=0.0
+[gpqa] 185-cfc7eb353d27: score=1.0
+[gpqa] 176-456846738828: score=0.0
+[gpqa] 171-495b9e928066: score=0.0
+[gpqa] 172-53bcd21a0369: score=1.0
+[gpqa] 177-21ce7ae897f3: score=1.0
+[gpqa] 189-7e04b8cef1b2: score=1.0
+[gpqa] 169-0e379e0942eb: score=1.0
+[gpqa] 186-0f7aa6f5127e: score=0.0
+[gpqa] 190-e399a4868a42: score=1.0
+[gpqa] 193-ddd3da795183: score=1.0
+[gpqa] 187-7000138e8620: score=0.0
+[gpqa] 163-fb2f5c9a4ffb: score=0.0
+ 82%|████████▏ | 163/198 [3:21:25<49:52, 85.50s/it][gpqa] 194-337368a7fb03: score=1.0
+[gpqa] 181-7e17a0931007: score=1.0
+[gpqa] 196-3edbaeffa888: score=1.0
+[gpqa] 174-befb3d015f01: score=0.0
+ 88%|████████▊ | 174/198 [3:51:05<37:50, 94.60s/it][gpqa] 192-79950bec25f2: score=1.0
+[gpqa] 180-c9db02f3c66e: score=0.0
+ 91%|█████████ | 180/198 [4:12:31<31:25, 104.77s/it][gpqa] 198-b81f8469c13d: score=1.0
+[gpqa] 184-e06cbe65142a: score=0.0
+[gpqa] 183-fbe8103c7ecb: score=0.0
+ 92%|█████████▏| 183/198 [4:43:47<33:38, 134.55s/it][gpqa] 188-87fde7ea9102: score=0.0
+ 95%|█████████▍| 188/198 [4:46:36<20:24, 122.47s/it][gpqa] 191-9deb061e3364: score=1.0
+ 96%|█████████▋| 191/198 [4:51:14<13:57, 119.68s/it][gpqa] 195-c27795adbb70: score=0.0
+ 98%|█████████▊| 195/198 [5:02:15<06:19, 126.55s/it][gpqa] 197-8afa4ca660bd: score=0.0
+ 99%|█████████▉| 197/198 [5:02:23<01:54, 114.63s/it]100%|██████████| 198/198 [5:02:23<00:00, 91.63s/it] 
+{
+  "label": "gpqa",
+  "model": "pi-gpqa-glimmer",
+  "base_url": "http://127.0.0.1:18096/v1",
+  "harness": "openai/simple-evals gpqa_eval (diamond)",
+  "questions": 198,
+  "workers": 16,
+  "temperature": 0.0,
+  "max_tokens": 2048,
+  "reasoning_effort": "low",
+  "stream": true,
+  "score": 0.5808080808080808,
+  "wall_secs": 102681.0,
+  "questions_per_min": 0.12,
+  "completion_tokens": 221168,
+  "prompt_tokens": 58573,
+  "gen_tok_per_sec": 2.2,
+  "mean_completion_tokens": 1117.0,
+  "mean_request_secs": 7453.69,
+  "truncated": 35,
+  "total_questions": 198,
+  "incomplete": 0
+}

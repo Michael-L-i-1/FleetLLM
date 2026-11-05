@@ -1,0 +1,346 @@
+{
+  "model": "pi-gpqa-glimmer",
+  "base_url": "http://127.0.0.1:18096/v1",
+  "workers": 8,
+  "temperature": 0.0,
+  "max_tokens": 8192,
+  "reasoning_effort": "low",
+  "stream": true,
+  "request_timeout": 43200.0,
+  "repeats": 1,
+  "questions": [
+    {
+      "id": "4c49b01c534d",
+      "permutation": [
+        1,
+        2,
+        3,
+        0
+      ]
+    },
+    {
+      "id": "a8be7a4963bf",
+      "permutation": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "cbf5c336a099",
+      "permutation": [
+        2,
+        3,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "16464cac7090",
+      "permutation": [
+        2,
+        0,
+        3,
+        1
+      ]
+    },
+    {
+      "id": "7fda2b6ca2ff",
+      "permutation": [
+        1,
+        3,
+        2,
+        0
+      ]
+    },
+    {
+      "id": "1f101bccd200",
+      "permutation": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "fcc630461b30",
+      "permutation": [
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "1054cb147fa0",
+      "permutation": [
+        1,
+        2,
+        3,
+        0
+      ]
+    },
+    {
+      "id": "80cca49a2f6a",
+      "permutation": [
+        1,
+        3,
+        0,
+        2
+      ]
+    },
+    {
+      "id": "bd713289ab1f",
+      "permutation": [
+        2,
+        1,
+        3,
+        0
+      ]
+    },
+    {
+      "id": "2413c551ec9a",
+      "permutation": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "8b5b2cb731b5",
+      "permutation": [
+        1,
+        0,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "654fc443f2ef",
+      "permutation": [
+        1,
+        0,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "c6231a95c81b",
+      "permutation": [
+        3,
+        1,
+        0,
+        2
+      ]
+    },
+    {
+      "id": "339602fd0ae9",
+      "permutation": [
+        1,
+        0,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "c003a37af0ea",
+      "permutation": [
+        1,
+        2,
+        3,
+        0
+      ]
+    },
+    {
+      "id": "ea1d2c2fd439",
+      "permutation": [
+        3,
+        2,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "03946dc24ec6",
+      "permutation": [
+        3,
+        0,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "b494f4c17856",
+      "permutation": [
+        3,
+        0,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "c1f013c71ec1",
+      "permutation": [
+        3,
+        1,
+        0,
+        2
+      ]
+    },
+    {
+      "id": "9e7260c352d5",
+      "permutation": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "188c5d277845",
+      "permutation": [
+        0,
+        3,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "1d37a7a51dfb",
+      "permutation": [
+        0,
+        3,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "9211da2d82ad",
+      "permutation": [
+        0,
+        1,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "4bab53f38320",
+      "permutation": [
+        2,
+        0,
+        3,
+        1
+      ]
+    },
+    {
+      "id": "14a2ed1ddcec",
+      "permutation": [
+        0,
+        3,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "d160134fd023",
+      "permutation": [
+        1,
+        3,
+        2,
+        0
+      ]
+    },
+    {
+      "id": "952132525f3a",
+      "permutation": [
+        2,
+        0,
+        3,
+        1
+      ]
+    },
+    {
+      "id": "28fc44d6ca68",
+      "permutation": [
+        1,
+        0,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "254c10ac4fdc",
+      "permutation": [
+        1,
+        0,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "6e2bd9ec28ef",
+      "permutation": [
+        0,
+        2,
+        3,
+        1
+      ]
+    },
+    {
+      "id": "f4486aea8f80",
+      "permutation": [
+        2,
+        3,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "8ad8050832d4",
+      "permutation": [
+        1,
+        3,
+        0,
+        2
+      ]
+    },
+    {
+      "id": "35cf9161cc3c",
+      "permutation": [
+        2,
+        3,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "126561d6b58f",
+      "permutation": [
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "78795a861f05",
+      "permutation": [
+        3,
+        1,
+        0,
+        2
+      ]
+    },
+    {
+      "id": "2662eff7a623",
+      "permutation": [
+        3,
+        1,
+        2,
+        0
+      ]
+    }
+  ]
+}

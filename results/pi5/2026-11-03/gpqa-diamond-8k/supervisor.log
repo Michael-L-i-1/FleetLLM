@@ -1,0 +1,7 @@
+2026-11-04 06:07:52 supervisor started: /home/mli5/fleetllm/build/fleet serve --model /home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf --backend cpu --threads 4 --budget-gb 14.8 --kv-gb 2 --kv-int8 --row-budget 64 --no-pin --ngram --spec-k 15 --spec-rows 16 --host 127.0.0.1 --port 18096 --name pi-gpqa-glimmer --reasoning low --max-active 8 --admit --max-tokens 8192
+2026-11-04 06:07:52 server starting (pid 27874)
+2026-11-04 06:08:17 server ready
+2026-11-04 06:08:17 runner started (pid 27936), 0/37 finished
+2026-11-04 10:30:31 runner exited (130), 8/37 finished
+2026-11-04 10:30:31 stop requested
+2026-11-04 10:30:31 supervisor exiting

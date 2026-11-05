@@ -1,0 +1,7 @@
+2026-11-04 10:39:48 supervisor started on DN0a1f2938: ./build/fleet serve --model /Users/michaelli/models/Muse-Glimmer-30B-Q2_K.gguf --budget-gb 32 --kv-gb 12 --kv-int8 --ngram --spec-k 15 --spec-rows 16 --host 127.0.0.1 --port 18097 --name glimmer-q2k --reasoning low --max-active 16 --admit --max-tokens 32768
+2026-11-04 10:39:48 server starting (pid 35174)
+2026-11-04 10:39:53 server ready
+2026-11-04 10:39:53 runner started (pid 35323), 0/ finished
+2026-11-04 11:16:54 runner exited (0), 28/28 finished
+2026-11-04 11:16:55 run complete
+2026-11-04 11:16:55 supervisor exiting

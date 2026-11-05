@@ -1,0 +1,51 @@
+{
+  "questions": 198,
+  "correct": 130,
+  "wrong": 66,
+  "capped": 2,
+  "unfinished": 0,
+  "score": 0.6565656565656566,
+  "first_run": {
+    "run": "gpqa-diamond-full",
+    "host": "Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",
+    "max_tokens": 2048,
+    "correct": 115,
+    "wrong": 48,
+    "capped": 35
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "run": "gpqa-diamond-full",
+      "host": "Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",
+      "max_tokens": 2048,
+      "workers": 16,
+      "questions_in_run": 198,
+      "answers_used": 163,
+      "correct_used": 115
+    },
+    {
+      "phase": 2,
+      "run": "gpqa-diamond-8k",
+      "host": "Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",
+      "max_tokens": 8192,
+      "workers": 8,
+      "questions_in_run": 37,
+      "answers_used": 7,
+      "correct_used": 5
+    },
+    {
+      "phase": 3,
+      "run": "gpqa-diamond-32k",
+      "host": "MacBook Pro M5 Pro 48 GB (Metal GPU)",
+      "max_tokens": 32768,
+      "workers": 16,
+      "questions_in_run": 28,
+      "answers_used": 28,
+      "correct_used": 10
+    }
+  ],
+  "controls": [],
+  "controls_identical": null,
+  "method": "Phased run (token caps 2048 -> 8192 -> 32768; hosts: MacBook Pro M5 Pro 48 GB (Metal GPU), Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)). Each question keeps its first final answer; questions that hit a cap or did not finish were run again in the next phase with a larger cap. Decoding did not reproduce token for token across phases, so this is an extended-budget estimate, not one uniform run; the uniform result is phase 1 (115/198 at 2048 tokens)."
+}

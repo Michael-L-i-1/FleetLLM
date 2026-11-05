@@ -1,0 +1,199 @@
+index,key,status,score,completion_tokens,seconds,finish_reason,phase,run,host,max_tokens
+1,f632ee36b77f,correct,1.0,624,4234.154100179672,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+2,9a187b98e464,wrong,0.0,1494,10532.815557956696,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+3,b12d3424f4e5,correct,1.0,915,6852.61434006691,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+4,89581d62b78c,wrong,0.0,652,4558.832949638367,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+5,164d69ce57b1,correct,1.0,509,4104.124800205231,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+6,d60f1a046df0,correct,1.0,1085,8074.052441596985,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+7,afe813013192,correct,1.0,1066,7880.29230260849,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+8,f7cff955dad2,wrong,0.0,1159,8699.242269039154,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+9,159246eecc19,wrong,0.0,534,4361.153889417648,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+10,0dc2429dc42f,correct,1.0,473,3505.4858479499817,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+11,2f8724c2e980,correct,1.0,579,4643.716234207153,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+12,9158bb23977b,correct,1.0,977,3956.659609556198,stop,2,gpqa-diamond-8k,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",8192
+13,32ab827da3c7,correct,1.0,1685,7842.174176454544,stop,2,gpqa-diamond-8k,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",8192
+14,87c6d97a767f,correct,1.0,508,3924.4091074466705,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+15,0c9cc6a909cb,correct,1.0,674,5291.654181718826,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+16,ca98706b900c,correct,1.0,1754,12486.450555801392,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+17,8c04d5e5be70,correct,1.0,548,3777.4830932617188,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+18,426110b0cc3d,wrong,0.0,1083,7439.532828330994,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+19,7c54245c107a,wrong,0.0,964,6434.204899549484,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+20,1d836749912d,correct,1.0,214,1523.778023481369,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+21,68ff68b42b8e,correct,1.0,894,5793.708646059036,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+22,6e9ed60fc073,correct,1.0,567,3829.5163600444794,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+23,d91279946a0f,wrong,0.0,2732,10968.747532367706,stop,2,gpqa-diamond-8k,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",8192
+24,5868e2d1c970,wrong,0.0,2610,12551.852003574371,stop,2,gpqa-diamond-8k,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",8192
+25,b1b208dfbd56,correct,1.0,926,6166.934758424759,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+26,4cddea0f8328,wrong,0.0,1210,8024.541264772415,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+27,006c24b343cd,correct,1.0,544,3632.7405955791473,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+28,7b347da4d47f,wrong,0.0,2033,13378.687423706055,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+29,36643a15bfb2,correct,1.0,1610,10612.718938589096,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+30,a04fdbad0f4a,wrong,0.0,880,5598.0964205265045,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+31,359bf5019f02,wrong,0.0,1386,8917.258625268936,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+32,1435173dbe24,correct,1.0,1376,9252.719675779343,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+33,35f590845609,wrong,0.0,593,3991.3103835582733,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+34,ab52a13d31d9,wrong,0.0,1522,10186.651304721832,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+35,3de031aaf2e3,correct,1.0,761,4983.668465137482,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+36,5d858964218d,correct,1.0,947,6007.644783735275,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+37,5eefc414569b,capped,0.0,32768,1803.3018958568573,length,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+38,8d98123f67b3,correct,1.0,934,6126.675157546997,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+39,193b686c400f,correct,1.0,711,4865.686974287033,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+40,80e2299639d8,correct,1.0,226,1508.0595984458923,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+41,af16bce16b52,correct,1.0,524,3352.551095724106,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+42,bd16a6161c7e,correct,1.0,735,5007.397540807724,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+43,978b4dfa37fc,wrong,0.0,1459,9476.488778829575,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+44,7a815ec02978,correct,1.0,376,2504.749476671219,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+45,3e5e1dc2b52a,correct,1.0,1399,9050.657606124878,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+46,8b47665b75c1,correct,1.0,1830,11867.087819576263,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+47,69f72e5f16b1,correct,1.0,665,4457.2619524002075,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+48,32986dc6505a,wrong,0.0,939,6077.512969017029,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+49,aa78a105b92c,correct,1.0,1442,9399.537475585938,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+50,e0445269f739,correct,1.0,563,3641.9108710289,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+51,1e3acdb90918,correct,1.0,1842,11863.632674455643,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+52,5e373b399b53,correct,1.0,986,6390.125663280487,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+53,37cfbd93ec21,correct,1.0,1109,7114.460915327072,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+54,83d6153d5c10,correct,1.0,834,3734.9669988155365,stop,2,gpqa-diamond-8k,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",8192
+55,16b51ba3dc06,correct,1.0,716,4410.5945246219635,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+56,1a05d552c725,correct,1.0,1303,8265.698439359665,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+57,fa605ab11411,correct,1.0,2485,11193.974199295044,stop,2,gpqa-diamond-8k,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",8192
+58,5a81527e0d58,correct,1.0,261,1594.0756969451904,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+59,1a7936041b6c,correct,1.0,825,5299.068688631058,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+60,520658f21652,correct,1.0,650,4240.092951536179,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+61,bdaeda804786,correct,1.0,842,5467.972830057144,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+62,2101eba3a3c6,correct,1.0,1037,6976.869933128357,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+63,8b67d30957eb,correct,1.0,1813,8961.487886190414,stop,2,gpqa-diamond-8k,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",8192
+64,2912c84621ae,wrong,0.0,5377,1312.9197289943695,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+65,bf0d45dc495e,wrong,0.0,1720,11591.763209819794,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+66,4d0c93016ac8,correct,1.0,523,3350.188770532608,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+67,ab7373ca222c,correct,1.0,936,6378.25555562973,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+68,ca3a5507c094,correct,1.0,623,4052.0516180992126,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+69,04225cb85412,correct,1.0,1013,7014.479663610458,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+70,7d660cdb6541,wrong,0.0,4919,1200.3630421161652,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+71,3a6f82f145a1,correct,1.0,517,3655.9541206359863,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+72,b99e84f7a4c5,wrong,0.0,1106,7685.895041465759,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+73,5b5a964dd4f8,correct,1.0,781,5553.797650575638,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+74,a4e316788ba2,correct,1.0,426,3105.246891260147,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+75,4202b8bf6c17,correct,1.0,1273,8831.077436447144,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+76,d3b4701fa99d,wrong,0.0,692,4908.357256889343,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+77,2254e3596702,wrong,0.0,1761,12150.027926921844,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+78,e81de26aaaee,correct,1.0,955,6522.125320672989,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+79,222402064853,correct,1.0,1555,10523.369140625,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+80,0ba55fbab1c5,correct,1.0,7421,1786.5660343170166,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+81,c0e3573e1df6,correct,1.0,1074,7288.049708843231,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+82,ef06b20822a4,wrong,0.0,815,5567.409967184067,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+83,f3e7808fb7ae,correct,1.0,1187,7921.5454795360565,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+84,65887df816f9,correct,1.0,179,1229.3690564632416,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+85,e82c33e06b00,correct,1.0,1486,9930.450625658035,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+86,d07700b8b76c,wrong,0.0,785,5223.168831348419,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+87,3bc0b07a4fdf,correct,1.0,799,5263.249106645584,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+88,223235f30a0b,correct,1.0,317,2006.5591008663177,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+89,7498921e320d,wrong,0.0,3308,826.0472431182861,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+90,aa5bf86c0e4c,wrong,0.0,1746,11729.438655614853,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+91,4581b0cc446c,wrong,0.0,1647,438.9559910297394,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+92,3f8582e0f259,wrong,0.0,4352,1068.8161897659302,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+93,daccf645529d,correct,1.0,460,3027.0148005485535,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+94,09748831dcec,wrong,0.0,1134,7482.116802215576,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+95,d8f4f874c1af,wrong,0.0,1352,8965.562888860703,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+96,8d3e32987f92,correct,1.0,963,6336.9366908073425,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+97,ce31cd26f461,correct,1.0,272,2006.265766620636,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+98,edf02c1b9bfd,wrong,0.0,1073,7225.462165355682,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+99,be5124fd67d0,wrong,0.0,1318,8845.260577201843,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+100,50657788cc18,wrong,0.0,2746,698.7344691753387,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+101,1a3316fda348,correct,1.0,1216,8083.27903676033,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+102,d6504fc7f49b,correct,1.0,2777,688.8028202056885,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+103,3c6d8dd08df9,wrong,0.0,2166,562.7618691921234,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+104,fa0759a641a1,correct,1.0,492,3184.323110818863,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+105,82b34c2942e7,correct,1.0,1018,6822.034827470779,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+106,8eca7cf6a25b,wrong,0.0,1153,7746.062111854553,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+107,e7dc09c8990a,wrong,0.0,278,1818.6085224151611,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+108,8079adf9122e,correct,1.0,434,2940.569240808487,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+109,09a23ef132fb,correct,1.0,1369,9839.783427000046,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+110,6dc5f1dda51e,correct,1.0,2674,680.0106918811798,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+111,5495641348c6,correct,1.0,1785,12507.084702253342,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+112,7e4cb3326046,correct,1.0,1064,7020.961403608322,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+113,2dccb0dd37b6,correct,1.0,782,5099.484287977219,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+114,748057ac0c18,wrong,0.0,470,3085.01420044899,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+115,14f7246f3b69,correct,1.0,1431,10128.778970718384,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+116,2bfe458ef681,wrong,0.0,8847,2104.195181131363,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+117,ebe22d98c6cd,correct,1.0,525,3449.8757894039154,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+118,6383816de0a1,correct,1.0,1413,9934.777993440628,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+119,2ee24579f43f,wrong,0.0,484,3220.2847094535828,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+120,83832900634b,correct,1.0,449,2857.688292980194,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+121,34123cde4139,wrong,0.0,1197,322.0143620967865,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+122,14426e35c3d7,correct,1.0,1958,504.1824269294739,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+123,ca15ef2df9cc,correct,1.0,676,5196.609100103378,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+124,78cbe73bdf86,correct,1.0,1076,7728.271197795868,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+125,c1ab6544e01f,correct,1.0,537,4227.0843324661255,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+126,29a2688a9d10,correct,1.0,1292,9082.820801258087,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+127,d378f76f9440,wrong,0.0,1271,341.30362820625305,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+128,35621b6de79f,wrong,0.0,5431,1311.3183596134186,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+129,fa180813b842,correct,1.0,2636,624.8596391677856,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+130,31cd16e58f5d,wrong,0.0,465,2958.336807012558,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+131,20ae91804039,wrong,0.0,1146,7380.315044403076,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+132,60484a173842,wrong,0.0,1800,423.3910348415375,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+133,f2ca52753751,correct,1.0,1202,7813.388931751251,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+134,048b0fecae5c,correct,1.0,896,5805.5446763038635,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+135,4232b059b46b,correct,1.0,635,4092.4367446899414,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+136,4711ce083021,correct,1.0,549,3423.641905784607,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+137,ad83b9f6c1d4,correct,1.0,1540,10506.600037813187,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+138,b7b76bb8f72c,correct,1.0,564,3672.4072363376617,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+139,90adf689e23a,wrong,0.0,1723,11731.924213171005,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+140,bf5f089a7f34,wrong,0.0,1886,446.51064705848694,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+141,fcb6efecafef,wrong,0.0,1723,11208.553385734558,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+142,0bc884c8fef1,correct,1.0,271,1825.6056067943573,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+143,c45b748cfc9f,wrong,0.0,1889,13031.587671756744,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+144,30bb6ce439cf,correct,1.0,782,5257.576625347137,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+145,6774e776d453,wrong,0.0,1968,13652.09813451767,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+146,543a5f0cbbab,wrong,0.0,1024,7065.3133063316345,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+147,a6deecdc9904,correct,1.0,707,5375.768948316574,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+148,8d4e42049c08,capped,0.0,32768,1707.0872371196747,length,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+149,2d566259c8a0,wrong,0.0,601,4383.1040987968445,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+150,8e9fdc821c82,correct,1.0,1752,418.2948889732361,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+151,cf8a549b1ff2,correct,1.0,1273,8843.020609855652,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+152,614e02001895,correct,1.0,385,3320.6490321159363,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+153,664e9fe64d3a,correct,1.0,1303,8848.838288784027,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+154,2a1e98fdb46b,correct,1.0,607,3877.307595729828,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+155,cc76e518c557,correct,1.0,705,4465.667642831802,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+156,30a9a0d8e94c,correct,1.0,984,7165.416489124298,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+157,3bd3c24a707a,correct,1.0,264,1588.7819299697876,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+158,f2fc8f09b7c4,correct,1.0,445,2870.205407857895,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+159,d6229b2681ea,correct,1.0,942,6308.176980257034,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+160,d7a72addada4,correct,1.0,887,5833.525709629059,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+161,11ec8b3d3142,wrong,0.0,754,5259.6606414318085,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+162,fc0d1e6f3a98,correct,1.0,475,3360.732771873474,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+163,fb2f5c9a4ffb,wrong,0.0,1833,12084.931450128555,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+164,b2597aef1932,correct,1.0,921,6840.823443651199,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+165,673199458dea,wrong,0.0,988,7377.456413030624,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+166,71ca8c47f2b2,correct,1.0,390,3257.750727415085,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+167,80d28add6083,wrong,0.0,417,3058.4562397003174,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+168,4a096da0fb25,wrong,0.0,300,2269.208306789398,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+169,0e379e0942eb,correct,1.0,1432,10206.632402420044,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+170,48c4e09bed92,correct,1.0,897,6263.919352531433,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+171,495b9e928066,wrong,0.0,1072,7945.00919675827,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+172,53bcd21a0369,correct,1.0,1069,8112.844489097595,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+173,b1a01c76189d,correct,1.0,806,5726.535906076431,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+174,befb3d015f01,correct,1.0,1564,373.47883129119873,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+175,0401368fb495,wrong,0.0,476,3897.4601125717163,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+176,456846738828,wrong,0.0,1037,7735.950739145279,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+177,21ce7ae897f3,correct,1.0,1228,8947.592113733292,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+178,a6454e048344,correct,1.0,368,3360.8647406101227,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+179,fe62bd5af1f2,wrong,0.0,722,5556.24573969841,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+180,c9db02f3c66e,wrong,0.0,2207,518.6478707790375,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+181,7e17a0931007,correct,1.0,1658,10475.50445842743,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+182,e0ff704a1d97,correct,1.0,312,2018.6845030784607,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+183,fbe8103c7ecb,wrong,0.0,2030,476.8622350692749,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+184,e06cbe65142a,correct,1.0,3173,739.6692359447479,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+185,cfc7eb353d27,correct,1.0,239,1600.0793845653534,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+186,0f7aa6f5127e,wrong,0.0,756,4894.964362621307,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+187,7000138e8620,wrong,0.0,778,5133.864272356033,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+188,87fde7ea9102,correct,1.0,3041,704.6609909534454,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+189,7e04b8cef1b2,correct,1.0,360,2320.3192162513733,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+190,e399a4868a42,correct,1.0,613,4005.727299451828,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+191,9deb061e3364,correct,1.0,1981,9738.101800203323,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+192,79950bec25f2,correct,1.0,1105,6509.673204898834,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+193,ddd3da795183,correct,1.0,561,3520.56178689003,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+194,337368a7fb03,correct,1.0,702,4252.155556678772,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+195,c27795adbb70,wrong,0.0,3679,851.8650431632996,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+196,3edbaeffa888,correct,1.0,648,3647.324810743332,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048
+197,8afa4ca660bd,correct,1.0,3387,782.582662820816,stop,3,gpqa-diamond-32k,MacBook Pro M5 Pro 48 GB (Metal GPU),32768
+198,b81f8469c13d,correct,1.0,867,4572.287297487259,stop,1,gpqa-diamond-full,"Raspberry Pi 5 16 GB (CPU, 4 x Cortex-A76)",2048

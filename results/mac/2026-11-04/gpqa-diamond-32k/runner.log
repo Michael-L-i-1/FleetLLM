@@ -1,0 +1,52 @@
+  0%|          | 0/28 [00:00<?, ?it/s][gpqa] 013-34123cde4139: score=0.0
+[gpqa] 015-d378f76f9440: score=0.0
+[gpqa] 006-4581b0cc446c: score=0.0
+[gpqa] 014-14426e35c3d7: score=1.0
+[gpqa] 010-3c6d8dd08df9: score=0.0
+[gpqa] 011-6dc5f1dda51e: score=1.0
+[gpqa] 009-d6504fc7f49b: score=1.0
+[gpqa] 008-50657788cc18: score=0.0
+[gpqa] 018-60484a173842: score=0.0
+[gpqa] 005-7498921e320d: score=0.0
+[gpqa] 019-bf5f089a7f34: score=0.0
+[gpqa] 017-fa180813b842: score=1.0
+[gpqa] 021-8e9fdc821c82: score=1.0
+[gpqa] 022-befb3d015f01: score=1.0
+[gpqa] 007-3f8582e0f259: score=0.0
+[gpqa] 024-fbe8103c7ecb: score=0.0
+[gpqa] 003-7d660cdb6541: score=0.0
+[gpqa] 023-c9db02f3c66e: score=0.0
+[gpqa] 016-35621b6de79f: score=0.0
+[gpqa] 002-2912c84621ae: score=0.0
+[gpqa] 025-e06cbe65142a: score=1.0
+[gpqa] 026-87fde7ea9102: score=1.0
+[gpqa] 028-8afa4ca660bd: score=1.0
+[gpqa] 027-c27795adbb70: score=0.0
+[gpqa] 004-0ba55fbab1c5: score=1.0
+[gpqa] 001-5eefc414569b: score=0.0
+  4%|▎         | 1/28 [30:03<13:31:29, 1803.31s/it][gpqa] 012-2bfe458ef681: score=0.0
+ 43%|████▎     | 12/28 [35:04<35:37, 133.61s/it]   [gpqa] 020-8d4e42049c08: score=0.0
+ 71%|███████▏  | 20/28 [36:51<09:53, 74.20s/it] 100%|██████████| 28/28 [36:51<00:00, 78.97s/it]
+{
+  "label": "gpqa",
+  "model": "glimmer-q2k",
+  "base_url": "http://127.0.0.1:18097/v1",
+  "harness": "openai/simple-evals gpqa_eval (diamond)",
+  "questions": 28,
+  "workers": 16,
+  "temperature": 0.0,
+  "max_tokens": 32768,
+  "reasoning_effort": "low",
+  "stream": true,
+  "score": 0.35714285714285715,
+  "wall_secs": 2211.3,
+  "questions_per_min": 0.76,
+  "completion_tokens": 148782,
+  "prompt_tokens": 10017,
+  "gen_tok_per_sec": 67.3,
+  "mean_completion_tokens": 5313.6,
+  "mean_request_secs": 847.08,
+  "truncated": 2,
+  "total_questions": 28,
+  "incomplete": 0
+}

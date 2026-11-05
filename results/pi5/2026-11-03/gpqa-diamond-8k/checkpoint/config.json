@@ -1,0 +1,12 @@
+{
+  "format_version": 1,
+  "model": "pi-gpqa-glimmer",
+  "fingerprint": "Muse-Glimmer-30B-Q2_K sha256:af4b15f0f3268d23e0f48f796a4ab563454b9cf8bab60d2bbe251b314b342fb5 kv-int8",
+  "temperature": 0.0,
+  "max_tokens": 8192,
+  "reasoning_effort": "low",
+  "repeats": 1,
+  "num_examples": null,
+  "grader_sha256": "f746e411bdbd3ec8cd0738e30fc0989ac0d6b5a1b988a454633553b419b724d3",
+  "common_sha256": "84616c52821a30ae3f55f153a763153fd833cb41b547b09f547b46e6337f8f35"
+}

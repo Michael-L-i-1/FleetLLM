@@ -1,0 +1,15 @@
+2026-11-03 01:23:30 supervisor started: /home/mli5/fleetllm/build/fleet serve --model /home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf --backend cpu --threads 4 --budget-gb 14.8 --kv-gb 1.5 --kv-int8 --row-budget 64 --no-pin --ngram --spec-k 15 --spec-rows 16 --host 127.0.0.1 --port 18096 --name pi-gpqa-glimmer --reasoning low --max-active 16 --admit --max-tokens 2048
+2026-11-03 01:23:30 server starting (pid 47854)
+2026-11-03 01:23:55 server ready
+2026-11-03 01:23:55 runner started (pid 47928), 0/198 finished
+2026-11-03 20:38:12 supervisor started: /home/mli5/fleetllm/build/fleet serve --model /home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf --backend cpu --threads 4 --budget-gb 14.8 --kv-gb 1.5 --kv-int8 --row-budget 64 --no-pin --ngram --spec-k 15 --spec-rows 16 --host 127.0.0.1 --port 18096 --name pi-gpqa-glimmer --reasoning low --max-active 16 --admit --max-tokens 2048
+2026-11-03 20:38:12 server starting (pid 1467)
+2026-11-03 20:38:37 server ready
+2026-11-03 20:38:37 runner started (pid 1554), 137/198 finished
+2026-11-04 01:00:49 supervisor started: /home/mli5/fleetllm/build/fleet serve --model /home/mli5/models/Muse-Glimmer-30B-Q2_K.gguf --backend cpu --threads 4 --budget-gb 14.8 --kv-gb 1.5 --kv-int8 --row-budget 64 --no-pin --ngram --spec-k 15 --spec-rows 16 --host 127.0.0.1 --port 18096 --name pi-gpqa-glimmer --reasoning low --max-active 16 --admit --max-tokens 2048
+2026-11-04 01:00:49 server starting (pid 1171)
+2026-11-04 01:01:14 server ready
+2026-11-04 01:01:14 runner started (pid 1237), 163/198 finished
+2026-11-04 06:03:40 runner exited (0), 198/198 finished
+2026-11-04 06:03:40 run complete
+2026-11-04 06:03:40 supervisor exiting

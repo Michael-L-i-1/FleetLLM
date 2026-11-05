@@ -14,12 +14,16 @@ import argparse
 import hashlib
 import json
 import os
+from pathlib import Path
+import signal
 import sys
 import threading
 import time
+from types import SimpleNamespace
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "third_party"))
+sys.path.insert(0, HERE)
 
 
 def main():
@@ -51,6 +55,21 @@ def main():
     )
     ap.add_argument("--reasoning-effort", choices=("none", "low", "medium", "high"))
     ap.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        help="Durable questions.csv and responses; automatically resume unchanged settings",
+    )
+    ap.add_argument(
+        "--prepare-only",
+        action="store_true",
+        help="Freeze questions and initialize CSV without calling a model",
+    )
+    ap.add_argument(
+        "--model-fingerprint",
+        default="",
+        help="Model hash and precision identity, checked on resume",
+    )
+    ap.add_argument(
         "--request-timeout",
         type=float,
         default=3600,
@@ -61,6 +80,10 @@ def main():
         ap.error("workers, max tokens and request timeout must be positive")
     if a.reasoning_effort and not a.stream:
         ap.error("--reasoning-effort currently requires --stream")
+    if a.checkpoint_dir and not a.stream:
+        ap.error("--checkpoint-dir requires --stream")
+    if a.prepare_only and not a.checkpoint_dir:
+        ap.error("--prepare-only requires --checkpoint-dir")
     os.makedirs(a.out_dir, exist_ok=True)
     base = os.path.join(a.out_dir, a.label)
 
@@ -69,13 +92,75 @@ def main():
     from simple_evals import common
     from simple_evals.gpqa_eval import GPQAEval
     from simple_evals.sampler.chat_completion_sampler import ChatCompletionSampler
-    from simple_evals.types import SamplerResponse
+    from simple_evals.types import SamplerResponse, SingleEvalResult
     from openai import OpenAI
+    from checkpoint import Checkpoint, FINAL, atomic_text
+
+    frozen = a.checkpoint_dir / "examples.json" if a.checkpoint_dir else None
+    if frozen and frozen.exists():
+        ev = GPQAEval.__new__(GPQAEval)
+        ev.examples = json.loads(frozen.read_text())
+        ev.n_repeats = a.repeats
+    else:
+        ev = GPQAEval(n_repeats=a.repeats, num_examples=a.num_examples)
+    store = None
+    if a.checkpoint_dir:
+        config = dict(
+            format_version=1,
+            model=a.model,
+            fingerprint=a.model_fingerprint,
+            temperature=a.temperature,
+            max_tokens=a.max_tokens,
+            reasoning_effort=a.reasoning_effort,
+            repeats=a.repeats,
+            num_examples=a.num_examples,
+            grader_sha256=hashlib.sha256(
+                Path(HERE, "third_party/simple_evals/gpqa_eval.py").read_bytes()
+            ).hexdigest(),
+            common_sha256=hashlib.sha256(
+                Path(HERE, "third_party/simple_evals/common.py").read_bytes()
+            ).hexdigest(),
+        )
+        store = Checkpoint(a.checkpoint_dir, config, ev.examples, a.workers)
+        if a.prepare_only:
+            store.close("ready")
+            print(
+                f"Prepared {len(ev.examples)} questions in {store.path}; no model requests made"
+            )
+            return 0
 
     # One request = one agent call; record what the server reports.
     calls, lock = [], threading.Lock()
     context = threading.local()
-    events = open(base + ".events.jsonl", "w")
+    events = open(base + ".events.jsonl", "a" if store else "w")
+    watch_done = threading.Event()
+    if store:
+
+        def stop_now(signum=None, frame=None):
+            if signum == signal.SIGINT:
+                atomic_text(store.path / "control", "stop\n")
+            store.interrupt()
+            os._exit(128 + (signum or 2))
+
+        def watch_control():
+            while not watch_done.wait(1):
+                action = store.control()
+                if action == "stop":
+                    stop_now()
+                active = any(
+                    r["status"] not in FINAL | {"queued", "error", "interrupted"}
+                    for r in store.rows
+                )
+                store.heartbeat(
+                    ("pausing" if active else "paused")
+                    if action == "pause"
+                    else "running"
+                )
+
+        signal.signal(signal.SIGTERM, stop_now)
+        signal.signal(signal.SIGINT, stop_now)
+        store.heartbeat("running")
+        threading.Thread(target=watch_control, daemon=True).start()
 
     def event(kind, **data):
         row = dict(
@@ -92,6 +177,15 @@ def main():
         def __call__(self, message_list):
             t0 = time.time()
             event("request_started")
+            replay = getattr(context, "replay", None)
+            if replay:
+                return SamplerResponse(
+                    response_text=replay["content"],
+                    response_metadata={
+                        "usage": SimpleNamespace(**(replay.get("usage") or {}))
+                    },
+                    actual_queried_message_list=replay["messages"],
+                )
             if a.stream:
                 # The pinned evaluator still supplies the exact prompts and
                 # grades only final content. Streaming changes transport only;
@@ -141,6 +235,20 @@ def main():
                             if thought:
                                 reasoning.append(thought)
                         if time.time() - last_progress >= 5:
+                            if store:
+                                store.save_response(
+                                    context.question_id,
+                                    dict(
+                                        seconds=time.time() - t0,
+                                        content="".join(content),
+                                        reasoning_content="".join(reasoning),
+                                        messages=actual,
+                                        usage=None,
+                                        finish_reason=None,
+                                        first_output_seconds=first,
+                                        first_answer_seconds=first_answer,
+                                    ),
+                                )
                             event(
                                 "request_progress",
                                 seconds=time.time() - t0,
@@ -161,6 +269,8 @@ def main():
                     messages=actual,
                 )
                 event("request_completed", **record)
+                if store:
+                    store.save_response(context.question_id, record, complete=True)
                 r = SamplerResponse(
                     response_text=record["content"],
                     response_metadata={"usage": usage},
@@ -193,25 +303,51 @@ def main():
     orig_map = common.map_with_progress
 
     def observed_map(f, xs, num_threads=a.workers, pbar=True):
-        def observed(row):
-            context.question_id = hashlib.sha256(row["Question"].encode()).hexdigest()[
-                :12
-            ]
+        def observed(item):
+            index, row = item
+            context.question_id = (
+                store.ids[index]
+                if store
+                else hashlib.sha256(row["Question"].encode()).hexdigest()[:12]
+            )
+            context.replay = None
+            if store:
+                saved = store.result(context.question_id)
+                if saved:
+                    return SingleEvalResult(**saved["result"])
+                while store.control() == "pause":
+                    time.sleep(0.2)
+                if store.control() == "stop":
+                    stop_now()
+                previous = store.response(context.question_id)
+                if previous and previous.get("complete"):
+                    context.replay = previous
+                    store.update(context.question_id, status="grading")
+                else:
+                    store.start(context.question_id)
             event("question_started")
             try:
                 result = f(row)
+                if store:
+                    store.complete(context.question_id, result)
                 event("question_graded", score=result.score)
                 print(f"[gpqa] {context.question_id}: score={result.score}", flush=True)
                 return result
             except Exception as exc:
                 event("question_failed", error=str(exc))
+                if store:
+                    store.update(context.question_id, status="error", error=str(exc))
+                    return SingleEvalResult(
+                        score=None,
+                        html="<p>Request failed; see checkpoint CSV.</p>",
+                        convo=[],
+                    )
                 raise
 
-        return orig_map(observed, xs, num_threads=a.workers, pbar=pbar)
+        return orig_map(observed, list(enumerate(xs)), num_threads=a.workers, pbar=pbar)
 
     common.map_with_progress = observed_map
 
-    ev = GPQAEval(n_repeats=a.repeats, num_examples=a.num_examples)
     with open(base + ".manifest.json", "w") as manifest:
         json.dump(
             dict(
@@ -239,6 +375,21 @@ def main():
     t0 = time.time()
     result = ev(sampler)
     wall = time.time() - t0
+    if store:
+        calls = []
+        for row in store.rows:
+            saved = store.result(row["id"])
+            if saved:
+                response = saved["response"]
+                usage = response.get("usage") or {}
+                calls.append(
+                    dict(
+                        secs=response["seconds"],
+                        prompt_tokens=usage.get("prompt_tokens", 0),
+                        completion_tokens=usage.get("completion_tokens", 0),
+                    )
+                )
+        wall = store.previous_seconds + time.monotonic() - store.started
 
     gen = sum(c["completion_tokens"] for c in calls)
     prompt = sum(c["prompt_tokens"] for c in calls)
@@ -266,12 +417,19 @@ def main():
         "truncated": sum(1 for c in calls if c["completion_tokens"] >= a.max_tokens),
         "metrics": result.metrics,
     }
+    if store:
+        summary["total_questions"] = len(store.rows)
+        summary["incomplete"] = len(store.rows) - len(calls)
     json.dump(summary, open(base + ".json", "w"), indent=2)
     open(base + ".html", "w").write(common.make_report(result))
     event("run_completed", summary=summary)
     events.close()
+    if store:
+        watch_done.set()
+        store.close("completed" if not summary["incomplete"] else "incomplete")
     print(json.dumps({k: v for k, v in summary.items() if k != "metrics"}, indent=2))
+    return 2 if store and summary["incomplete"] else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

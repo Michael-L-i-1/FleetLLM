@@ -1,0 +1,51 @@
+.{"elapsed": 0.0, "event": "start", "config": {"output": "/var/folders/dj/3p8x43cs4pl41l9h8fj5rvmr0000gn/T/tmpj4ykwip9/trial", "model": "fake", "label": "test", "base": "http://127.0.0.1:54636/v1", "max_steps": 8, "max_tokens": 100, "reasoning": "low", "timeout": 10}, "fixture": {"app.js": "973b92d2fb5feb37a15b2273ed1bdffe6dac009018568bc2f7dd93f836aca06f", "index.html": "01a9ce1ef1ad6b9709ab69819ade09417a9ed3775db5187a33226dbbecebcfb3", "responsive.css": "417cdbb47967d929ae80522d75a22c126b00d557ec0d030d7a021e2c41f2ba03", "styles.css": "8097221305b2c4e09b5a8006ae724304dd8b0422fe1f553815d201eca9d3ba0e", "theme.css": "b18d3e20649d2a181f7f4e3c36b78909d73eddfc09a93fc8349deabad43a0c42"}}
+{"elapsed": 0.0, "event": "request", "agent": "coordinator", "step": 0}
+{"elapsed": 0.01, "event": "response", "agent": "coordinator", "seconds": 0.009352750144898891, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 534.6021140880218, "timings": {}}
+{"elapsed": 0.01, "event": "action", "agent": "coordinator", "action": "read", "path": "../../README.md"}
+{"elapsed": 0.01, "event": "tool_error", "agent": "coordinator", "error": "Path must be an exact listed filename"}
+{"elapsed": 0.01, "event": "request", "agent": "coordinator", "step": 1}
+{"elapsed": 0.01, "event": "response", "agent": "coordinator", "seconds": 0.0005146670155227184, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 9715.019321612792, "timings": {}}
+{"elapsed": 0.01, "event": "action", "agent": "coordinator", "action": "delegate", "path": null}
+{"elapsed": 0.01, "event": "delegated", "tasks": [{"name": "../escape", "files": ["index.html"], "task": "Improve layout"}, {"name": "style", "files": ["styles.css"], "task": "Improve style"}, {"name": "theme", "files": ["theme.css"], "task": "Improve theme"}, {"name": "responsive", "files": ["responsive.css"], "task": "Improve layout"}]}
+{"elapsed": 0.012, "event": "request", "agent": "worker-2", "step": 0}
+{"elapsed": 0.013, "event": "request", "agent": "worker-1", "step": 0}
+{"elapsed": 0.013, "event": "request", "agent": "worker-3", "step": 0}
+{"elapsed": 0.013, "event": "request", "agent": "worker-4", "step": 0}
+{"elapsed": 0.014, "event": "response", "agent": "worker-2", "seconds": 0.0016037500463426113, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 3117.692817158518, "timings": {}}
+{"elapsed": 0.014, "event": "response", "agent": "worker-4", "seconds": 0.0008626251947134733, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 5796.260103046008, "timings": {}}
+{"elapsed": 0.015, "event": "response", "agent": "worker-3", "seconds": 0.0011118331458419561, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 4497.077658369015, "timings": {}}
+{"elapsed": 0.015, "event": "response", "agent": "worker-1", "seconds": 0.0016756250988692045, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 2983.9610324375362, "timings": {}}
+{"elapsed": 0.015, "event": "action", "agent": "worker-2", "action": "write", "path": "styles.css"}
+{"elapsed": 0.015, "event": "action", "agent": "worker-4", "action": "write", "path": "responsive.css"}
+{"elapsed": 0.015, "event": "action", "agent": "worker-3", "action": "write", "path": "theme.css"}
+{"elapsed": 0.015, "event": "action", "agent": "worker-1", "action": "write", "path": "index.html"}
+{"elapsed": 0.015, "event": "request", "agent": "worker-3", "step": 1}
+{"elapsed": 0.015, "event": "request", "agent": "worker-4", "step": 1}
+{"elapsed": 0.015, "event": "request", "agent": "worker-2", "step": 1}
+{"elapsed": 0.015, "event": "request", "agent": "worker-1", "step": 1}
+{"elapsed": 0.016, "event": "response", "agent": "worker-3", "seconds": 0.0007302078884094954, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 6847.3650851550865, "timings": {}}
+{"elapsed": 0.016, "event": "response", "agent": "worker-4", "seconds": 0.0009305421262979507, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 5373.2118715483575, "timings": {}}
+{"elapsed": 0.016, "event": "response", "agent": "worker-2", "seconds": 0.0008232078980654478, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 6073.79984053856, "timings": {}}
+{"elapsed": 0.016, "event": "action", "agent": "worker-3", "action": "done", "path": null}
+{"elapsed": 0.017, "event": "finished", "agent": "worker-3", "summary": "Updated owned file"}
+{"elapsed": 0.017, "event": "action", "agent": "worker-2", "action": "done", "path": null}
+{"elapsed": 0.017, "event": "finished", "agent": "worker-2", "summary": "Updated owned file"}
+{"elapsed": 0.017, "event": "action", "agent": "worker-4", "action": "done", "path": null}
+{"elapsed": 0.017, "event": "finished", "agent": "worker-4", "summary": "Updated owned file"}
+{"elapsed": 0.017, "event": "response", "agent": "worker-1", "seconds": 0.0008894170168787241, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 5621.659924550074, "timings": {}}
+{"elapsed": 0.017, "event": "action", "agent": "worker-1", "action": "done", "path": null}
+{"elapsed": 0.017, "event": "finished", "agent": "worker-1", "summary": "Updated owned file"}
+{"elapsed": 0.018, "event": "integrated", "files": ["index.html", "responsive.css", "styles.css", "theme.css"]}
+{"elapsed": 0.018, "event": "request", "agent": "coordinator", "step": 2}
+{"elapsed": 0.018, "event": "response", "agent": "coordinator", "seconds": 0.00047300010919570923, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 10570.82208395684, "timings": {}}
+{"elapsed": 0.018, "event": "action", "agent": "coordinator", "action": "check", "path": null}
+{"elapsed": 0.019, "event": "request", "agent": "coordinator", "step": 3}
+{"elapsed": 0.019, "event": "response", "agent": "coordinator", "seconds": 0.0004223750438541174, "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "finish_reason": "stop", "ttft_seconds": null, "output_window_seconds": null, "request_completion_tokens_per_second": 11837.820611690619, "timings": {}}
+{"elapsed": 0.019, "event": "action", "agent": "coordinator", "action": "done", "path": null}
+{"elapsed": 0.019, "event": "finished", "agent": "coordinator", "summary": "Integrated"}
+{"elapsed": 0.032, "event": "complete", "label": "test", "model": "fake", "success": true, "seconds": 0.01970441685989499, "calls": 12, "error": null, "prompt_tokens": 120, "completion_tokens": 60, "aggregate_completion_tokens_per_second": 3045.0025710793734, "tool_errors": 1, "check_calls": 1, "write_calls": 4, "median_ttft_seconds": null}
+.
+----------------------------------------------------------------------
+Ran 2 tests in 0.534s
+
+OK

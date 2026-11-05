@@ -1,0 +1,8 @@
+{
+  "seconds": 14.225737041095272,
+  "requests": 4,
+  "concurrency": 4,
+  "completion_tokens": 1024,
+  "prompt_tokens": 2868,
+  "aggregate_completion_tokens_per_second": 71.98221062584466
+}

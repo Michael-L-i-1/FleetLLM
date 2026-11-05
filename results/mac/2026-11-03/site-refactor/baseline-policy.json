@@ -1,0 +1,12 @@
+{
+  "requested_by_user": "Optimizations specific to FleetLLM; compare with normal llama.cpp/vLLM serving",
+  "policy": "Remove explicitly added speculation, prompt lookup, cache-reuse and batching-kernel tuning flags from comparators. Retain native defaults, GPU acceleration, four-request batching, matched reasoning/context and a safe memory budget. Do not deliberately disable native kernels or intrinsic KV state.",
+  "retired_comparisons": [
+    "vllm-mlx4-fixed-ngram-01",
+    "replay-vllm-mlx4-ngram-01"
+  ],
+  "primary_comparisons": [
+    "vllm-mlx4-standard-01",
+    "llama-q4km-standard-01"
+  ]
+}

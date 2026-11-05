@@ -1,0 +1,35 @@
+{
+  "git_head": "afc999ee61b580e59d995ebaffd5dab543ab971e",
+  "date": "2026-11-03",
+  "fleet_first_server_pid": 63215,
+  "mlx_revision": "3e7677d7a40d348a3daba263a2b1c0aa41910710",
+  "drafter_revision": "c676cce91658f9568aaf264a416211e2782735b7",
+  "hardware": {
+    "chip": "Apple M5 Pro",
+    "memory_gb": 48,
+    "gpu_cores": 20
+  },
+  "vllm_metal_version": "0.32.0",
+  "note": "First run started during GGUF background download; no other model serving or compiler active during inference. Later comparison runs must record any differences.",
+  "status": "complete",
+  "model_servers_running": false,
+  "primary_policy": "optimized Fleet versus standard comparator flags; native defaults retained",
+  "final_outcomes": {
+    "fleet-mlx4-span-01": {
+      "success": true,
+      "seconds": 220.70202945894562
+    },
+    "fleet-mlx4-span-02": {
+      "success": true,
+      "seconds": 230.70303470804356
+    },
+    "llama-q4km-standard-01": {
+      "success": false,
+      "seconds": 854.5576090000104
+    },
+    "vllm-mlx4-standard-01": {
+      "success": true,
+      "seconds": 495.86295595788397
+    }
+  }
+}

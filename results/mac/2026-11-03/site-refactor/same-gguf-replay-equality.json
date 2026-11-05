@@ -1,0 +1,30 @@
+[
+  {
+    "worker": 1,
+    "content_equal": false,
+    "reasoning_equal": false,
+    "fleet_tokens": 256,
+    "llama_tokens": 256
+  },
+  {
+    "worker": 2,
+    "content_equal": true,
+    "reasoning_equal": true,
+    "fleet_tokens": 113,
+    "llama_tokens": 113
+  },
+  {
+    "worker": 3,
+    "content_equal": false,
+    "reasoning_equal": true,
+    "fleet_tokens": 256,
+    "llama_tokens": 256
+  },
+  {
+    "worker": 4,
+    "content_equal": true,
+    "reasoning_equal": true,
+    "fleet_tokens": 98,
+    "llama_tokens": 98
+  }
+]

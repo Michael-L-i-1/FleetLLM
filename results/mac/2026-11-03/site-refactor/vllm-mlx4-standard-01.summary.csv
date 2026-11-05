@@ -1,0 +1,2 @@
+label,model,success,seconds,calls,error,prompt_tokens,completion_tokens,aggregate_completion_tokens_per_second,tool_errors,check_calls,write_calls,median_ttft_seconds
+vllm-mlx4-standard-01,glimmer-mlx4,True,495.86295595788397,30,,84442,10843,21.86692889581562,1,1,8,1.578094270429574

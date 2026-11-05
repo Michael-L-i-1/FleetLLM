@@ -1,0 +1,2 @@
+label,model,success,seconds,calls,error,prompt_tokens,completion_tokens,aggregate_completion_tokens_per_second,tool_errors,check_calls,write_calls,median_ttft_seconds
+fleet-mlx4-span-02,glimmer-mlx4,True,230.70303470804356,28,,82577,11343,49.16710356391563,1,1,8,0.741134250536561

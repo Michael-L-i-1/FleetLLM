@@ -1,0 +1,37 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "READY",
+        "reasoning_content": "Reply with exactly READY.\n\nWe need reply with exactly READY. Probably just READY. No extra punctuation? Exactly READY. Probably uppercase.\n\nOutput exactly READY.\n\nEnsure no extra whitespace? Probably newline okay. Just READY.\n\n"
+      }
+    }
+  ],
+  "created": 1793736395,
+  "model": "glimmer-q4km",
+  "system_fingerprint": "b1-6cb3e67",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 59,
+    "prompt_tokens": 62,
+    "total_tokens": 121,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "id": "chatcmpl-WFihAzpqAD6s7U9ue7Ar5M8cWOFXm1FI",
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 62,
+    "prompt_ms": 862.921,
+    "prompt_per_token_ms": 13.918080645161291,
+    "prompt_per_second": 71.8489873348777,
+    "predicted_n": 59,
+    "predicted_ms": 3577.119,
+    "predicted_per_token_ms": 61.67446551724138,
+    "predicted_per_second": 16.214165645593564
+  }
+}

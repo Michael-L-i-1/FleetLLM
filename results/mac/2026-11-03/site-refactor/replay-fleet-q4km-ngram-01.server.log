@@ -1,0 +1,11 @@
+[load] 1.3s muse-glimmer elli/.cache/fleetllm/benchmarks/Muse-Glimmer-30B-Q4_K_M.gguf, 52 layers, weights 16.53 GB (pinned 16.53), KV 4.00 GB (6300 full + 4160 swa pages), backend metal
+[serve] listening on http://127.0.0.1:8090/v1 (model "glimmer-q4km")
+[serve] chatcmpl-1: 62 prompt + 59 generated tokens, first token 0.83s, total 5.25s, stop
+[serve] 4 active | 5.2 tok/s generated | 1 served | 0 preemptions | 0 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 4/34 accepted in 10 verifies
+[serve] 4 active | 5.3 tok/s generated | 1 served | 0 preemptions | 1410 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 42/89 accepted in 22 verifies
+[serve] chatcmpl-3: 572 prompt + 98 generated tokens, first token 8.19s, total 24.36s, stop
+[serve] chatcmpl-2: 596 prompt + 113 generated tokens, first token 6.54s, total 25.13s, stop
+[serve] 2 active | 38.4 tok/s generated | 3 served | 0 preemptions | 1410 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 279/408 accepted in 61 verifies
+[serve] 2 active | 21.1 tok/s generated | 3 served | 0 preemptions | 1410 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 297/476 accepted in 82 verifies
+[serve] chatcmpl-4: 590 prompt + 256 generated tokens, first token 9.86s, total 38.03s, length
+[serve] chatcmpl-5: 1110 prompt + 256 generated tokens, first token 16.04s, total 39.69s, length

@@ -1,0 +1,15 @@
+{
+  "label": "llama-q4km-standard-01",
+  "model": "glimmer-q4km",
+  "success": false,
+  "seconds": 854.5576090000104,
+  "calls": 30,
+  "error": "HTTP Error 400: Bad Request",
+  "prompt_tokens": 150982,
+  "completion_tokens": 15741,
+  "aggregate_completion_tokens_per_second": 18.420057154976206,
+  "tool_errors": 0,
+  "check_calls": 3,
+  "write_calls": 10,
+  "median_ttft_seconds": 2.700867874897085
+}

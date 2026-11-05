@@ -1,0 +1,42 @@
+{
+  "id": "chatcmpl-a41d68d664f27a08",
+  "object": "chat.completion",
+  "created": 1793735835,
+  "model": "glimmer-mlx4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "READY",
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "reasoning": "Reply with exactly READY.\n\nWe need reply with exactly READY. Probably just \"READY\". Exactly. No extra punctuation? Exactly READY. Probably uppercase.\n\nOutput READY.\n\nEnsure no extra whitespace? Probably just READY.\n\n"
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 200008,
+      "token_ids": null,
+      "routed_experts": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": "vllm-0.32.0-27afc1f8",
+  "usage": {
+    "prompt_tokens": 62,
+    "total_tokens": 119,
+    "completion_tokens": 57,
+    "prompt_tokens_details": null,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "prompt_logprobs": null,
+  "prompt_token_ids": null,
+  "prompt_text": null,
+  "kv_transfer_params": null,
+  "ec_transfer_params": null,
+  "metrics": null
+}

@@ -1,0 +1,727 @@
+FFFFFFFF....                                                             [100%]
+=================================== FAILURES ===================================
+________ test_paged_attention_matches_upstream[fp32-mlx_lm-local_rope] _________
+
+build = <function _mlx_lm_attention at 0x10d71a980>, layer_idx = 0
+dtype = mlx.core.float32, tol = 2e-05
+
+    @_LAYERS
+    @pytest.mark.parametrize(
+        "build", [_mlx_lm_attention, _mlx_vlm_attention], ids=["mlx_lm", "mlx_vlm"]
+    )
+    # bf16 allows about one ulp near 1; mlx-vlm's RoPE also rounds in bf16.
+    @pytest.mark.parametrize(
+        ("dtype", "tol"), [(mx.float32, 2e-5), (mx.bfloat16, 1e-2)], ids=["fp32", "bf16"]
+    )
+    def test_paged_attention_matches_upstream(
+        build, layer_idx: int, dtype: mx.Dtype, tol: float
+    ) -> None:
+        """The weightless QK-norm, query scale and output gate must reach the kernel.
+    
+        Both ports are served; the reference is mlx-vlm's port with the same weights.
+        """
+        mx.random.seed(0)
+        attention = build(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        x = mx.random.normal((1, 6, 128)).astype(dtype)
+        cache = MetalPagedKVCache(
+            num_layers=1,
+            num_kv_heads=1,
+            head_dim=64,
+            num_blocks=1,
+            block_size=16,
+            dtype=dtype,
+        )
+    
+>       actual, _ = sdpa_forward(
+            attention,
+            x,
+            _context(),
+            cache,
+            layer_idx=0,
+            attention_contract=attention_contract_for(attention),
+        )
+
+/tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/fleet-site-vllm-metal/vllm_metal/attention/impls/sdpa.py:874: in sdpa_forward
+    new_k_cache, new_v_cache = get_ops().reshape_and_cache(
+                               ^^^^^^^^^
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:303: in get_ops
+    mod = _load_native_module()
+          ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _load_native_module() -> ModuleType:
+        """Import the native extension without initializing its kernel libraries."""
+        global _native_module
+        if _native_module is not None:
+            return _native_module
+    
+        # Register MLX's nanobind types and load libmlx before the native extension.
+        import mlx.core  # noqa: F401
+    
+        # 1. Locate the native extension: load the prebuilt artifact by default;
+        #    only compile from source when explicitly opted in (no silent fallback).
+        from vllm_metal import envs
+        from vllm_metal.metal.build import (
+            build,
+            mlx_version_mismatch,
+            output_path,
+            stale_artifacts,
+        )
+    
+        build_from_source = envs.VLLM_METAL_BUILD_FROM_SOURCE
+        if build_from_source:
+            so_path = build()
+        else:
+            so_path = output_path()
+            if not so_path.exists():
+>               raise RuntimeError(
+                    f"Prebuilt native extension not found at {so_path}. Install a "
+                    f"vllm-metal release wheel (which ships it prebuilt), or set "
+                    f"VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source "
+                    f"(requires CMake and the Xcode Metal toolchain)."
+                )
+E               RuntimeError: Prebuilt native extension not found at /private/tmp/fleet-site-vllm-metal/vllm_metal/metal/_paged_ops.cpython-312-darwin.so. Install a vllm-metal release wheel (which ships it prebuilt), or set VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source (requires CMake and the Xcode Metal toolchain).
+
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:240: RuntimeError
+________ test_paged_attention_matches_upstream[fp32-mlx_lm-global_nope] ________
+
+build = <function _mlx_lm_attention at 0x10d71a980>, layer_idx = 3
+dtype = mlx.core.float32, tol = 2e-05
+
+    @_LAYERS
+    @pytest.mark.parametrize(
+        "build", [_mlx_lm_attention, _mlx_vlm_attention], ids=["mlx_lm", "mlx_vlm"]
+    )
+    # bf16 allows about one ulp near 1; mlx-vlm's RoPE also rounds in bf16.
+    @pytest.mark.parametrize(
+        ("dtype", "tol"), [(mx.float32, 2e-5), (mx.bfloat16, 1e-2)], ids=["fp32", "bf16"]
+    )
+    def test_paged_attention_matches_upstream(
+        build, layer_idx: int, dtype: mx.Dtype, tol: float
+    ) -> None:
+        """The weightless QK-norm, query scale and output gate must reach the kernel.
+    
+        Both ports are served; the reference is mlx-vlm's port with the same weights.
+        """
+        mx.random.seed(0)
+        attention = build(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        x = mx.random.normal((1, 6, 128)).astype(dtype)
+        cache = MetalPagedKVCache(
+            num_layers=1,
+            num_kv_heads=1,
+            head_dim=64,
+            num_blocks=1,
+            block_size=16,
+            dtype=dtype,
+        )
+    
+>       actual, _ = sdpa_forward(
+            attention,
+            x,
+            _context(),
+            cache,
+            layer_idx=0,
+            attention_contract=attention_contract_for(attention),
+        )
+
+/tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/fleet-site-vllm-metal/vllm_metal/attention/impls/sdpa.py:874: in sdpa_forward
+    new_k_cache, new_v_cache = get_ops().reshape_and_cache(
+                               ^^^^^^^^^
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:303: in get_ops
+    mod = _load_native_module()
+          ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _load_native_module() -> ModuleType:
+        """Import the native extension without initializing its kernel libraries."""
+        global _native_module
+        if _native_module is not None:
+            return _native_module
+    
+        # Register MLX's nanobind types and load libmlx before the native extension.
+        import mlx.core  # noqa: F401
+    
+        # 1. Locate the native extension: load the prebuilt artifact by default;
+        #    only compile from source when explicitly opted in (no silent fallback).
+        from vllm_metal import envs
+        from vllm_metal.metal.build import (
+            build,
+            mlx_version_mismatch,
+            output_path,
+            stale_artifacts,
+        )
+    
+        build_from_source = envs.VLLM_METAL_BUILD_FROM_SOURCE
+        if build_from_source:
+            so_path = build()
+        else:
+            so_path = output_path()
+            if not so_path.exists():
+>               raise RuntimeError(
+                    f"Prebuilt native extension not found at {so_path}. Install a "
+                    f"vllm-metal release wheel (which ships it prebuilt), or set "
+                    f"VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source "
+                    f"(requires CMake and the Xcode Metal toolchain)."
+                )
+E               RuntimeError: Prebuilt native extension not found at /private/tmp/fleet-site-vllm-metal/vllm_metal/metal/_paged_ops.cpython-312-darwin.so. Install a vllm-metal release wheel (which ships it prebuilt), or set VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source (requires CMake and the Xcode Metal toolchain).
+
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:240: RuntimeError
+________ test_paged_attention_matches_upstream[fp32-mlx_vlm-local_rope] ________
+
+build = <function _mlx_vlm_attention at 0x136192700>, layer_idx = 0
+dtype = mlx.core.float32, tol = 2e-05
+
+    @_LAYERS
+    @pytest.mark.parametrize(
+        "build", [_mlx_lm_attention, _mlx_vlm_attention], ids=["mlx_lm", "mlx_vlm"]
+    )
+    # bf16 allows about one ulp near 1; mlx-vlm's RoPE also rounds in bf16.
+    @pytest.mark.parametrize(
+        ("dtype", "tol"), [(mx.float32, 2e-5), (mx.bfloat16, 1e-2)], ids=["fp32", "bf16"]
+    )
+    def test_paged_attention_matches_upstream(
+        build, layer_idx: int, dtype: mx.Dtype, tol: float
+    ) -> None:
+        """The weightless QK-norm, query scale and output gate must reach the kernel.
+    
+        Both ports are served; the reference is mlx-vlm's port with the same weights.
+        """
+        mx.random.seed(0)
+        attention = build(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        x = mx.random.normal((1, 6, 128)).astype(dtype)
+        cache = MetalPagedKVCache(
+            num_layers=1,
+            num_kv_heads=1,
+            head_dim=64,
+            num_blocks=1,
+            block_size=16,
+            dtype=dtype,
+        )
+    
+>       actual, _ = sdpa_forward(
+            attention,
+            x,
+            _context(),
+            cache,
+            layer_idx=0,
+            attention_contract=attention_contract_for(attention),
+        )
+
+/tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/fleet-site-vllm-metal/vllm_metal/attention/impls/sdpa.py:874: in sdpa_forward
+    new_k_cache, new_v_cache = get_ops().reshape_and_cache(
+                               ^^^^^^^^^
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:303: in get_ops
+    mod = _load_native_module()
+          ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _load_native_module() -> ModuleType:
+        """Import the native extension without initializing its kernel libraries."""
+        global _native_module
+        if _native_module is not None:
+            return _native_module
+    
+        # Register MLX's nanobind types and load libmlx before the native extension.
+        import mlx.core  # noqa: F401
+    
+        # 1. Locate the native extension: load the prebuilt artifact by default;
+        #    only compile from source when explicitly opted in (no silent fallback).
+        from vllm_metal import envs
+        from vllm_metal.metal.build import (
+            build,
+            mlx_version_mismatch,
+            output_path,
+            stale_artifacts,
+        )
+    
+        build_from_source = envs.VLLM_METAL_BUILD_FROM_SOURCE
+        if build_from_source:
+            so_path = build()
+        else:
+            so_path = output_path()
+            if not so_path.exists():
+>               raise RuntimeError(
+                    f"Prebuilt native extension not found at {so_path}. Install a "
+                    f"vllm-metal release wheel (which ships it prebuilt), or set "
+                    f"VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source "
+                    f"(requires CMake and the Xcode Metal toolchain)."
+                )
+E               RuntimeError: Prebuilt native extension not found at /private/tmp/fleet-site-vllm-metal/vllm_metal/metal/_paged_ops.cpython-312-darwin.so. Install a vllm-metal release wheel (which ships it prebuilt), or set VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source (requires CMake and the Xcode Metal toolchain).
+
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:240: RuntimeError
+_______ test_paged_attention_matches_upstream[fp32-mlx_vlm-global_nope] ________
+
+build = <function _mlx_vlm_attention at 0x136192700>, layer_idx = 3
+dtype = mlx.core.float32, tol = 2e-05
+
+    @_LAYERS
+    @pytest.mark.parametrize(
+        "build", [_mlx_lm_attention, _mlx_vlm_attention], ids=["mlx_lm", "mlx_vlm"]
+    )
+    # bf16 allows about one ulp near 1; mlx-vlm's RoPE also rounds in bf16.
+    @pytest.mark.parametrize(
+        ("dtype", "tol"), [(mx.float32, 2e-5), (mx.bfloat16, 1e-2)], ids=["fp32", "bf16"]
+    )
+    def test_paged_attention_matches_upstream(
+        build, layer_idx: int, dtype: mx.Dtype, tol: float
+    ) -> None:
+        """The weightless QK-norm, query scale and output gate must reach the kernel.
+    
+        Both ports are served; the reference is mlx-vlm's port with the same weights.
+        """
+        mx.random.seed(0)
+        attention = build(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        x = mx.random.normal((1, 6, 128)).astype(dtype)
+        cache = MetalPagedKVCache(
+            num_layers=1,
+            num_kv_heads=1,
+            head_dim=64,
+            num_blocks=1,
+            block_size=16,
+            dtype=dtype,
+        )
+    
+>       actual, _ = sdpa_forward(
+            attention,
+            x,
+            _context(),
+            cache,
+            layer_idx=0,
+            attention_contract=attention_contract_for(attention),
+        )
+
+/tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/fleet-site-vllm-metal/vllm_metal/attention/impls/sdpa.py:874: in sdpa_forward
+    new_k_cache, new_v_cache = get_ops().reshape_and_cache(
+                               ^^^^^^^^^
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:303: in get_ops
+    mod = _load_native_module()
+          ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _load_native_module() -> ModuleType:
+        """Import the native extension without initializing its kernel libraries."""
+        global _native_module
+        if _native_module is not None:
+            return _native_module
+    
+        # Register MLX's nanobind types and load libmlx before the native extension.
+        import mlx.core  # noqa: F401
+    
+        # 1. Locate the native extension: load the prebuilt artifact by default;
+        #    only compile from source when explicitly opted in (no silent fallback).
+        from vllm_metal import envs
+        from vllm_metal.metal.build import (
+            build,
+            mlx_version_mismatch,
+            output_path,
+            stale_artifacts,
+        )
+    
+        build_from_source = envs.VLLM_METAL_BUILD_FROM_SOURCE
+        if build_from_source:
+            so_path = build()
+        else:
+            so_path = output_path()
+            if not so_path.exists():
+>               raise RuntimeError(
+                    f"Prebuilt native extension not found at {so_path}. Install a "
+                    f"vllm-metal release wheel (which ships it prebuilt), or set "
+                    f"VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source "
+                    f"(requires CMake and the Xcode Metal toolchain)."
+                )
+E               RuntimeError: Prebuilt native extension not found at /private/tmp/fleet-site-vllm-metal/vllm_metal/metal/_paged_ops.cpython-312-darwin.so. Install a vllm-metal release wheel (which ships it prebuilt), or set VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source (requires CMake and the Xcode Metal toolchain).
+
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:240: RuntimeError
+________ test_paged_attention_matches_upstream[bf16-mlx_lm-local_rope] _________
+
+build = <function _mlx_lm_attention at 0x10d71a980>, layer_idx = 0
+dtype = mlx.core.bfloat16, tol = 0.01
+
+    @_LAYERS
+    @pytest.mark.parametrize(
+        "build", [_mlx_lm_attention, _mlx_vlm_attention], ids=["mlx_lm", "mlx_vlm"]
+    )
+    # bf16 allows about one ulp near 1; mlx-vlm's RoPE also rounds in bf16.
+    @pytest.mark.parametrize(
+        ("dtype", "tol"), [(mx.float32, 2e-5), (mx.bfloat16, 1e-2)], ids=["fp32", "bf16"]
+    )
+    def test_paged_attention_matches_upstream(
+        build, layer_idx: int, dtype: mx.Dtype, tol: float
+    ) -> None:
+        """The weightless QK-norm, query scale and output gate must reach the kernel.
+    
+        Both ports are served; the reference is mlx-vlm's port with the same weights.
+        """
+        mx.random.seed(0)
+        attention = build(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        x = mx.random.normal((1, 6, 128)).astype(dtype)
+        cache = MetalPagedKVCache(
+            num_layers=1,
+            num_kv_heads=1,
+            head_dim=64,
+            num_blocks=1,
+            block_size=16,
+            dtype=dtype,
+        )
+    
+>       actual, _ = sdpa_forward(
+            attention,
+            x,
+            _context(),
+            cache,
+            layer_idx=0,
+            attention_contract=attention_contract_for(attention),
+        )
+
+/tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/fleet-site-vllm-metal/vllm_metal/attention/impls/sdpa.py:874: in sdpa_forward
+    new_k_cache, new_v_cache = get_ops().reshape_and_cache(
+                               ^^^^^^^^^
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:303: in get_ops
+    mod = _load_native_module()
+          ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _load_native_module() -> ModuleType:
+        """Import the native extension without initializing its kernel libraries."""
+        global _native_module
+        if _native_module is not None:
+            return _native_module
+    
+        # Register MLX's nanobind types and load libmlx before the native extension.
+        import mlx.core  # noqa: F401
+    
+        # 1. Locate the native extension: load the prebuilt artifact by default;
+        #    only compile from source when explicitly opted in (no silent fallback).
+        from vllm_metal import envs
+        from vllm_metal.metal.build import (
+            build,
+            mlx_version_mismatch,
+            output_path,
+            stale_artifacts,
+        )
+    
+        build_from_source = envs.VLLM_METAL_BUILD_FROM_SOURCE
+        if build_from_source:
+            so_path = build()
+        else:
+            so_path = output_path()
+            if not so_path.exists():
+>               raise RuntimeError(
+                    f"Prebuilt native extension not found at {so_path}. Install a "
+                    f"vllm-metal release wheel (which ships it prebuilt), or set "
+                    f"VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source "
+                    f"(requires CMake and the Xcode Metal toolchain)."
+                )
+E               RuntimeError: Prebuilt native extension not found at /private/tmp/fleet-site-vllm-metal/vllm_metal/metal/_paged_ops.cpython-312-darwin.so. Install a vllm-metal release wheel (which ships it prebuilt), or set VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source (requires CMake and the Xcode Metal toolchain).
+
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:240: RuntimeError
+________ test_paged_attention_matches_upstream[bf16-mlx_lm-global_nope] ________
+
+build = <function _mlx_lm_attention at 0x10d71a980>, layer_idx = 3
+dtype = mlx.core.bfloat16, tol = 0.01
+
+    @_LAYERS
+    @pytest.mark.parametrize(
+        "build", [_mlx_lm_attention, _mlx_vlm_attention], ids=["mlx_lm", "mlx_vlm"]
+    )
+    # bf16 allows about one ulp near 1; mlx-vlm's RoPE also rounds in bf16.
+    @pytest.mark.parametrize(
+        ("dtype", "tol"), [(mx.float32, 2e-5), (mx.bfloat16, 1e-2)], ids=["fp32", "bf16"]
+    )
+    def test_paged_attention_matches_upstream(
+        build, layer_idx: int, dtype: mx.Dtype, tol: float
+    ) -> None:
+        """The weightless QK-norm, query scale and output gate must reach the kernel.
+    
+        Both ports are served; the reference is mlx-vlm's port with the same weights.
+        """
+        mx.random.seed(0)
+        attention = build(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        x = mx.random.normal((1, 6, 128)).astype(dtype)
+        cache = MetalPagedKVCache(
+            num_layers=1,
+            num_kv_heads=1,
+            head_dim=64,
+            num_blocks=1,
+            block_size=16,
+            dtype=dtype,
+        )
+    
+>       actual, _ = sdpa_forward(
+            attention,
+            x,
+            _context(),
+            cache,
+            layer_idx=0,
+            attention_contract=attention_contract_for(attention),
+        )
+
+/tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/fleet-site-vllm-metal/vllm_metal/attention/impls/sdpa.py:874: in sdpa_forward
+    new_k_cache, new_v_cache = get_ops().reshape_and_cache(
+                               ^^^^^^^^^
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:303: in get_ops
+    mod = _load_native_module()
+          ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _load_native_module() -> ModuleType:
+        """Import the native extension without initializing its kernel libraries."""
+        global _native_module
+        if _native_module is not None:
+            return _native_module
+    
+        # Register MLX's nanobind types and load libmlx before the native extension.
+        import mlx.core  # noqa: F401
+    
+        # 1. Locate the native extension: load the prebuilt artifact by default;
+        #    only compile from source when explicitly opted in (no silent fallback).
+        from vllm_metal import envs
+        from vllm_metal.metal.build import (
+            build,
+            mlx_version_mismatch,
+            output_path,
+            stale_artifacts,
+        )
+    
+        build_from_source = envs.VLLM_METAL_BUILD_FROM_SOURCE
+        if build_from_source:
+            so_path = build()
+        else:
+            so_path = output_path()
+            if not so_path.exists():
+>               raise RuntimeError(
+                    f"Prebuilt native extension not found at {so_path}. Install a "
+                    f"vllm-metal release wheel (which ships it prebuilt), or set "
+                    f"VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source "
+                    f"(requires CMake and the Xcode Metal toolchain)."
+                )
+E               RuntimeError: Prebuilt native extension not found at /private/tmp/fleet-site-vllm-metal/vllm_metal/metal/_paged_ops.cpython-312-darwin.so. Install a vllm-metal release wheel (which ships it prebuilt), or set VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source (requires CMake and the Xcode Metal toolchain).
+
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:240: RuntimeError
+________ test_paged_attention_matches_upstream[bf16-mlx_vlm-local_rope] ________
+
+build = <function _mlx_vlm_attention at 0x136192700>, layer_idx = 0
+dtype = mlx.core.bfloat16, tol = 0.01
+
+    @_LAYERS
+    @pytest.mark.parametrize(
+        "build", [_mlx_lm_attention, _mlx_vlm_attention], ids=["mlx_lm", "mlx_vlm"]
+    )
+    # bf16 allows about one ulp near 1; mlx-vlm's RoPE also rounds in bf16.
+    @pytest.mark.parametrize(
+        ("dtype", "tol"), [(mx.float32, 2e-5), (mx.bfloat16, 1e-2)], ids=["fp32", "bf16"]
+    )
+    def test_paged_attention_matches_upstream(
+        build, layer_idx: int, dtype: mx.Dtype, tol: float
+    ) -> None:
+        """The weightless QK-norm, query scale and output gate must reach the kernel.
+    
+        Both ports are served; the reference is mlx-vlm's port with the same weights.
+        """
+        mx.random.seed(0)
+        attention = build(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        x = mx.random.normal((1, 6, 128)).astype(dtype)
+        cache = MetalPagedKVCache(
+            num_layers=1,
+            num_kv_heads=1,
+            head_dim=64,
+            num_blocks=1,
+            block_size=16,
+            dtype=dtype,
+        )
+    
+>       actual, _ = sdpa_forward(
+            attention,
+            x,
+            _context(),
+            cache,
+            layer_idx=0,
+            attention_contract=attention_contract_for(attention),
+        )
+
+/tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/fleet-site-vllm-metal/vllm_metal/attention/impls/sdpa.py:874: in sdpa_forward
+    new_k_cache, new_v_cache = get_ops().reshape_and_cache(
+                               ^^^^^^^^^
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:303: in get_ops
+    mod = _load_native_module()
+          ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _load_native_module() -> ModuleType:
+        """Import the native extension without initializing its kernel libraries."""
+        global _native_module
+        if _native_module is not None:
+            return _native_module
+    
+        # Register MLX's nanobind types and load libmlx before the native extension.
+        import mlx.core  # noqa: F401
+    
+        # 1. Locate the native extension: load the prebuilt artifact by default;
+        #    only compile from source when explicitly opted in (no silent fallback).
+        from vllm_metal import envs
+        from vllm_metal.metal.build import (
+            build,
+            mlx_version_mismatch,
+            output_path,
+            stale_artifacts,
+        )
+    
+        build_from_source = envs.VLLM_METAL_BUILD_FROM_SOURCE
+        if build_from_source:
+            so_path = build()
+        else:
+            so_path = output_path()
+            if not so_path.exists():
+>               raise RuntimeError(
+                    f"Prebuilt native extension not found at {so_path}. Install a "
+                    f"vllm-metal release wheel (which ships it prebuilt), or set "
+                    f"VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source "
+                    f"(requires CMake and the Xcode Metal toolchain)."
+                )
+E               RuntimeError: Prebuilt native extension not found at /private/tmp/fleet-site-vllm-metal/vllm_metal/metal/_paged_ops.cpython-312-darwin.so. Install a vllm-metal release wheel (which ships it prebuilt), or set VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source (requires CMake and the Xcode Metal toolchain).
+
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:240: RuntimeError
+_______ test_paged_attention_matches_upstream[bf16-mlx_vlm-global_nope] ________
+
+build = <function _mlx_vlm_attention at 0x136192700>, layer_idx = 3
+dtype = mlx.core.bfloat16, tol = 0.01
+
+    @_LAYERS
+    @pytest.mark.parametrize(
+        "build", [_mlx_lm_attention, _mlx_vlm_attention], ids=["mlx_lm", "mlx_vlm"]
+    )
+    # bf16 allows about one ulp near 1; mlx-vlm's RoPE also rounds in bf16.
+    @pytest.mark.parametrize(
+        ("dtype", "tol"), [(mx.float32, 2e-5), (mx.bfloat16, 1e-2)], ids=["fp32", "bf16"]
+    )
+    def test_paged_attention_matches_upstream(
+        build, layer_idx: int, dtype: mx.Dtype, tol: float
+    ) -> None:
+        """The weightless QK-norm, query scale and output gate must reach the kernel.
+    
+        Both ports are served; the reference is mlx-vlm's port with the same weights.
+        """
+        mx.random.seed(0)
+        attention = build(layer_idx)
+        attention.set_dtype(dtype)
+        upstream = _mlx_vlm_attention(layer_idx)
+        upstream.update(attention.parameters())
+        x = mx.random.normal((1, 6, 128)).astype(dtype)
+        cache = MetalPagedKVCache(
+            num_layers=1,
+            num_kv_heads=1,
+            head_dim=64,
+            num_blocks=1,
+            block_size=16,
+            dtype=dtype,
+        )
+    
+>       actual, _ = sdpa_forward(
+            attention,
+            x,
+            _context(),
+            cache,
+            layer_idx=0,
+            attention_contract=attention_contract_for(attention),
+        )
+
+/tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/fleet-site-vllm-metal/vllm_metal/attention/impls/sdpa.py:874: in sdpa_forward
+    new_k_cache, new_v_cache = get_ops().reshape_and_cache(
+                               ^^^^^^^^^
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:303: in get_ops
+    mod = _load_native_module()
+          ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _load_native_module() -> ModuleType:
+        """Import the native extension without initializing its kernel libraries."""
+        global _native_module
+        if _native_module is not None:
+            return _native_module
+    
+        # Register MLX's nanobind types and load libmlx before the native extension.
+        import mlx.core  # noqa: F401
+    
+        # 1. Locate the native extension: load the prebuilt artifact by default;
+        #    only compile from source when explicitly opted in (no silent fallback).
+        from vllm_metal import envs
+        from vllm_metal.metal.build import (
+            build,
+            mlx_version_mismatch,
+            output_path,
+            stale_artifacts,
+        )
+    
+        build_from_source = envs.VLLM_METAL_BUILD_FROM_SOURCE
+        if build_from_source:
+            so_path = build()
+        else:
+            so_path = output_path()
+            if not so_path.exists():
+>               raise RuntimeError(
+                    f"Prebuilt native extension not found at {so_path}. Install a "
+                    f"vllm-metal release wheel (which ships it prebuilt), or set "
+                    f"VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source "
+                    f"(requires CMake and the Xcode Metal toolchain)."
+                )
+E               RuntimeError: Prebuilt native extension not found at /private/tmp/fleet-site-vllm-metal/vllm_metal/metal/_paged_ops.cpython-312-darwin.so. Install a vllm-metal release wheel (which ships it prebuilt), or set VLLM_METAL_BUILD_FROM_SOURCE=1 to compile it from source (requires CMake and the Xcode Metal toolchain).
+
+/tmp/fleet-site-vllm-metal/vllm_metal/metal/__init__.py:240: RuntimeError
+=============================== warnings summary ===============================
+../../../../../private/tmp/fleet-site-vllm-env/lib/python3.12/site-packages/_pytest/config/__init__.py:1636
+  /private/tmp/fleet-site-vllm-env/lib/python3.12/site-packages/_pytest/config/__init__.py:1636: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../../../../../opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/metadata/__init__.py:948
+  /opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/metadata/__init__.py:948: DeprecationWarning: Implicit None on return values is deprecated and will raise KeyErrors.
+    pkg_to_dist[pkg].append(dist.metadata['Name'])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED ../../../../../tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py::test_paged_attention_matches_upstream[fp32-mlx_lm-local_rope]
+FAILED ../../../../../tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py::test_paged_attention_matches_upstream[fp32-mlx_lm-global_nope]
+FAILED ../../../../../tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py::test_paged_attention_matches_upstream[fp32-mlx_vlm-local_rope]
+FAILED ../../../../../tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py::test_paged_attention_matches_upstream[fp32-mlx_vlm-global_nope]
+FAILED ../../../../../tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py::test_paged_attention_matches_upstream[bf16-mlx_lm-local_rope]
+FAILED ../../../../../tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py::test_paged_attention_matches_upstream[bf16-mlx_lm-global_nope]
+FAILED ../../../../../tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py::test_paged_attention_matches_upstream[bf16-mlx_vlm-local_rope]
+FAILED ../../../../../tmp/fleet-site-vllm-metal/tests/test_muse_glimmer_paged.py::test_paged_attention_matches_upstream[bf16-mlx_vlm-global_nope]
+8 failed, 4 passed, 2 warnings in 3.80s

@@ -1,0 +1,10 @@
+[metal] repacked 14.91 GB of 4-bit weights into NAX tiles in 2.7s
+[load] 2.9s muse-glimmer -30B-4bit/snapshots/3e7677d7a40d348a3daba263a2b1c0aa41910710, 52 layers, weights 14.91 GB (pinned 0.00), KV 4.00 GB (6300 full + 4160 swa pages), backend metal
+[serve] listening on http://127.0.0.1:8090/v1 (model "glimmer-mlx4")
+[serve] chatcmpl-1: 62 prompt + 57 generated tokens, first token 3.98s, total 6.87s, stop
+[serve] 4 active | 15.7 tok/s generated | 1 served | 0 preemptions | 1410 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 83/118 accepted in 23 verifies
+[serve] chatcmpl-2: 590 prompt + 256 generated tokens, first token 1.16s, total 11.69s, length
+[serve] 3 active | 86.4 tok/s generated | 2 served | 0 preemptions | 1410 shared prompt tokens | swap 0 out 0 in (0.00s, 0.00 GB held) | 0 tokens reused in 0 spans (0.00s) | drafts 328/566 accepted in 103 verifies
+[serve] chatcmpl-3: 596 prompt + 256 generated tokens, first token 1.46s, total 13.74s, length
+[serve] chatcmpl-5: 1110 prompt + 256 generated tokens, first token 2.83s, total 14.15s, length
+[serve] chatcmpl-4: 572 prompt + 256 generated tokens, first token 1.75s, total 14.21s, length

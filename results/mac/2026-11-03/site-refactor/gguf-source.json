@@ -1,0 +1,14 @@
+{
+  "repo": "bartowski/Muse-Glimmer-30B-GGUF",
+  "revision": "01e1b7c30e19e1823ee9a73dec51d12f59ec4857",
+  "file": {
+    "rfilename": "Muse-Glimmer-30B-Q4_K_M.gguf",
+    "blobId": "e1a6606b0213fddd4469cf461e9e404ae4b8c608",
+    "size": 17306324000,
+    "lfs": {
+      "sha256": "0d3fc85f61d10fdc84072f0bba6005d61c1ac5605a2627b0fd5ea4ff8194c384",
+      "size": 17306324000,
+      "pointerSize": 136
+    }
+  }
+}

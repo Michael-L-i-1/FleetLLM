@@ -1,0 +1,32 @@
+{
+  "base_versions": {
+    "vllm": "0.32.0+cpu",
+    "vllm_metal": "0.32.0",
+    "mlx": "0.32.2",
+    "mlx_lm": "0.32.0",
+    "mlx_vlm": "0.7.6"
+  },
+  "glimmer_support_commit": "7f95a63fee91153cf4f0def3927119aa3e28704b",
+  "file_hashes": {
+    "attention/attention_contracts.py": {
+      "base": "a7319dd1f5abc849de83167b273ffd80ab29a6ff102eff25b342968a54563fbb",
+      "overlay": "9307284cccc9a2c9c1d1b05a2af9d8d6f2c4e3ab50cee3ff2480ead02b5863e8"
+    },
+    "attention/impls/sdpa.py": {
+      "base": "677d1d09d33e219ed6027ec9d8792bd1c905e7d1be43e5b1535fd265a376f848",
+      "overlay": "e9391921d6f77f1e4a6857fdd4d4877545b4f857586f6dc893380d185ccac7d2"
+    },
+    "attention/impls/sdpa_wrapper.py": {
+      "base": "8075658cba415efb1127d4bbf2de5c6a5e235368666672606166a90e67570fbd",
+      "overlay": "afcea23bb64fd7e9e5d5bc1a2cafa12b45f0e1652938d2590f6226ef8ffdbe76"
+    },
+    "v1/model_adapter.py": {
+      "base": "79fe96eece27f99a2ef6d519a18057457f22a61900d0363a7d42298e3200f688",
+      "overlay": "2f25113f2b67a68a7e0394e5dcc7c309bc4ee775e8da8ab59f0a315204f15786"
+    },
+    "metal/_paged_ops.cpython-312-darwin.so": {
+      "base": "61bbe4f251c3ea902c9bbe22a4000bbbe4351f593c54121d76234d47b19c8bd1",
+      "overlay": "61bbe4f251c3ea902c9bbe22a4000bbbe4351f593c54121d76234d47b19c8bd1"
+    }
+  }
+}

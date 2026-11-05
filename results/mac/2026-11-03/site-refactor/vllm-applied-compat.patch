@@ -1,0 +1,171 @@
+--- a/vllm_metal/attention/attention_contracts.py
++++ b/vllm_metal/attention/attention_contracts.py
+@@ -20,6 +20,10 @@
+     qk_norm_placement: QKNormPlacement = QKNormPlacement.BEFORE_ROPE
+     derive_scale_from_query: bool = False
+     use_rope: bool = True
++    scaleless_qk_norm: bool = False
++    shared_qk_norm: bool = False
++    post_norm_query_scale: bool = False
++    sigmoid_output_gate: bool = False
+ 
+ 
+ DEFAULT_ATTENTION_CONTRACT = AttentionContract()
+@@ -45,6 +49,10 @@
+     "mlx_lm.models.phi": AttentionContract(derive_scale_from_query=True),
+     # Nemotron-H attention is position-free: no rotary module, none expected.
+     "mlx_lm.models.nemotron_h": AttentionContract(use_rope=False),
++    "mlx_lm.models.muse_glimmer": AttentionContract(
++        scaleless_qk_norm=True, post_norm_query_scale=True, sigmoid_output_gate=True),
++    "mlx_vlm.models.muse_glimmer.language": AttentionContract(
++        shared_qk_norm=True, post_norm_query_scale=True, sigmoid_output_gate=True),
+ }
+ 
+ 
+--- a/vllm_metal/attention/impls/sdpa.py
++++ b/vllm_metal/attention/impls/sdpa.py
+@@ -30,7 +30,9 @@
+ 
+ from __future__ import annotations
+ 
++import functools
+ import math
++from collections.abc import Callable
+ from dataclasses import dataclass, field
+ from typing import Any
+ 
+@@ -254,6 +256,17 @@
+     return queries, keys
+ 
+ 
++def _norm_then_scale_queries(
++    q_norm: Callable[[mx.array], mx.array], scale: float, queries: mx.array
++) -> mx.array:
++    """Normalize, then scale in fp32 and cast back (Muse Glimmer, before RoPE).
++
++    vLLM and mlx-vlm apply Glimmer's query scale in this order.
++    """
++    queries = q_norm(queries)
++    return (queries.astype(mx.float32) * scale).astype(queries.dtype)
++
++
+ # === Q/K/V preparation (YOCO, K-eq-V, v_norm variants) ===
+ 
+ 
+@@ -299,7 +312,7 @@
+         - ``queries``, ``keys``, ``values``: ``(B, H, L, head_dim)`` tensors
+           ready for the Metal kernel.
+         - ``gate``: optional gate tensor for gated attention (Qwen3.5
+-          Qwen3Next style), else ``None``.
++          Qwen3Next style, or Muse Glimmer's ``gate_proj``), else ``None``.
+         - ``kv_for_sharing``: the post-norm+RoPE ``(keys, values)`` pair so
+           the caller can forward them to the next YOCO layer.
+ 
+@@ -312,6 +325,17 @@
+     norm_placement = attention_contract.qk_norm_placement
+     q_norm = _named_norm(inner, "q_norm", "query_layernorm", "q_layernorm")
+     k_norm = _named_norm(inner, "k_norm", "key_layernorm", "k_layernorm")
++    if attention_contract.scaleless_qk_norm:
++        q_norm = k_norm = functools.partial(
++            mx.fast.rms_norm, weight=None, eps=inner.eps
++        )
++    if attention_contract.shared_qk_norm:
++        q_norm = k_norm = inner.qk_norm
++    if attention_contract.post_norm_query_scale:
++        # From here on, q_norm also applies the query scale.
++        q_norm = functools.partial(
++            _norm_then_scale_queries, q_norm, inner.qk_scale_factor
++        )
+     if shared_kv is not None and read_existing_kv:
+         raise ValueError("shared_kv and read_existing_kv are mutually exclusive")
+ 
+@@ -430,6 +454,9 @@
+         )
+         if norm_placement is QKNormPlacement.AFTER_ROPE:
+             queries, keys = _apply_qk_norms(queries, keys, q_norm, k_norm)
++
++    if attention_contract.sigmoid_output_gate:
++        gate = inner.gate_proj(x)
+ 
+     kv_for_sharing = (keys, values)
+     return queries, keys, values, gate, kv_for_sharing
+--- a/vllm_metal/attention/impls/sdpa_wrapper.py
++++ b/vllm_metal/attention/impls/sdpa_wrapper.py
+@@ -109,6 +109,16 @@
+         attention — so wrapping them is a no-op for this flag.
+         """
+         return getattr(self._inner, "is_local", False)
++
++    @property
++    def layer_type(self) -> Any:
++        """Expose the wrapped attention's layer type.
++
++        Muse Glimmer's host model forward (mlx_lm) reads
++        ``self_attn.layer_type`` to select the sliding-window vs full mask
++        per layer.
++        """
++        return self._inner.layer_type
+ 
+     def rebind_cache(
+         self,
+--- a/vllm_metal/v1/model_adapter.py
++++ b/vllm_metal/v1/model_adapter.py
+@@ -391,6 +391,7 @@
+ 
+ # Models/configs that vLLM flags as multimodal but must be loaded via mlx_lm.
+ # gemma4: mlx_vlm forward path produces garbled output vs mlx_lm.
++# muse_glimmer: no multimodal adapter, so image requests must stop at the frontend.
+ # Qwen3.5/Qwen3.6 conditional-generation wrappers expose a multimodal config,
+ # but only the FP8 and adapter-less variants are forced onto the text backbone:
+ # FP8 checkpoints ship `*_weight_scale_inv` tensors that the mlx_vlm qwen3_5
+@@ -411,6 +412,9 @@
+ _MISTRAL3_TEXT_BACKBONE_TEXT_TYPES: frozenset[str] = frozenset(
+     {"mistral", "ministral3"}
+ )
++_TEXT_BACKBONE_OVERRIDE_MODEL_TYPES: frozenset[str] = _GEMMA4_MODEL_TYPES | {
++    "muse_glimmer"
++}
+ _QWEN3_VL_MODEL_TYPES: frozenset[str] = frozenset({"qwen3_5", "qwen3_vl"})
+ _QWEN3_VL_ARCHITECTURES: frozenset[str] = frozenset(
+     {
+@@ -438,9 +442,9 @@
+         Gemma4: mlx_vlm forward currently produces garbled output; remove this
+         override once mlx_vlm Gemma4 parity is fixed upstream.
+ 
+-        Mistral 3: no multimodal adapter yet. The text backbone clears
+-        ``multimodal_config``, so the frontend rejects image input instead of
+-        the runner raising on it.
++        Mistral 3 and Muse Glimmer: no multimodal adapter yet. The text backbone
++        clears ``multimodal_config``, so the frontend rejects image input
++        instead of the runner raising on it.
+ 
+         Qwen3.5/Qwen3.6 conditional-generation wrappers: these configs are
+         marked multimodal even when served text-only, and the FP8 family fails
+@@ -454,7 +458,7 @@
+             return False
+ 
+         model_type_from_hf = hf_config.model_type
+-        if model_type_from_hf in _GEMMA4_MODEL_TYPES:
++        if model_type_from_hf in _TEXT_BACKBONE_OVERRIDE_MODEL_TYPES:
+             return True
+         if model_type_from_hf == "mistral3":
+             text_config = getattr(hf_config, "text_config", None)
+@@ -903,7 +907,17 @@
+     def _apply_target_logit_postprocessing(
+         self, model: Any, logits: mx.array
+     ) -> mx.array:
+-        softcap = getattr(model, "final_logit_softcapping", None)
++        # Muse Glimmer scales its logits before the softcap, and mlx-lm keeps
++        # both values on ``args``.
++        args = getattr(model, "args", None)
++        multiplier = getattr(args, "output_multiplier", None)
++        if multiplier is not None:
++            logits = logits * multiplier
++        softcap = getattr(
++            model,
++            "final_logit_softcapping",
++            getattr(args, "final_logit_softcapping", None),
++        )
+         if softcap is None:
+             return logits
+         return mx.tanh(logits / softcap) * softcap

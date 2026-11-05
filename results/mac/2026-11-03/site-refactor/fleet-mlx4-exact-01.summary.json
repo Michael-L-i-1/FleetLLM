@@ -1,0 +1,15 @@
+{
+  "label": "fleet-mlx4-exact-01",
+  "model": "glimmer-mlx4",
+  "success": true,
+  "seconds": 230.90630820812657,
+  "calls": 28,
+  "error": null,
+  "prompt_tokens": 82577,
+  "completion_tokens": 11343,
+  "aggregate_completion_tokens_per_second": 49.12382034091519,
+  "tool_errors": 1,
+  "check_calls": 1,
+  "write_calls": 8,
+  "median_ttft_seconds": 0.7879804999101907
+}

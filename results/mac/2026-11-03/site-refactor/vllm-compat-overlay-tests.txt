@@ -1,0 +1,8 @@
+............                                                             [100%]
+=============================== warnings summary ===============================
+../../../../../opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/metadata/__init__.py:948
+  /opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/metadata/__init__.py:948: DeprecationWarning: Implicit None on return values is deprecated and will raise KeyErrors.
+    pkg_to_dist[pkg].append(dist.metadata['Name'])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+12 passed, 1 warning in 5.27s

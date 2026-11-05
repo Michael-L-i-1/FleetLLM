@@ -1,0 +1,2 @@
+label,model,success,seconds,calls,error,prompt_tokens,completion_tokens,aggregate_completion_tokens_per_second,tool_errors,check_calls,write_calls,median_ttft_seconds
+llama-q4km-standard-01,glimmer-q4km,False,854.5576090000104,30,HTTP Error 400: Bad Request,150982,15741,18.420057154976206,0,3,10,2.700867874897085

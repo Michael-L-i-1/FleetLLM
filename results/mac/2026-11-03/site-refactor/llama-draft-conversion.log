@@ -1,0 +1,89 @@
+INFO:hf-to-gguf:Loading model: c676cce91658f9568aaf264a416211e2782735b7
+INFO:hf-to-gguf:Model architecture: MuseGlimmerAssistantModel
+INFO:hf-to-gguf:gguf: indexing model part 'model.safetensors'
+INFO:gguf.gguf_writer:gguf: This GGUF file is for Little Endian only
+INFO:hf-to-gguf:Exporting model...
+INFO:hf-to-gguf:fc.weight,                             torch.bfloat16 --> Q8_0, shape = {33280, 6656}
+INFO:hf-to-gguf:enc.output_norm.weight,                torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.0.attn_norm.weight,                torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.0.ffn_down.weight,                 torch.bfloat16 --> Q8_0, shape = {19968, 6656}
+INFO:hf-to-gguf:blk.0.ffn_gate.weight,                 torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.0.ffn_up.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.0.ffn_norm.weight,                 torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.0.attn_k_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.0.attn_k.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.0.attn_output.weight,              torch.bfloat16 --> Q8_0, shape = {4096, 6656}
+INFO:hf-to-gguf:blk.0.attn_q_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.0.attn_q.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 4096}
+INFO:hf-to-gguf:blk.0.attn_v.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.1.attn_norm.weight,                torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.1.ffn_down.weight,                 torch.bfloat16 --> Q8_0, shape = {19968, 6656}
+INFO:hf-to-gguf:blk.1.ffn_gate.weight,                 torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.1.ffn_up.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.1.ffn_norm.weight,                 torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.1.attn_k_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.1.attn_k.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.1.attn_output.weight,              torch.bfloat16 --> Q8_0, shape = {4096, 6656}
+INFO:hf-to-gguf:blk.1.attn_q_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.1.attn_q.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 4096}
+INFO:hf-to-gguf:blk.1.attn_v.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.2.attn_norm.weight,                torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.2.ffn_down.weight,                 torch.bfloat16 --> Q8_0, shape = {19968, 6656}
+INFO:hf-to-gguf:blk.2.ffn_gate.weight,                 torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.2.ffn_up.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.2.ffn_norm.weight,                 torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.2.attn_k_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.2.attn_k.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.2.attn_output.weight,              torch.bfloat16 --> Q8_0, shape = {4096, 6656}
+INFO:hf-to-gguf:blk.2.attn_q_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.2.attn_q.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 4096}
+INFO:hf-to-gguf:blk.2.attn_v.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.3.attn_norm.weight,                torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.3.ffn_down.weight,                 torch.bfloat16 --> Q8_0, shape = {19968, 6656}
+INFO:hf-to-gguf:blk.3.ffn_gate.weight,                 torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.3.ffn_up.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.3.ffn_norm.weight,                 torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.3.attn_k_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.3.attn_k.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.3.attn_output.weight,              torch.bfloat16 --> Q8_0, shape = {4096, 6656}
+INFO:hf-to-gguf:blk.3.attn_q_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.3.attn_q.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 4096}
+INFO:hf-to-gguf:blk.3.attn_v.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.4.attn_norm.weight,                torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.4.ffn_down.weight,                 torch.bfloat16 --> Q8_0, shape = {19968, 6656}
+INFO:hf-to-gguf:blk.4.ffn_gate.weight,                 torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.4.ffn_up.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 19968}
+INFO:hf-to-gguf:blk.4.ffn_norm.weight,                 torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:blk.4.attn_k_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.4.attn_k.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:blk.4.attn_output.weight,              torch.bfloat16 --> Q8_0, shape = {4096, 6656}
+INFO:hf-to-gguf:blk.4.attn_q_norm.weight,              torch.bfloat16 --> F32, shape = {128}
+INFO:hf-to-gguf:blk.4.attn_q.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 4096}
+INFO:hf-to-gguf:blk.4.attn_v.weight,                   torch.bfloat16 --> Q8_0, shape = {6656, 1024}
+INFO:hf-to-gguf:output_norm.weight,                    torch.bfloat16 --> F32, shape = {6656}
+INFO:hf-to-gguf:Set meta model
+INFO:hf-to-gguf:Set model parameters
+INFO:hf-to-gguf:gguf: context length = 131072
+INFO:hf-to-gguf:gguf: embedding length = 6656
+INFO:hf-to-gguf:gguf: feed forward length = 19968
+INFO:hf-to-gguf:gguf: head count = 32
+INFO:hf-to-gguf:gguf: key-value head count = 8
+WARNING:hf-to-gguf:Unknown RoPE type: default
+INFO:hf-to-gguf:gguf: rope scaling type = NONE
+INFO:hf-to-gguf:gguf: rope theta = 500000.0
+INFO:hf-to-gguf:gguf: rms norm epsilon = 1e-05
+INFO:hf-to-gguf:gguf: file type = 7
+INFO:hf-to-gguf:Set model quantization version
+INFO:hf-to-gguf:Set model tokenizer
+WARNING:gguf.vocab:Unknown separator token '<|begin_of_text|>' in TemplateProcessing<pair>
+INFO:gguf.vocab:Adding 439802 merge(s).
+INFO:gguf.vocab:Setting special token type bos to 200000
+INFO:gguf.vocab:Setting special token type eos to 200001
+INFO:gguf.vocab:Setting special token type pad to 200018
+INFO:gguf.vocab:Setting add_bos_token to True
+INFO:gguf.vocab:Setting add_sep_token to False
+INFO:gguf.vocab:Setting chat_template to {%- macro render_content(content) -%}{%- if content is string -%}{{- content -}}{%- elif content is not none -%}{%- for part in content -%}{%- if part['type'] == 'image' -%}{{- '<|patch|>' -}}{%- elif part['type'] == 'video' -%}{{- '<|video|>' -}}{%- elif part['type'] == 'text' -%}{{- part['text'] -}}{%- endif -%}{%- endfor -%}{%- endif -%}{%- endmacro -%}{%- macro render_atem(tc) -%}{%- set args = tc.function.arguments -%}{%- if args is not mapping -%}{{- raise_exception('Onyx ATEM chat template requires tool_call.function.arguments to be a dict (mapping); a JSON string cannot be parsed in the HF jinja sandbox.') -}}{%- endif -%}{{- '<atem:function_calls>\n<atem:invoke name="' + tc.function.name + '">\n' -}}{%- for k, v in args.items() -%}{{- '<atem:parameter name="' + k + '">' -}}{%- if v is boolean -%}{%- if v -%}true{%- else -%}false{%- endif -%}{%- elif v is none -%}null{%- elif v is mapping or (v is iterable and v is not string) -%}{{- v | tojson -}}{%- else -%}{{- v -}}{%- endif -%}{{- '</atem:parameter>\n' -}}{%- endfor -%}{{- '</atem:invoke>\n</atem:function_calls>' -}}{%- endmacro -%}{%- macro render_tool_defs(tools) -%}{{- 'In this environment you have access to a set of tools you can use to answer the user\'s question.\n\n' -}}{{- 'You can invoke a function by writing a "<atem:function_calls>" block like the following:\n' -}}{{- '<atem:function_calls>\n<atem:invoke name="$FUNCTION_NAME">\n<atem:parameter name="$PARAMETER_NAME">$PARAMETER_VALUE</atem:parameter>\n...\n</atem:invoke>\n</atem:function_calls>\n\n' -}}{{- 'String and scalar parameters should be specified as is, while lists and objects should use JSON format. Note that spaces for string values are not stripped. The output is not expected to be valid XML and is parsed with regular expressions.\n' -}}{{- 'Here are the functions available in JSONSchema format:\n' -}}{{- '// Tool metadata\n' -}}{%- set nsns = namespace(seen=[]) -%}{%- for tool in tools -%}{%- set fn = tool.function if tool.function is defined else tool -%}{%- set tns = fn.name.split('.')[0] -%}{%- if tns not in nsns.seen -%}{%- set nsns.seen = nsns.seen + [tns] -%}{%- endif -%}{%- endfor -%}{%- set nd = tool_namespace_descriptions if tool_namespace_descriptions is defined else {} -%}{%- for tns in nsns.seen -%}{{- '{"name": ' + (tns | tojson) + ', "description": ' + ((nd[tns] if tns in nd else '') | tojson) + '}\n' -}}{%- endfor -%}{{- '// Function schemas' -}}{%- for tool in tools -%}{%- set fn = tool.function if tool.function is defined else tool -%}{{- '\n{"name": ' + (fn.name | tojson) + ', "description": ' + (fn.description | tojson) + ', "parameters": ' + (fn.parameters | tojson) + '}' -}}{%- endfor -%}{{- '\n\nHere\'s an example of how to call a function in the tool set:\n' -}}{{- '(If the tool namespace is not specified, invoke the function directly as `example_function_name` rather than `example_tool_name.example_function_name`)\n\n' -}}{{- 'to=example_tool_name.example_function_name\n\n' -}}{{- '<atem:function_calls>\n<atem:invoke name="example_tool_name.example_function_name">\n' -}}{{- '<atem:parameter name="example_parameter_1">value_1</atem:parameter>\n' -}}{{- '<atem:parameter name="example_parameter_2">This is the value for the second parameter\nthat can span\n"multiple" lines\n</atem:parameter>\n' -}}{{- '</atem:invoke>\n</atem:function_calls>' -}}{%- endmacro -%}{%- macro render_reasoning() -%}{%- set rs = reasoning_strength if reasoning_strength is defined and reasoning_strength else 'high' -%}{{- 'Reasoning strength: ' + rs + '.' -}}{%- endmacro -%}{%- macro render_system_meta(tools) -%}{%- set rns = namespace(recipients=['"self"'], nslist=[]) -%}{%- if tools -%}{%- for tool in tools -%}{%- set fn = tool.function if tool.function is defined else tool -%}{%- set tns = fn.name.split('.')[0] -%}{%- if tns not in rns.nslist -%}{%- set rns.nslist = rns.nslist + [tns] -%}{%- endif -%}{%- endfor -%}{%- for tns in rns.nslist -%}{%- set rns.recipients = rns.recipients + ['"' + tns + '.*"'] -%}{%- endfor -%}{%- endif -%}{%- set rns.recipients = rns.recipients + ['"user"'] -%}{{- '# Valid recipients: ' + rns.recipients | join(', ') + '.' -}}{%- endmacro -%}{{- bos_token -}}{%- set ns = namespace(has_system=false) -%}{%- for m in messages -%}{%- if m['role'] == 'system' -%}{%- set ns.has_system = true -%}{%- endif -%}{%- endfor -%}{%- if not ns.has_system -%}{{- '<|start|>system<|message|>You are a helpful AI assistant.' -}}{%- set kc = knowledge_cutoff if knowledge_cutoff is defined and knowledge_cutoff else '2026-01-04' -%}{{- '\nKnowledge cutoff: ' + kc + '.' -}}{%- if current_date is defined and current_date -%}{{- '\nCurrent date: ' + current_date + '.' -}}{%- elif strftime_now is defined -%}{{- '\nCurrent date: ' + strftime_now('%Y-%m-%d') + '.' -}}{%- endif -%}{{- '\n\n' -}}{{- render_reasoning() -}}{%- if tools -%}{{- '\n\n' -}}{{- render_tool_defs(tools) -}}{%- endif -%}{{- '\n\n' -}}{{- render_system_meta(tools) -}}{{- '<|eot|>' -}}{%- endif -%}{%- for message in messages -%}{%- set role = message['role'] -%}{%- set end_token = '<|eom|>' if (not loop.last and messages[loop.index0 + 1]['role'] == role) else '<|eot|>' -%}{%- if role == 'system' -%}{{- '<|start|>system<|message|>' -}}{{- render_content(message['content']) -}}{{- '\n\n' -}}{{- render_reasoning() -}}{%- if tools -%}{{- '\n\n' -}}{{- render_tool_defs(tools) -}}{%- endif -%}{{- '\n\n' -}}{{- render_system_meta(tools) -}}{{- '<|eot|>' -}}{%- elif role == 'user' -%}{{- '<|start|>user<|message|>' -}}{{- render_content(message['content']) -}}{{- '<|eot|>' -}}{%- elif role == 'tool' -%}{%- set tname = message.get('name') -%}{%- if not tname -%}{%- set tcid = message.get('tool_call_id') -%}{%- set rns = namespace(name=tcid if tcid else '') -%}{%- for m in messages -%}{%- if m.get('tool_calls') -%}{%- for tc in m['tool_calls'] -%}{%- if tcid is not none and tc.id is defined and tc.id == tcid -%}{%- set rns.name = tc.function.name -%}{%- endif -%}{%- endfor -%}{%- endif -%}{%- endfor -%}{%- set tname = rns.name -%}{%- endif -%}{{- '<|start|>tool ' + tname + '<|message|><tool_output name="' + tname + '">\n' -}}{{- render_content(message['content']) -}}{{- '\n</tool_output><|eot|>' -}}{%- elif role == 'assistant' -%}{%- if message.get('reasoning_content') -%}{{- '<|start|>assistant to=self<|message|>' + message['reasoning_content'] + '<|eom|>' -}}{%- endif -%}{%- if message.get('tool_calls') -%}{%- for tc in message['tool_calls'] -%}{{- '<|start|>assistant to=' + tc.function.name + '<|message|>' -}}{{- render_atem(tc) -}}{%- if loop.last -%}{{- end_token -}}{%- else -%}{{- '<|eom|>' -}}{%- endif -%}{%- endfor -%}{%- else -%}{%- set recipient = message.get('recipient') or 'user' -%}{%- set end_turn = message.get('end_turn') -%}{%- if end_turn is none -%}{%- set end_turn = not (recipient and recipient != 'user') -%}{%- endif -%}{{- '<|start|>assistant' -}}{%- if recipient -%}{{- ' to=' + recipient -}}{%- endif -%}{{- '<|message|>' -}}{{- render_content(message['content']) -}}{{- ('<|eot|>' if end_turn else '<|eom|>') -}}{%- endif -%}{%- endif -%}{%- endfor -%}{%- if add_generation_prompt -%}{{- '<|start|>assistant' -}}{%- endif -%}
+INFO:gguf.gguf_writer:Writing the following files:
+INFO:gguf.gguf_writer:/Users/michaelli/.cache/fleetllm/benchmarks/Muse-Glimmer-assistant-Q8_0.gguf: n_tensors = 58, total_size = 2.7G
+Writing:   0%|          | 0.00/2.72G [00:00<?, ?byte/s]Writing:   9%|▊         | 235M/2.72G [00:01<00:13, 184Mbyte/s]Writing:  14%|█▍        | 377M/2.72G [00:02<00:12, 181Mbyte/s]Writing:  19%|█▉        | 518M/2.72G [00:02<00:11, 183Mbyte/s]Writing:  24%|██▍       | 659M/2.72G [00:03<00:11, 184Mbyte/s]Writing:  26%|██▌       | 695M/2.72G [00:03<00:11, 179Mbyte/s]Writing:  27%|██▋       | 724M/2.72G [00:04<00:11, 177Mbyte/s]Writing:  32%|███▏      | 873M/2.72G [00:04<00:10, 182Mbyte/s]Writing:  37%|███▋      | 1.01G/2.72G [00:05<00:09, 184Mbyte/s]Writing:  43%|████▎     | 1.16G/2.72G [00:06<00:08, 185Mbyte/s]Writing:  44%|████▍     | 1.19G/2.72G [00:06<00:08, 179Mbyte/s]Writing:  45%|████▍     | 1.22G/2.72G [00:06<00:08, 178Mbyte/s]Writing:  50%|█████     | 1.37G/2.72G [00:07<00:07, 183Mbyte/s]Writing:  56%|█████▌    | 1.51G/2.72G [00:08<00:06, 184Mbyte/s]Writing:  61%|██████    | 1.65G/2.72G [00:09<00:05, 185Mbyte/s]Writing:  62%|██████▏   | 1.69G/2.72G [00:09<00:05, 178Mbyte/s]Writing:  63%|██████▎   | 1.72G/2.72G [00:09<00:05, 177Mbyte/s]Writing:  69%|██████▊   | 1.86G/2.72G [00:10<00:04, 182Mbyte/s]Writing:  74%|███████▍  | 2.01G/2.72G [00:11<00:03, 183Mbyte/s]Writing:  79%|███████▉  | 2.15G/2.72G [00:11<00:03, 184Mbyte/s]Writing:  80%|████████  | 2.18G/2.72G [00:12<00:02, 178Mbyte/s]Writing:  81%|████████▏ | 2.21G/2.72G [00:12<00:02, 177Mbyte/s]Writing:  87%|████████▋ | 2.36G/2.72G [00:13<00:01, 182Mbyte/s]Writing:  92%|█████████▏| 2.50G/2.72G [00:13<00:01, 183Mbyte/s]Writing:  97%|█████████▋| 2.64G/2.72G [00:14<00:00, 184Mbyte/s]Writing:  99%|█████████▊| 2.68G/2.72G [00:14<00:00, 177Mbyte/s]Writing: 100%|█████████▉| 2.71G/2.72G [00:14<00:00, 175Mbyte/s]Writing: 100%|██████████| 2.72G/2.72G [00:15<00:00, 181Mbyte/s]
+INFO:hf-to-gguf:Model successfully exported to /Users/michaelli/.cache/fleetllm/benchmarks/Muse-Glimmer-assistant-Q8_0.gguf

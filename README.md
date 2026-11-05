@@ -8,7 +8,7 @@ FleetLLM combines local inference with agent workflow coordination. Run multiple
 
 ### GPQA Diamond: 65.7%
 
-**130/198 correct** with Muse Glimmer 30B Q2_K and phased output budgets. The experiment began on a **16 GB Raspberry Pi 5**; 170 retained answers came from the Pi and 28 from Mac retries. The uniform Pi-only run scored 58.1% at a 2,048-token cap.
+**130/198 correct** with Muse Glimmer 30B Q2_K and phased output budgets. The experiment began on a **16 GB Raspberry Pi 5**. The uniform Pi-only run scored 58.1% at a 2,048-token cap.
 
 [Results and method](results/gpqa/2026-11-04-glimmer-q2k-phased/README.md) · [Per-question results](results/gpqa/2026-11-04-glimmer-q2k-phased/questions.csv)
 
